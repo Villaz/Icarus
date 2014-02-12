@@ -259,3 +259,67 @@ describe 'Map tests with Map' , ->
 		@map.remove(1)
 
 		@map.getValue(1).then result
+
+
+	it 'Update map' , ( done ) ->
+
+		map2 = new Map.Map("testMap")
+
+
+		result = ( value ) =>
+			f = ( ) =>
+				map2.hashMap.has("1").should.be.true
+				map2.hashMap.has("2").should.be.true
+			check done , f
+
+		@map.addValue(1,{"op":"test"})
+		map2.addValue(2,{"op":"test2"})
+
+		map2.update(@map).then result
+
+
+	it 'Update map with duplicates' , ( done ) ->
+
+		map2 = new Map.Map("testMap")
+
+
+		result = ( value ) =>
+			f = ( ) =>
+				map2.hashMap.has("1").should.be.true
+				map2.hashMap.has("2").should.be.true
+				map2.hashMap.get("1").op.should.be.exactly "test3"
+			check done , f
+
+		@map.addValue(1,{"op":"test"})
+		map2.addValue(2,{"op":"test2"})
+		map2.addValue(1,{"op":"test3"})
+
+		map2.update(@map).then result
+
+	it 'Update map with empty' , ( done ) ->
+		map2 = new Map.Map("testMap")
+
+
+		result = ( value ) =>
+			f = ( ) =>
+				map2.hashMap.has("1").should.be.true
+				map2.hashMap.has("2").should.be.true
+			check done , f
+
+		map2.addValue(2,{"op":"test2"})
+		map2.addValue(1,{"op":"test3"})
+
+		map2.update(@map).then result
+
+	it 'Update map with empty 2' , ( done ) ->
+		map2 = new Map.Map("testMap")
+
+
+		result = ( value ) =>
+			f = ( ) =>
+				map2.hashMap.has("1").should.be.true
+			check done , f
+
+		@map.addValue(1,{"op":"test"})	
+		
+		map2.update(@map).then result

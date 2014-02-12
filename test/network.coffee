@@ -7,9 +7,9 @@ else
 	Network = require('../lib/network.coffee');
 
 
-describe 'Acceptor Network tests', ->
+describe 'Network tests', ->
 
-	network : undefined
+	network = undefined
 	counter = 9000
 
 	check = (done,f) ->

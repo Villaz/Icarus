@@ -156,6 +156,15 @@ class Map.Map extends Map.Map
 	clear:( ) ->
 		do @hashMap.clear
 
+
+	update : ( x ) ->
+		deferred = Q.defer()
+
+		for key in x.keys when @keys.indexOf(key) < 0
+			@addValue(key , x.hashMap.get(key) )
+		deferred.resolve()
+		return deferred.promise
+
 	close:()->
 
 	
