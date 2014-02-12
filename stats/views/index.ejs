@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="http://localhost:3000/javascripts/socket.io.js"></script>
+    <script src="http://localhost:3000/javascripts/Chart.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+   	
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+
+    <canvas id="chartP1A" width="400" height="400"></canvas>
+    <canvas id="chartP1B" width="400" height="400"></canvas>
+
+    <script>
+
+
+	exists = function ( oldObject , newObject ) {
+		if(oldObject.name == newObject.name && oldObject.mean == newObject.mean && oldObject.timestamp == newObject.timestamp) 
+			return true
+		else
+			return false
+	}
+
+	function print(name){
+		labels = []
+  		datas = []
+  		for(i in metrics[name]){
+  			labels.push(metrics[name][i].timestamp)
+  			datas.push(metrics[name][i].mean)
+  		}
+  		//Get context with jQuery - using jQuery's .get() method.
+  		console.log(labels)
+  		console.log(datas)
+  		data = {
+  			labels : labels,
+  			datasets:[{
+			fillColor : "rgba(220,220,220,0.5)",
+			strokeColor : "rgba(220,220,220,1)",
+			pointColor : "rgba(220,220,220,1)",
+			pointStrokeColor : "#fff",
+			data : datas
+		},]
+  		}
+
+  		var labelName = "chart"+name
+  		console.log(labelName)
+		var ctx = document.getElementById(labelName).getContext("2d");
+		//This will get the first returned node in the jQuery collection.
+		var myNewChart = new Chart(ctx).Line(data,{animation:false});;
+	}
+
+	function printP1A(){
+		print("P1A")
+	}
+
+	function printP2A(){
+		print("P1B")
+	}
+
+
+	metrics = []
+	socket = io.connect('http://localhost:3100')
+	socket.on('metrics',function (data){
+		data = JSON.parse(data)
+
+		for(metric in data.metrics){
+			if( metrics[data.metrics[metric].name] === undefined )
+    			metrics[data.metrics[metric].name] = []
+    		
+    		exitsObject = false
+    		for(object in metrics[data.metrics[metric].name]){
+    			exitsObject = exists( metrics[data.metrics[metric].name][object] ,data.metrics[metric] )
+    			if(exitsObject) break;
+    		}
+  		    if(!exitsObject){
+  		    	metrics[data.metrics[metric].name].push(data.metrics[metric]) 
+  		    	if(metrics[data.metrics[metric].name].length > 10)
+  		    		metrics[data.metrics[metric].name].shift()
+  		    }
+  		}
+
+  		printP1A()
+  		printP2A()
+  		
+  	});
+
+    	
+ 
+</script>
+  </body>
+</html>

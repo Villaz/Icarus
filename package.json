@@ -1,0 +1,21 @@
+{
+  "name": "icarus",
+  "version": "0.0.0",
+  "description": "A Coffescript Paxos implementation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD",
+  "dependencies": {
+    "mdns2": "*",
+    "q": "*",
+    "zmq": "*",
+    "hiredis": "*",
+    "redis": "*"
+  },
+  "devDependencies": {
+    "should": "~2.1.1"
+  }
+}
