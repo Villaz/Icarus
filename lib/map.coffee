@@ -111,6 +111,15 @@ class Map.Map extends Map.Map
 			return @keys
 		Q.fcall returnKeys
 
+	getAllValues:( ) ->
+
+		values = [ ]
+		for key in @keys
+			values.push @hashMap.get key
+
+		Q.fcall ( ) =>
+			values
+
 	addValue:( slot , value ) ->
 		if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
 
@@ -160,8 +169,13 @@ class Map.Map extends Map.Map
 	update : ( x ) ->
 		deferred = Q.defer()
 
-		for key in x.keys when @keys.indexOf(key) < 0
+		values = [ ]
+		for key in @keys
+			values.push @hashMap.get key
+
+		for key in x.keys when (key not in @keys) and x.hashMap.get(key) not in values
 			@addValue(key , x.hashMap.get(key) )
+			
 		deferred.resolve()
 		return deferred.promise
 
