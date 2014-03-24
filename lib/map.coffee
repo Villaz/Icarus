@@ -1,7 +1,8 @@
 Map = exports? and exports or @Map = {}
 
 Q = require 'q'
-HashMap = require('hashmap').HashMap;
+HashMap = require('hashmap').HashMap
+underscore = require('./underscore')
 
 class Map.Map
 
@@ -172,13 +173,18 @@ class Map.Map extends Map.Map
 		values = [ ]
 		for key in @keys
 			values.push @hashMap.get key
-
-		for key in x.keys when (key not in @keys) and x.hashMap.get(key) not in values
+		
+		for key in x.keys when (key not in @keys) and not @_inArray(x.hashMap.get(key), values)
 			@addValue(key , x.hashMap.get(key) )
-			
+		
 		deferred.resolve()
 		return deferred.promise
 
+
+	_inArray:(obj , values) ->
+		for value in values
+			if underscore._.isEqual obj , value then return true
+		return false
 	close:()->
 
 	

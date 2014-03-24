@@ -53,9 +53,7 @@ class Leader.Leader  extends EventEmitter
 
 
 		
-		
 		promise1 = pvalues.update(@proposals)
-		
 		promise2 = pvaluesSlot.update(@proposalsInSlot)
 		
 		Q.all([promise1,promise2]).then(allPromiseResult)

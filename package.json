@@ -13,9 +13,13 @@
     "q": "*",
     "zmq": "*",
     "hiredis": "*",
-    "redis": "*"
+    "redis": "*",
+    "hashmap":"*",
+    "restify":"*",
+    "socket.io":"*",
+    "measured":"*"
   },
   "devDependencies": {
-    "should": "~2.1.1"
+    "should": "^3.2.0-beta1"
   }
 }
