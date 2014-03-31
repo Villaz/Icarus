@@ -15,12 +15,16 @@ class Acceptor.Acceptor
 	constructor:( ) ->
 		@actualBallot = new Ballot()
 		@mapOfValues = new Map.Map("acceptor")
-		@network = new Network.AcceptorNetwork( )
+		try
+			@network = new Network.AcceptorNetwork( )
+		catch e
+			throw new Error(e.message)
 		@network.on 'message' , @processRequests
 	
 	clear: ( ) ->
 		@actualBallot = new Ballot()
 		do @mapOfValues?.clear
+		do @network.close
 
 	processRequests:( message ) =>
 		switch message.type

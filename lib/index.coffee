@@ -7,22 +7,16 @@ Ballot = require('./ballot').Ballot
 
 workerAcceptor = undefined
 workerReplica = undefined
-workerLeader = undefined
 
 acceptorObject = undefined
 replicaObject = undefined
-leaderObject = undefined
 
 discover = undefined
 
 
-txt_record = 
-    roles:['L'],
-    'LTA':8888
-    
-
 processDiscoverUpMessage = ( service ) =>
-	workerAcceptor.send service
+	workerAcceptor?.send service
+	replicaAcceptor?.send service
 
 
 test = ( ) =>
@@ -69,25 +63,17 @@ if cluster.isMaster
     	console.log "Server #{worker.id} died. restart..."
     	if worker.id is workerAcceptor.id then cluster.fork()
 	
-
-    discover = new Discover("paxos",9999,txt_record)
-    discover.on 'up' , processDiscoverUpMessage
-    discover.start()
-    
-
 	workerAcceptor = cluster.fork({type:'Acceptor'})
-	workerLeader = cluster.fork({type:'Leader'})
 	workerReplica = cluster.fork({type:'Replica'})
 
 	do test
 else
 	switch process.env.type
 		when 'Acceptor' then acceptorObject = new Acceptor()
-  	
+  		when 'Replica' then replicaObject = new Replica()
 
 	process.on? 'message' , ( message) ->
   		acceptorObject?.network.upNode message
-  		leaderObject?.network.upNode message
   		replicaObject?.network.upNode message
 
 
