@@ -2,12 +2,12 @@ Network = exports? and exports or @Network = {}
 
 
 zmq 	 = require 'zmq'
-Discover = require('./discover').Discover
+Discover = require('./discover').UDP
 Ballot 	 = require('./ballot').Ballot
 MetricServer = require('./metrics/metricServer').MetricServer
 
 txt_record = 
-    roles:['L'],
+    roles:['A'],
     'LTA':8888
 
 {EventEmitter} = require 'events'
@@ -25,7 +25,7 @@ class Network.Network extends EventEmitter
 	acceptors = new Array()
 	
 	constructor:( port = 9999 ) ->
-		@metricServer = new MetricServer(3100)
+		@metricServer = new MetricServer 3100
 		@socketPub = zmq.socket 'pub'
 		@socketPub.identity = "publisher#{process.pid}"
 		try
@@ -34,10 +34,10 @@ class Network.Network extends EventEmitter
 			#console.log e
 			#throw new Error(e.message)
 		
-		@discover = new Discover("paxos",9999,txt_record)
-    	@discover.on 'up' , @upNode
-    	@discover.on 'down' , @downNode
-    	@discover.start()
+		@discover = new Discover "paxos" , 9999 , txt_record
+		@discover.on 'up' , @upNode
+		@discover.on 'down' , @downNode
+		@discover.start()
 
 
 	close:( ) ->
@@ -98,7 +98,7 @@ class Network.AcceptorNetwork extends Network.Network
 
 		return socket
 
-	upNode:( service ) ->
+	upNode:( service ) =>
 		if (service.data.roles.indexOf('A') isnt -1 ) and ( not @recuperationSubs[service.address]? ) and ( service.data.ATA? )
 			@recuperationSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATA}"
 
@@ -151,6 +151,6 @@ class Network.ReplicaNetwork extends Network.Network
 		return socket
 
 
-	upNode:( service ) ->
+	upNode:( service ) =>
 		if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.ATR? )
 			@socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATR}"	
