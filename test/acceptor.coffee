@@ -1,5 +1,5 @@
 should = require 'should'
-
+sleep = require 'sleep'
 Ballot = require('../lib/ballot.coffee').Ballot
 
 #path = if not process.env['COV']? then '../lib-cov' else '../lib';
@@ -21,7 +21,13 @@ describe 'Acceptor tests', ->
 			done(e)
 	
 	beforeEach () ->
-		@acceptor = new Acceptor( ) if not @acceptor?
+		try
+			console.log "wiiiiii"
+			@acceptor = new Acceptor( ) if not @acceptor?
+		catch e
+			console.log "Wolaaaaa"
+			sleep.sleep 5
+			@acceptor = new Acceptor( ) if not @acceptor?
 		
 
 	afterEach ( ) ->

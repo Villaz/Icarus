@@ -118,14 +118,14 @@ describe 'Tests Leader' , ->
 	it 'Adopted Duplicated Operation diferent Slot' , ( done ) ->
 		ballot = new Ballot(1,'localhost')
 		slot = 1
-		operation = {client_id:'1',operation_id:'1',operation:"test"}
-		operation2 = {client_id:'1',operation_id:'1',operation:"test2"}
+		operation = {client_id:'1',operation_id:'1'}
+		operation2 = {client_id:'1',operation_id:'1'}
 
 		pvals = new Map()
 		pvalsSlot = new Map()
 
 		pvals.addValue 2 , operation 
-		pvalsSlot.addValue operation , 1
+		pvalsSlot.addValue operation , 2
 
 		adopt = ( ) =>
 			@leader.adopted  ballot , pvals , pvalsSlot 
@@ -134,11 +134,10 @@ describe 'Tests Leader' , ->
 			f = ( ) =>
 				should.not.exists @leader.proposals.hashMap.get('1')
 				@leader.proposals.hashMap.get('2').should.be.exactly operation
-				console.log @leader.proposals.hashMap
 				@leader.proposals.hashMap.count().should.be.exactly 1
 
 				@leader.proposalsInSlot.hashMap.count().should.be.exactly 1
-				@leader.proposalsInSlot.hashMap.get(JSON.stringify operation).should.be.exactly 1
+				@leader.proposalsInSlot.hashMap.get(JSON.stringify operation).should.be.exactly 2
 			check done , f
 
 
