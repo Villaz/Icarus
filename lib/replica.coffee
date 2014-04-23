@@ -3,7 +3,7 @@ Replica = exports? and exports or @Replica = {}
 Q = require 'q'
 Map = require './map'
 Leader = require('./leader').Leader
-
+Network = require('./network')
 
 
 class Replica.Replica
@@ -18,6 +18,7 @@ class Replica.Replica
 	lastSlotEmpltyInProposals: undefined
 	lastSlotEmpltyInDecisions: undefined
 
+	network : undefined
 	leader : undefined
 
 	constructor:( ) ->
@@ -35,6 +36,16 @@ class Replica.Replica
 		
 		@leader = new Leader( )
 		@leader.on 'decision' , @decision
+		@network = new Network.ReplicaNetwork( ) 
+		@network.on 'message' , @processRequests
+
+
+
+	processRequests:(message)=>
+		switch message.type
+			when 'propose' then @propose message.body
+			when 'adopted' then @propose message.body
+			when 'P1B'		then @leader.p1b message.body
 
 
 	propose:( operation ) ->
