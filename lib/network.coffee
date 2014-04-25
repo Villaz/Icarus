@@ -2,13 +2,10 @@ Network = exports? and exports or @Network = {}
 
 
 zmq 	 = require 'zmq'
-Discover = require('./discover').UDP
+Discover = require('./discover').Discover
 Ballot 	 = require('./ballot').Ballot
 MetricServer = require('./metrics/metricServer').MetricServer
 
-txt_record = 
-    roles:['A'],
-    'LTA':8888
 
 {EventEmitter} = require 'events'
 
@@ -16,8 +13,7 @@ class Network.Network extends EventEmitter
 
 	socketPub  : undefined
 	socketSubs : []
-	discover : undefined
-
+	
 	metricServer = undefined
 
 	replicas = new Array()
@@ -25,7 +21,7 @@ class Network.Network extends EventEmitter
 	acceptors = new Array()
 	
 	constructor:( port = 9999 ) ->
-		@metricServer = new MetricServer 3100
+		#@metricServer = new MetricServer 3100
 		@socketPub = zmq.socket 'pub'
 		@socketPub.identity = "publisher#{process.pid}"
 		try
@@ -34,10 +30,7 @@ class Network.Network extends EventEmitter
 			#console.log e
 			#throw new Error(e.message)
 		
-		@discover = new Discover "paxos" , 9999 , txt_record
-		@discover.on 'up' , @upNode
-		@discover.on 'down' , @downNode
-		@discover.start()
+		
 
 
 	close:( ) ->
@@ -49,7 +42,7 @@ class Network.Network extends EventEmitter
 		
 	send:( message ) ->
 		@socketPub.send "#{message.type} #{JSON.stringify message}"
-		@metricServer.addMetric message.type
+		@metricServer?.addMetric message.type
 	
 	upNode:( service ) ->
 		if not socketSubs[service.address]?
@@ -90,7 +83,7 @@ class Network.AcceptorNetwork extends Network.Network
 				"type":type,
 				"body":JSON.parse data
 			
-			@metricServer.addMetric type
+			@metricServer?.addMetric type
 			
 			ballot = new Ballot(message.body.ballot.number,message.body.ballot.id)
 			message.body.ballot = ballot
@@ -136,10 +129,9 @@ class Network.ReplicaNetwork extends Network.Network
 		socket.identity = "subscriber#{@socketSubs.length}#{process.pid}"
 		socket.subscribe 'P1B'
 		socket.subscribe 'P2B'
-
 		socket.connect url
 
-		socket.on 'message' , data ( ) =>
+		socket.on 'message' ,( data ) =>
 			type = data.toString().substr 0 , data.toString().indexOf("{")-1
 			data = data.toString().substr data.toString().indexOf("{")
 			

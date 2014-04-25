@@ -14,6 +14,10 @@ replicaObject = undefined
 
 discover = undefined
 
+txt_record = 
+    roles:['A','R'],
+    'ATR':9999,
+    'RTA':8000
 
 processDiscoverUpMessage = ( service ) =>
 	workerAcceptor?.send service
@@ -61,20 +65,43 @@ if cluster.isMaster
   
 	cluster.on 'exit', (worker) ->
     	console.log "Server #{worker.id} died. restart..."
-    	if worker.id is workerAcceptor.id then cluster.fork()
+    	if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor'})
+    	if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica'})
 	
 	workerAcceptor = cluster.fork({type:'Acceptor'})
 	workerReplica = cluster.fork({type:'Replica'})
 
+	discover = new Discover "paxos" , 9999 , txt_record
+	discover.on 'up' , ( service ) =>
+		msg =
+			type: 'up'
+			service: service
+		workerReplica?.send msg
+		workerAcceptor?.send msg
+
+	discover.on 'down' , ( service ) =>
+		msg =
+			type: 'down'
+			service: service
+		workerReplica?.send 'down' , service
+		workerAcceptor?.send 'down' , service
+	discover.start()
+	
 	do test
 else
 	switch process.env.type
 		when 'Acceptor' then acceptorObject = new Acceptor()
 		when 'Replica' then replicaObject = new Replica()
 
-	process.on? 'message' , ( message) ->
-  		acceptorObject?.network.upNode message
-  		replicaObject?.network.upNode message
+	process.on? 'message' , ( msg ) ->
+		if msg.type is 'up'
+			acceptorObject?.network.upNode msg.service
+			replicaObject?.network.upNode msg.service
+		
+		if msg.type is 'down'
+			acceptorObject?.network.upNode msg.service
+			replicaObject?.network.upNode msg.service
+
 
 
 

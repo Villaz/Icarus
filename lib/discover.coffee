@@ -40,7 +40,7 @@ class Discover.Discover extends EventEmitter
 
 		@browser.on 'serviceUp' , ( service ) =>
 			data = 
-				address : service.addresses[0]
+				address : service.addresses[1]
 				data : service.txtRecord
 			@emit 'up' , data
 		
