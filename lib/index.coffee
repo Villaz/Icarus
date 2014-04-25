@@ -1,6 +1,7 @@
 cluster = require('cluster')
 cpus    = require('os').cpus().length
 Acceptor = require('./acceptor').Acceptor
+Replica  = require('./replica').Replica
 Discover = require('./discover').Discover
 
 Ballot = require('./ballot').Ballot
@@ -30,7 +31,6 @@ test = ( ) =>
 	socket2.subscribe 'P2B'
 	socket2.connect 'tcp://localhost:9999'
 	socket2.on 'message' , ( data ) =>
-
 		type = data.toString().substr 0 , data.toString().indexOf("{")-1
 		data = data.toString().substr data.toString().indexOf("{")
 		
@@ -70,7 +70,7 @@ if cluster.isMaster
 else
 	switch process.env.type
 		when 'Acceptor' then acceptorObject = new Acceptor()
-  		when 'Replica' then replicaObject = new Replica()
+		when 'Replica' then replicaObject = new Replica()
 
 	process.on? 'message' , ( message) ->
   		acceptorObject?.network.upNode message
