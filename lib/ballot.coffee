@@ -19,15 +19,19 @@ class Ballot.Ballot
 
 		if actualBytes > externalBytes then return true else return false
 
+
 	isMayorOrEqualThanOtherBallot:( ballot ) ->
-
-		actualBytes = @_getValue @id
-		externalBytes = @_getValue ballot.id
-
-		if (@number is ballot.number) and (actualBytes is externalBytes)
+		if @isEqual( ballot )
 			return true
 		else
 			@isMayorThanOtherBallot ballot
+
+
+	isEqual:( ballot ) ->
+		actualBytes = @_getValue @id
+		externalBytes = @_getValue ballot.id
+		if (@number is ballot.number) and (actualBytes is externalBytes)
+			return true
 
 
 	_getBytes: (str) ->
