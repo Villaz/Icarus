@@ -5,6 +5,7 @@ Q = require 'q'
 Map = require './map'
 Ballot = require('./ballot').Ballot
 Scout = require('./scout').Scout
+Commander = require('./commander').Commander
 
 {EventEmitter} = require 'events'
 class Leader.Leader  extends EventEmitter
@@ -15,14 +16,17 @@ class Leader.Leader  extends EventEmitter
 	proposalsInSlot : undefined
 	scout : undefined
 
-	constructor:( @acceptors ) ->
+	constructor:( @acceptors , @network ) ->
 		@ballot = new Ballot()
 		@active = false
-		@proposals = new Map.Map ("proposalsLeader")
-		@proposalsInSlot = new Map.Map ("proposalsInSlot")
-
+		@proposals = new Map.Map "proposalsLeader"
+		@proposalsInSlot = new Map.Map "proposalsInSlot"
 		do @_spawnScout
 	
+
+	
+	
+
 	propose:( slot , operation ) ->
 		deferred = Q.defer()
 
@@ -38,9 +42,8 @@ class Leader.Leader  extends EventEmitter
 		
 
 	adopted:( ballot , pvalues , pvaluesSlot ) ->
-
 		deferred = Q.defer()
-
+		
 		finishAdopted = ( ) =>
 			@active = true
 			deferred.resolve(true)
@@ -53,14 +56,10 @@ class Leader.Leader  extends EventEmitter
 			@proposalsInSlot = pvaluesSlot
 			@proposals.getAllKeys().then(sendToCommander).then(finishAdopted)
 
-
-		
 		promise1 = pvalues.update(@proposals)
 		promise2 = pvaluesSlot.update(@proposalsInSlot)
 		
 		Q.all([promise1,promise2]).then(allPromiseResult)
-		
-		
 		deferred.promise
 
 
@@ -70,43 +69,35 @@ class Leader.Leader  extends EventEmitter
 			@ballot.number = ballot.number + 1
 			do @_spawnScout
 
+
 	p1b:( message ) ->
 		if @scout? then @scout.process message
 
+	
 	_spawnScout:( ) ->
 		@scout = new Scout( @ballot , undefined , @acceptors )
 		@scout.on 'P1A' , ( body ) =>
 			@emit 'P1A' , body
 		@scout.on 'preempted' , ( body ) =>
-
+			return 0
 		@scout.on 'adopted' , ( body ) =>
-
-
-
-	_spawnCommander:( slot , operation ) =>
-		deferred = Q.defer()
-		deferred.resolve(true)
-		deferred.pomise
+			return 0
 
 
 	_sendToCommanderAllproposals:( keys ) =>
-		promises = [ ]
-		deferred = Q.defer()
-		counter = 0
-
-		resolve = ( ) =>
-			deferred.resolve()
-
-		resolvePromises = ( ) =>
-			Q.all([promises])
-
+		promises = []
 		for key in keys
-			@proposals.getValue(key).then ( operation ) =>
-				promises.push @_spawnCommander key , operation
-				counter++
-				if counter >= keys.length then resolvePromises().then(resolve)
+			deferred = do Q.defer
+			promises.push deferred
+			@proposals.getValue(key).then (operation)=>
+				@_spawnCommander key , operation
+				deferred.resolve()
+		Q.all promises
 
-		deferred.promise 
 
+	_spawnCommander:( slot , operation ) =>
+		@network.sendMessageToAllAcceptors()
+		commander = new Commander @acceptors , key , operation
 
-class Leader.Commander extends EventEmitter
+	
+

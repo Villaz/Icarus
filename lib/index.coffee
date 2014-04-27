@@ -30,11 +30,12 @@ test = ( ) =>
 	socket = zmq.socket 'pub'
 	socket2 = zmq.socket 'sub'
 	
-	socket.bindSync 'tcp://*:8888'
+	socket.bindSync 'tcp://*:8000'
 	socket2.subscribe 'P1B'
 	socket2.subscribe 'P2B'
 	socket2.connect 'tcp://localhost:9999'
 	socket2.on 'message' , ( data ) =>
+		console.log data.toString()
 		type = data.toString().substr 0 , data.toString().indexOf("{")-1
 		data = data.toString().substr data.toString().indexOf("{")
 		
@@ -69,7 +70,7 @@ if cluster.isMaster
     	if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica'})
 	
 	workerAcceptor = cluster.fork({type:'Acceptor'})
-	workerReplica = cluster.fork({type:'Replica'})
+	#workerReplica = cluster.fork({type:'Replica'})
 
 	discover = new Discover "paxos" , 9999 , txt_record
 	discover.on 'up' , ( service ) =>

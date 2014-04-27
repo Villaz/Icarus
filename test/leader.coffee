@@ -33,7 +33,10 @@ describe 'Tests Leader' , ->
 
 	it 'Propose value', ( done ) ->
 		slot = 1
-		operation = {client_id:'1',operation_id:'1',operation:"test"}
+		operation = 
+			client_id:'1',
+			operation_id:'1',
+			operation:"test"
 
 		promise = @leader.propose slot , operation 
 
@@ -49,8 +52,14 @@ describe 'Tests Leader' , ->
 	it 'Propose value to not empty slot' , ( done ) ->
 
 		slot = 1
-		operation1 = {client_id:'1',operation_id:'1',operation:"test"}
-		operation2 = {client_id:'1',operation_id:'2',operation:"test"}
+		operation1 = 
+			client_id:'1',
+			operation_id:'1',
+			operation:"test"
+		operation2 = 
+			client_id:'1',
+			operation_id:'2',
+			operation:"test"
 
 		secondPropose = ( ) =>
 			@leader.propose slot , operation2
@@ -72,18 +81,21 @@ describe 'Tests Leader' , ->
 	it 'Adopted' , ( done ) ->
 		ballot = new Ballot(1,'localhost')
 		slot = 1
-		operation = {client_id:'1',operation_id:'1',operation:"test"}
+		operation = 
+			client_id:'1',
+			operation_id:'1',
+			operation:"test"
+
 		pvals = new Map()
 		pvalsSlot = new Map()
 
 		adopt = ( ) =>
-			@leader.adopted  ballot , pvals , pvalsSlot 
+			@leader.adopted  ballot , pvals , pvalsSlot
 
 		result = ( ) =>
 			f = ( ) =>
 				@leader.proposals.hashMap.get('1').should.be.exactly operation
 			check done , f
-
 
 		@leader.propose(slot,operation).then(adopt).then result
 
@@ -91,8 +103,14 @@ describe 'Tests Leader' , ->
 	it 'Adopted duplicated' , ( done ) ->
 		ballot = new Ballot(1,'localhost')
 		slot = 1
-		operation = {client_id:'1',operation_id:'1',operation:"test"}
-		operation2 = {client_id:'1',operation_id:'1',operation:"test2"}
+		operation = 
+			client_id:'1',
+			operation_id:'1',
+			operation:"test"
+		operation2 = 
+			client_id:'1',
+			operation_id:'1',
+			operation:"test2"
 
 		pvals = new Map()
 		pvalsSlot = new Map()
@@ -118,8 +136,12 @@ describe 'Tests Leader' , ->
 	it 'Adopted Duplicated Operation diferent Slot' , ( done ) ->
 		ballot = new Ballot(1,'localhost')
 		slot = 1
-		operation = {client_id:'1',operation_id:'1'}
-		operation2 = {client_id:'1',operation_id:'1'}
+		operation = 
+			client_id:'1',
+			operation_id:'1'
+		operation2 = 
+			client_id:'1',
+			operation_id:'1'
 
 		pvals = new Map()
 		pvalsSlot = new Map()

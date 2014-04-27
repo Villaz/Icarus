@@ -22,10 +22,8 @@ describe 'Acceptor tests', ->
 	
 	beforeEach () ->
 		try
-			console.log "wiiiiii"
 			@acceptor = new Acceptor( ) if not @acceptor?
 		catch e
-			console.log "Wolaaaaa"
 			sleep.sleep 5
 			@acceptor = new Acceptor( ) if not @acceptor?
 		

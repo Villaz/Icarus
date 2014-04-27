@@ -30,9 +30,6 @@ class Network.Network extends EventEmitter
 			#console.log e
 			#throw new Error(e.message)
 		
-		
-
-
 	close:( ) ->
 		try
 			do @socketPub?.close
@@ -103,7 +100,7 @@ class Network.ReplicaNetwork extends Network.Network
 
 	clientSockets : undefined
 
-	constructor:( port = 8000)->
+	constructor:( port = 8000 )->
 		super()
 		@server = zmq.socket( 'router' )
 		@server.identity = "replicaServer#{process.pid}"
@@ -143,6 +140,15 @@ class Network.ReplicaNetwork extends Network.Network
 		return socket
 
 
+	sendMessageToAllAcceptors:( body )->
+		for socket in @socketSubs
+			message =
+				type: 'P1A',
+				body: body
+			@socketSubs[socket].send 'P1A' , JSON.stringify message
+
+
 	upNode:( service ) =>
 		if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.ATR? )
 			@socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATR}"	
+			@emit 'up' , @socketSubs.length

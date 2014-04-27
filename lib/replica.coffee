@@ -21,7 +21,7 @@ class Replica.Replica
 	network : undefined
 	leader : undefined
 
-	constructor:( ) ->
+	constructor:( test=false ) ->
 		@slot_num = 0
 		@proposals = new Map.Map("proposalsReplica")
 		@decisions = new Map.Map("decisionsReplica")
@@ -36,8 +36,15 @@ class Replica.Replica
 		
 		@leader = new Leader( )
 		@leader.on 'decision' , @decision
-		@network = new Network.ReplicaNetwork( ) 
-		@network.on 'message' , @processRequests
+		
+		@leader.on 'P1A' , ( body ) =>
+			@network.sendMessageToAllAcceptors body 
+
+		if not test
+			@network = new Network.ReplicaNetwork( ) 
+			@network.on 'message' , @processRequests
+			@network.on 'up' , ( value ) =>
+				@leader.acceptors = value
 
 
 
@@ -45,7 +52,7 @@ class Replica.Replica
 		switch message.type
 			when 'propose' then @propose message.body
 			when 'adopted' then @propose message.body
-			when 'P1B'		then @leader.p1b message.body
+			when 'P1B'	   then @leader.p1b message.body
 
 
 	propose:( operation ) ->
