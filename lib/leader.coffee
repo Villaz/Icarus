@@ -4,6 +4,7 @@ Leader = exports? and exports or @Leader = {}
 Q = require 'q'
 Map = require './map'
 Ballot = require('./ballot').Ballot
+Scout = require('./scout').Scout
 
 {EventEmitter} = require 'events'
 class Leader.Leader  extends EventEmitter
@@ -12,8 +13,9 @@ class Leader.Leader  extends EventEmitter
 	active: undefined
 	proposals : undefined
 	proposalsInSlot : undefined
+	scout : undefined
 
-	constructor:( ) ->
+	constructor:( @acceptors ) ->
 		@ballot = new Ballot()
 		@active = false
 		@proposals = new Map.Map ("proposalsLeader")
@@ -62,21 +64,30 @@ class Leader.Leader  extends EventEmitter
 		deferred.promise
 
 
-	
-
-
 	preempted:( ballot ) ->
 		if ballot.isMayorThanOtherBallot @ballot
 			@active = false
 			@ballot.number = ballot.number + 1
 			do @_spawnScout
 
+	p1b:( message ) ->
+		if @scout? then @scout.process message
+
 	_spawnScout:( ) ->
+		@scout = new Scout( @ballot , undefined , @acceptors )
+		@scout.on 'P1A' , ( body ) =>
+			@emit 'P1A' , body
+		@scout.on 'preempted' , ( body ) =>
+
+		@scout.on 'adopted' , ( body ) =>
+
+
 
 	_spawnCommander:( slot , operation ) =>
 		deferred = Q.defer()
 		deferred.resolve(true)
 		deferred.pomise
+
 
 	_sendToCommanderAllproposals:( keys ) =>
 		promises = [ ]
@@ -97,8 +108,5 @@ class Leader.Leader  extends EventEmitter
 
 		deferred.promise 
 
-	
-
-class Leader.Scout extends EventEmitter
 
 class Leader.Commander extends EventEmitter
