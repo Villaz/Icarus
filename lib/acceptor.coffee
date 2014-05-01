@@ -4,6 +4,7 @@ Q = require 'q'
 Ballot = require('./ballot').Ballot
 Map = require './map'
 Network = require('./network')
+winston = require 'winston'
 
 class Acceptor.Acceptor
 
@@ -20,6 +21,9 @@ class Acceptor.Acceptor
 		catch e
 			throw new Error(e.message)
 		@network.on 'message' , @processRequests
+
+		winston.add(winston.transports.File, { filename: 'acceptor.log' });
+		winston.info "Acceptor started"
 	
 	clear: ( ) ->
 		@actualBallot = new Ballot()
@@ -27,6 +31,7 @@ class Acceptor.Acceptor
 		do @network.close
 
 	processRequests:( message ) =>
+		winston.info "Received message #{message.type}"
 		switch message.type
 			when 'P1A' then @processP1A message.body.ballot , message.body.leader
 			when 'P2A' then @processP2A message.body
@@ -43,9 +48,10 @@ class Acceptor.Acceptor
 		send = ( values ) =>
 			message =
 				type: 'P1B',
-				acceptor: @id,
-				ballot : @actualBallot,
-				values : values
+				from: @id,
+				body:
+					ballot : @actualBallot,
+					accepted : values
 			@network.send message
 
 		@mapOfValues.getValues( from , to ).then send 
