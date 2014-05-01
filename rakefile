@@ -1,5 +1,13 @@
 
+task :run do
+	system 'coffee lib/index.coffee'
+end
+
 desc 'Run tests'
 task :test do
-   system 'mocha --compilers coffee:coffee-script/register'
+   system 'mocha --compilers coffee:coffee-script'
+end
+
+task :coverage do
+    system 'COVERAGE=true mocha --require register-handlers.js --reporter html-cov --compilers coffee:coffee-script > index.html'
 end
