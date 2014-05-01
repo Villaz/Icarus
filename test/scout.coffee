@@ -21,30 +21,36 @@ describe 'Tests Scout' , ->
   timeout = ( time , done ) -> setTimeout( done , time )
 
   it 'Constructor' , ( ) ->
-    ballot = new Ballot(1 , '127.0.0.1')
-    scout = new Scout( ballot , 1 , [ '127.0.0.1', '127.0.0.2' ] )
+    ballot = new Ballot 1 , '127.0.0.1'
+    scout = new Scout ballot , 1 
+    
     should.exists scout.ballot
     scout.lastSlotReceived.should.be.exactly 1
     scout.ballot.number.should.be.exactly 1
     scout.ballot.id.should.be.exactly '127.0.0.1'
-    scout.acceptors.length.should.be.exactly 2
     scout.adopted.should.be.exactly false
 
-  it 'start' , ( done ) ->
-    ballot = new Ballot(1 , '127.0.0.1')
-    scout = new Scout( ballot , 1 , [ '127.0.0.1', '127.0.0.2' ] )
-    scout.on 'P1A' , ( body ) =>
-      body.leader.should.be.exactly '127.0.0.1'
-      body.ballot.number.should.be.exactly ballot.number
-      body.ballot.id.should.be.exactly ballot.id
-      body.lastSlotReceived.should.be.exactly 1
-      done()
-    do scout.start
+
+  it 'start' , ( ) ->
+    ballot = new Ballot 1 , '127.0.0.1'
+    scout = new Scout  ballot , 1 
+    
+    message = do scout.start
+    message.type.should.be.exactly 'P1A'
+    message.body.leader.should.be.exactly '127.0.0.1'
+    message.body.ballot.number.should.be.exactly ballot.number
+    message.body.ballot.id.should.be.exactly ballot.id
+    message.body.lastSlotReceived.should.be.exactly 1
+        
+
 
   it 'Process Preempted message' , ( done ) ->
-    ballot = new Ballot(1 , '127.0.0.1')
-    ballot2 = new Ballot(2, '127.0.0.1')
-    scout = new Scout( ballot , 1 , [ '127.0.0.1', '127.0.0.2' ] )
+    ballot = new Ballot 1 , '127.0.0.1'
+    ballot2 = new Ballot 2, '127.0.0.1'
+    scout = new Scout ballot , 1 
+    
+    scout.acceptors = [ '127.0.0.1', '127.0.0.2' ] 
+
     scout.on 'preempted' , ( body ) =>
       body.ballot.number.should.be.exactly 2
       body.ballot.id.should.be.exactly '127.0.0.1'
@@ -59,8 +65,11 @@ describe 'Tests Scout' , ->
 
 
   it 'Process accepted message' , (  ) ->
-    ballot = new Ballot(1 , '127.0.0.1')
-    scout = new Scout( ballot , 1 , [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ] )
+    ballot = new Ballot 1 , '127.0.0.1'
+    scout = new Scout ballot , 1 
+    
+    scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
+    
     message =
       type:'P1B',
       body:
@@ -77,8 +86,11 @@ describe 'Tests Scout' , ->
 
 
   it 'Process accepted message and adopted' , ( done ) ->
-    ballot = new Ballot(1 , '127.0.0.1')
-    scout = new Scout( ballot , 1 , [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ] )
+    ballot = new Ballot 1 , '127.0.0.1'
+    scout = new Scout ballot , 1 
+    
+    scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
+
     scout.on 'adopted', ( body )=>
       body.ballot.id.should.be.exactly ballot.id
       body.ballot.number.should.be.exactly ballot.number
@@ -108,8 +120,11 @@ describe 'Tests Scout' , ->
 
 
   it 'if unknown acceptor sends message, should not process it' , ( done ) ->
-    ballot = new Ballot(1 , '127.0.0.1')
-    scout = new Scout( ballot , 1 , [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ] )
+    ballot = new Ballot 1 , '127.0.0.1'
+    scout = new Scout ballot , 1
+    
+    scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
+    
     scout.on 'adopted', ( body )=>
       body.ballot.id.should.be.exactly ballot.id
       body.ballot.number.should.be.exactly ballot.number
@@ -140,10 +155,13 @@ describe 'Tests Scout' , ->
 
 
   it 'Preempted if adopted is true' , ( done ) ->
-    ballot = new Ballot(1 , '127.0.0.1')
-    scout = new Scout( ballot , 1 , [ '127.0.0.1', '127.0.0.2' ] )
+    ballot = new Ballot 1 , '127.0.0.1'
+    scout = new Scout ballot , 1 
+    
+    scout.acceptors = [ '127.0.0.1', '127.0.0.2' ]
     scout.adopted = true
     scout.pvalues = [{slot:1},{slot:2}]
+    
     scout.on 'preempted' , ( body ) =>
       body.ballot.number.should.be.exactly 1
       body.ballot.id.should.be.exactly '127.0.0.1'

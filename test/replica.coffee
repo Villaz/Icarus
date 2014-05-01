@@ -20,7 +20,7 @@ describe 'Tests Replica' , ->
 			done(e)
 
 	beforeEach ( ) ->
-		@replica = new Replica.Replica( true )
+		@replica = new Replica.Replica( [] , true )
 
 
 	it 'Propose operation' , ( done ) ->
@@ -69,9 +69,8 @@ describe 'Tests Replica' , ->
 						value[0].id.should.be.exactly 1
 						should.not.exists value[1]
 					check(done,f)
-				
-
 			@replica.propose(op1).then result
+
 
 	it 'Propose decided operation' , ( done ) ->
 		
@@ -87,10 +86,7 @@ describe 'Tests Replica' , ->
 				f = ( ) =>
 					should.not.exists value
 				check done , f
-
-
 		@replica.propose(op1).then result
-
 
 
 	it '_getNextSlotEmply' , ->
@@ -116,13 +112,9 @@ describe 'Tests Replica' , ->
 
 
 	it '_slotsHaveMenorThanSlotNum', ->
-
 		slots = [2,3,4]
-
 		@replica._slotsHaveMenorThanSlotNum(slots,1).should.be.false
-
 		@replica._slotsHaveMenorThanSlotNum(slots,2).should.be.false
-
 		@replica._slotsHaveMenorThanSlotNum(slots,5).should.be.true
 
 
@@ -147,6 +139,7 @@ describe 'Tests Replica' , ->
 					should.not.exists valuesIn0
 			check done , f
 
+
 		getValues = (  ) =>
 			Q.all([@replica.proposals.getValue(0),@replica.proposals.getValue(1)]).then searchValues
 		
@@ -161,7 +154,6 @@ describe 'Tests Replica' , ->
 		@replica.lastSlotEmpltyInDecisions = 1
 
 		@replica.slot_num = 0
-
 
 		searchValues = ( values ) =>
 			valuesIn0 = values[0]
@@ -196,6 +188,7 @@ describe 'Tests Replica' , ->
 
 		@replica.decision(0 , op1).then(getValues).then(result)
 
+
 	it 'Decision operation to same slot' , ( done ) ->
 		op1 = {id:1,client:1,op:{'hello'}}
 		op2 = {id:2,client:2,op:{'hello'}}
@@ -215,6 +208,4 @@ describe 'Tests Replica' , ->
 				value.id.should.be.exactly 1
 				value.client.should.be.exactly 1
 			check done , f
-
-
 		sendDecision1().then(sendDecision2).then(getValues).then(result)
