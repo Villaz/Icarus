@@ -3,6 +3,7 @@ cpus    = require('os').cpus().length
 Acceptor = require('./acceptor').Acceptor
 Replica  = require('./replica').Replica
 Discover = require('./discover').Discover
+Network = require('./network')
 
 Ballot = require('./ballot').Ballot
 
@@ -53,7 +54,16 @@ if cluster.isMaster
 else
 	switch process.env.type
 		when 'Acceptor' then acceptorObject = new Acceptor()
-		when 'Replica' then replicaObject = new Replica()
+		when 'Replica'
+			network = new Network.ReplicaNetwork( ) 
+			network.on 'message' , ( message ) =>
+				switch message.type
+					when 'propose' then replicaObject.propose message.body
+					when 'adopted' then replicaObject.adopted message.body
+					when 'P1B'	   then replicaObject.leader.p1b message.body
+			
+			replicaObject = new Replica(network)
+			
 
 	process.on? 'message' , ( msg ) ->
 		if msg.type is 'up'

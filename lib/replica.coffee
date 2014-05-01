@@ -22,7 +22,7 @@ class Replica.Replica
 	network : undefined
 	leader : undefined
 
-	constructor:( test=false ) ->
+	constructor:( @network ,test=false ) ->
 		@slot_num = 0
 		@proposals = new Map.Map("proposalsReplica")
 		@decisions = new Map.Map("decisionsReplica")
@@ -33,31 +33,14 @@ class Replica.Replica
 
 		@lastSlotEmpltyInDecisions = 0
 		@lastSlotEmpltyInProposals = 0
-
 		
-		@leader = new Leader( )
-		@leader.on 'decision' , @decision
-		
-		@leader.on 'P1A' , ( body ) =>
-			@network.sendMessageToAllAcceptors body 
-
 		if not test
-			@network = new Network.ReplicaNetwork( ) 
-			@network.on 'message' , @processRequests
-			@network.on 'up' , ( value ) =>
-				@leader.acceptors = value
+			@leader = new Leader( @network )
+			@leader.on 'decision' , @decision
+			do @leader.start
 
 			winston.add(winston.transports.File, { filename: 'replica.log' });
 			winston.info "Replica started"
-
-
-
-	processRequests:(message)=>
-		winston.info "Received message #{message.type} from #{message.ip}"
-		switch message.type
-			when 'propose' then @propose message.body
-			when 'adopted' then @propose message.body
-			when 'P1B'	   then @leader.p1b message.body
 
 
 	propose:( operation ) ->
@@ -69,7 +52,6 @@ class Replica.Replica
 		promiseProposed = @operationsProposed.getValue key
 
 		Q.spread [ promiseDecided , promiseProposed ] , ( decided , proposed = [] ) =>
-
 			if not decided? 
 				slot = do @_getNextSlotEmply
 				
@@ -78,7 +60,7 @@ class Replica.Replica
 					@operationsProposed.addValues key , slot
 					
 					@lastSlotEmpltyInProposals++
-					@leader.propose slot , operation
+					@leader?.propose slot , operation
 			deferred.resolve()
 		
 		return deferred.promise

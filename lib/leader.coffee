@@ -6,6 +6,7 @@ Map = require './map'
 Ballot = require('./ballot').Ballot
 Scout = require('./scout').Scout
 Commander = require('./commander').Commander
+winston = require 'winston'
 
 {EventEmitter} = require 'events'
 class Leader.Leader  extends EventEmitter
@@ -15,17 +16,19 @@ class Leader.Leader  extends EventEmitter
 	proposals : undefined
 	proposalsInSlot : undefined
 	scout : undefined
+	lastSlotReceived: undefined
+	network : undefined
 
-	constructor:( @acceptors , @network ) ->
+	constructor:( @network ) ->
 		@ballot = new Ballot()
 		@active = false
 		@proposals = new Map.Map "proposalsLeader"
 		@proposalsInSlot = new Map.Map "proposalsInSlot"
+		
+	
+	start:( )->
 		do @_spawnScout
-	
 
-	
-	
 
 	propose:( slot , operation ) ->
 		deferred = Q.defer()
@@ -75,13 +78,15 @@ class Leader.Leader  extends EventEmitter
 
 	
 	_spawnScout:( ) ->
-		@scout = new Scout( @ballot , undefined , @acceptors )
-		@scout.on 'P1A' , ( body ) =>
-			@emit 'P1A' , body
+		@scout = new Scout( @ballot , @lastSlotReceived , @network )
+		
 		@scout.on 'preempted' , ( body ) =>
 			return 0
 		@scout.on 'adopted' , ( body ) =>
 			return 0
+		
+		do @scout.start
+		
 
 
 	_sendToCommanderAllproposals:( keys ) =>

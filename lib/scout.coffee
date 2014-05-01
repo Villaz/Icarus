@@ -3,28 +3,35 @@ Scout = exports? and exports or @Scout = {}
 Q = require 'q'
 Map = require './map'
 Ballot = require('./ballot').Ballot
+winston = require 'winston'
 
 {EventEmitter} = require 'events'
 
 class Scout.Scout extends EventEmitter
 
+  acceptors : undefined
   acceptorsResponsed : undefined
   pvalues : undefined
   slotsOfValues : undefined
-
   adopted : false
 
-  constructor:( @ballot , @lastSlotReceived , @acceptors ) ->
+  constructor:( @ballot , @lastSlotReceived , @network ) ->
     @slotsOfValues = []
     @pvalues = []
     @acceptorsResponsed = []
+    @acceptors = @network?.acceptors
+
 
   start:( )->
-    body =
-      leader : @ballot.id,
-      ballot: @ballot,
-      lastSlotReceived : @lastSlotReceived,
-    @emit 'P1A' , body
+    message =
+      type:'P1A',
+      body:
+        leader : @ballot.id,
+        ballot: @ballot,
+        lastSlotReceived : @lastSlotReceived,
+    @network?.sendMessageToAllAcceptors message 
+    return message
+    
 
 
   process:( message ) =>
