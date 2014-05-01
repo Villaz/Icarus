@@ -16,9 +16,8 @@ class Network.Network extends EventEmitter
 	
 	metricServer = undefined
 
-	replicas = new Array()
-	leaders = new Array()
-	acceptors = new Array()
+	replicas : []
+	acceptors : []
 	
 	constructor:( port = 9999 ) ->
 		#@metricServer = new MetricServer 3100
@@ -27,8 +26,8 @@ class Network.Network extends EventEmitter
 		try
 			@socketPub.bindSync("tcp://*:#{port}")
 		catch e
-			#console.log e
-			#throw new Error(e.message)
+			console.log e
+			throw new Error(e.message)
 		
 	close:( ) ->
 		try
@@ -72,13 +71,12 @@ class Network.AcceptorNetwork extends Network.Network
 		
 		socket.connect url
 		socket.on 'message' , ( data ) =>
-
 			type = data.toString().substr 0 , data.toString().indexOf("{")-1
 			data = data.toString().substr data.toString().indexOf("{")
-			
+			data = JSON.parse data
 			message =
 				"type":type,
-				"body":JSON.parse data
+				"body":data.body
 			
 			@metricServer?.addMetric type
 			
@@ -99,14 +97,17 @@ class Network.AcceptorNetwork extends Network.Network
 class Network.ReplicaNetwork extends Network.Network
 
 	clientSockets : undefined
+	pendingMessagesToAcceptors : undefined
 
-	constructor:( port = 8000 )->
-		super()
+	constructor:( port = 8000 , portClient = 8181 )->
+		super( port )
 		@clientSockets = {}
 		@server = zmq.socket( 'router' )
 		@server.identity = "replicaServer#{process.pid}"
-		@server.bindSync("tcp://*:#{port}")
+		@server.bindSync("tcp://*:#{portClient}")
 		@server.on 'message' , @processMessage
+		@pendingMessagesToAcceptors = []
+		setInterval @_checkPending , 2000
 
 
 	close:( ) ->
@@ -142,16 +143,22 @@ class Network.ReplicaNetwork extends Network.Network
 			@emit 'message' , message
 		return socket
 
+	_checkPending:( ) =>
+		if @pendingMessagesToAcceptors.length > 0 and Object.keys(@socketSubs).length > 0
+			for message in @pendingMessagesToAcceptors
+				@sendMessageToAllAcceptors message
+				@pendingMessagesToAcceptors.splice(@pendingMessagesToAcceptors.indexOf(message),1)
 
-	sendMessageToAllAcceptors:( body )->
-		for socket in @socketSubs
-			message =
-				type: 'P1A',
-				body: body
-			@socketSubs[socket].send 'P1A' , JSON.stringify message
+
+	sendMessageToAllAcceptors:( message )->
+		if Object.keys(@socketSubs).length is 0
+			@pendingMessagesToAcceptors.push message
+		else
+			@socketPub.send "#{message.type} #{JSON.stringify message}"
+			
 
 
 	upNode:( service ) =>
 		if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.ATR? )
 			@socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATR}"	
-			@emit 'up' , @socketSubs.length
+			@acceptors.push service.address
