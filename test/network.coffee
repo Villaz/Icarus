@@ -30,21 +30,22 @@ describe 'Network tests', ->
 
 	it 'Retrieve replica txt message' , =>
 		txt_record = 
-      address: '192.168.4.68',
-				data:
-		    RTA: '8888',
-			  roles: 'R'
+			address: '192.168.4.68',
+			data:
+				RTA: '8888',
+				roles: 'R'
 
 		txt_record2 =
-    		address: '192.168.4.69',
-			  data:
-				  RTA: '8888',
-				  roles: 'R'
+			address: '192.168.4.69',
+			data:
+				RTA: '8888',
+				roles: 'R'
 
-    	@network.upNode txt_record
-    	Object.keys(@network.socketSubs).length.should.be.exactly 1
-    	@network.upNode txt_record
-    	Object.keys(@network.socketSubs).length.should.be.exactly 1
+		@network.upNode txt_record
+		Object.keys(@network.socketSubs).length.should.be.exactly 1
+		@network.upNode txt_record
+		Object.keys(@network.socketSubs).length.should.be.exactly 1
+
 
   it 'Retrieve multiple leader txt messages', =>
     	txt_record = 
