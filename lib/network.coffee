@@ -102,6 +102,7 @@ class Network.ReplicaNetwork extends Network.Network
 
 	constructor:( port = 8000 )->
 		super()
+		@clientSockets = {}
 		@server = zmq.socket( 'router' )
 		@server.identity = "replicaServer#{process.pid}"
 		@server.bindSync("tcp://*:#{port}")
@@ -113,14 +114,16 @@ class Network.ReplicaNetwork extends Network.Network
 		@server.close
 
 	processMessage:( envelope , black , data ) =>
-		data = JSON.stringify data.toString()
+		data = JSON.parse data.toString()
 		@clientSockets[data.ip] = envelope
+		data.type = 'propose'
+		@emit 'message' , data
 		
-		@emit 'message', data
 
-    response:(client, data) ->
-    	@server.send [ @clientSockets[client] , '' , data ]
+	response:(client, data) ->
+		@server.send [ @clientSockets[client] , '' , data ]
 	
+
 	_startClient:( url ) ->
 		socket = zmq.socket 'sub'
 		socket.identity = "subscriber#{@socketSubs.length}#{process.pid}"
