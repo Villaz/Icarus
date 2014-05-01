@@ -4,6 +4,7 @@ Q = require 'q'
 Map = require './map'
 Leader = require('./leader').Leader
 Network = require('./network')
+winston = require('winston')
 
 
 class Replica.Replica
@@ -46,9 +47,13 @@ class Replica.Replica
 			@network.on 'up' , ( value ) =>
 				@leader.acceptors = value
 
+			winston.add(winston.transports.File, { filename: 'replica.log' });
+			winston.info "Replica started"
+
 
 
 	processRequests:(message)=>
+		winston.info "Received message #{message.type} from #{message.ip}"
 		switch message.type
 			when 'propose' then @propose message.body
 			when 'adopted' then @propose message.body

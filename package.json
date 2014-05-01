@@ -12,6 +12,7 @@
     "mdns2": "*",
     "q": "*",
     "zmq": "*",
+    "winston":"*",
     "hiredis": "*",
     "redis": "*",
     "hashmap":"*",
