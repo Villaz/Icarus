@@ -20,7 +20,7 @@ class Leader.Leader  extends EventEmitter
 	network : undefined
 
 	constructor:( @network ) ->
-		@ballot = new Ballot()
+		@ballot = new Ballot 1 , @network?.ip
 		@active = false
 		@proposals = new Map.Map "proposalsLeader"
 		@proposalsInSlot = new Map.Map "proposalsInSlot"

@@ -11,6 +11,8 @@ MetricServer = require('./metrics/metricServer').MetricServer
 
 class Network.Network extends EventEmitter
 
+	ip : undefined
+
 	socketPub  : undefined
 	socketSubs : []
 	
@@ -23,6 +25,7 @@ class Network.Network extends EventEmitter
 		#@metricServer = new MetricServer 3100
 		@socketPub = zmq.socket 'pub'
 		@socketPub.identity = "publisher#{process.pid}"
+		@ip = do @_getIP
 		try
 			@socketPub.bindSync("tcp://*:#{port}")
 		catch e
@@ -36,9 +39,11 @@ class Network.Network extends EventEmitter
 		catch e
 			#console.log e
 		
+
 	send:( message ) ->
 		@socketPub.send "#{message.type} #{JSON.stringify message}"
 		@metricServer?.addMetric message.type
+	
 	
 	upNode:( service ) ->
 		if not socketSubs[service.address]?
@@ -47,6 +52,15 @@ class Network.Network extends EventEmitter
 
 	downNode:( service ) ->
 		@socketSubs[service.address]?.close()
+
+
+	_getIP:( ) ->
+		os = require 'os'
+		ifaces = do os.networkInterfaces
+	
+		for dev , addresses of ifaces 
+			for address in addresses when address.family is 'IPv4' and address.internal is false
+				return address.address
 
 
 

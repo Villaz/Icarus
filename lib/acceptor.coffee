@@ -8,7 +8,7 @@ winston = require 'winston'
 
 class Acceptor.Acceptor
 
-	id 				: "localhost"
+	id 				: undefined
 	actualBallot 	: undefined
 	mapOfValues 	: undefined
 	network 		: undefined
@@ -18,17 +18,20 @@ class Acceptor.Acceptor
 		@mapOfValues = new Map.Map("acceptor")
 		try
 			@network = new Network.AcceptorNetwork( )
+			@id = @network.ip
+			@network.on 'message' , @processRequests
 		catch e
 			throw new Error(e.message)
-		@network.on 'message' , @processRequests
-
+		
 		winston.add(winston.transports.File, { filename: 'acceptor.log' });
 		winston.info "Acceptor started"
 	
+
 	clear: ( ) ->
 		@actualBallot = new Ballot()
 		do @mapOfValues?.clear
 		do @network.close
+
 
 	processRequests:( message ) =>
 		winston.info "Received message #{message.type}"
