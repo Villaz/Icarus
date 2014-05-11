@@ -19,6 +19,8 @@ class Leader.Leader  extends EventEmitter
 	lastSlotReceived: undefined
 	network : undefined
 
+	commanders : []
+
 	constructor:( @network ) ->
 		@ballot = new Ballot 1 , @network?.ip
 		@active = false
@@ -50,6 +52,7 @@ class Leader.Leader  extends EventEmitter
 		finishAdopted = ( ) =>
 			@active = true
 			deferred.resolve(true)
+			console.log "Adopted #{JSON.stringify ballot}"
 
 		sendToCommander = ( keys ) =>
 			@_sendToCommanderAllproposals keys
@@ -76,14 +79,18 @@ class Leader.Leader  extends EventEmitter
 	p1b:( message ) ->
 		if @scout? then @scout.process message
 
+	p2b:( message ) ->
+		for commander in @commanders
+			commander.receiveP2B message.acceptor , message.ballot
+
 	
 	_spawnScout:( ) ->
-		@scout = new Scout( @ballot , @lastSlotReceived , @network )
+		@scout = new Scout @ballot , @lastSlotReceived , @network 
 		
 		@scout.on 'preempted' , ( body ) =>
 			return 0
 		@scout.on 'adopted' , ( body ) =>
-			return 0
+			@adopted body.ballot , body.pvalues , body.pvaluesSlot
 		
 		do @scout.start
 		
@@ -101,8 +108,18 @@ class Leader.Leader  extends EventEmitter
 
 
 	_spawnCommander:( slot , operation ) =>
-		@network.sendMessageToAllAcceptors()
-		commander = new Commander @acceptors , key , operation
+		deferred = do Q.defer
+		
+		commander = new Commander slot , operation , @ballot , @network
+		@commanders.push commander
+				
+		commander.on 'decision' , ( message ) =>
+			@commanders.slice @commanders.indexOf( commander ) , 1
+			@emit 'decision' , message
+			do deferred.resolve
+			
 
-	
+		commander.on 'preempted' , ( message ) =>
+			@commanders.slice @commanders.indexOf( commander ) , 1
+			do referred.resolve
 

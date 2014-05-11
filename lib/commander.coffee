@@ -11,13 +11,24 @@ class Commander.Commander extends EventEmitter
   ballot : undefined
   decided: false
 
-  constructor:(@acceptors , @slot , @operation ) ->
+  constructor:( @slot , @operation , @ballot , @network ) ->
     @acceptorsResponse = []
-    @ballot = @operation.ballot
+    @acceptors = @network.acceptors
+    
+    message =
+      from: @ballot.id,
+      type:'P2A',
+      body:
+        slot: @slot,
+        operation: @operation
+        ballot: @ballot
+
+    @network.sendMessageToAllAcceptors message
+
 
   receiveP2B:( acceptor , ballot )->
     return if acceptor not in @acceptors or @decided
-    if @ballot.isEqual( ballot )
+    if @ballot.isEqual ballot 
       @acceptorsResponse.push acceptor if acceptor not in @acceptorsResponse
       if @acceptorsResponse.length >= Math.round(( @acceptors.length ) / 2)
         @decided = true

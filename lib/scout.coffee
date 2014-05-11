@@ -61,9 +61,16 @@ class Scout.Scout extends EventEmitter
       @adopted = true
       @acceptorsResponsed = []
 
+      pvaluesMap = new Map.Map "proposalsScout"
+      pvaluesInSlotMap = new Map.Map "proposalsInSlotScout"
+
+      for pvalue in @pvalues
+        pvaluesMap.addValue pvalue.slot , pvalue
+        pvaluesInSlotMap.addValue pvalue , pvalue.slot 
       body =
         ballot: @ballot,
-        pvalues: @pvalues
+        pvalues: pvaluesMap,
+        pvaluesSlot: pvaluesInSlotMap
 
       this.emit 'adopted' , body
 

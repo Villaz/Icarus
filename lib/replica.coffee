@@ -36,7 +36,8 @@ class Replica.Replica
 		
 		if not test
 			@leader = new Leader( @network )
-			@leader.on 'decision' , @decision
+			@leader.on 'decision' , ( message ) =>
+				@decision message.slot , message.operation
 			do @leader.start
 
 			winston.add(winston.transports.File, { filename: 'replica.log' });

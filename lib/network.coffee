@@ -44,7 +44,7 @@ class Network.Network extends EventEmitter
 		@socketPub.send "#{message.type} #{JSON.stringify message}"
 		@metricServer?.addMetric message.type
 	
-	
+
 	upNode:( service ) ->
 		if not socketSubs[service.address]?
 			@socketSubs[service.address] = @startClient "tcp://#{service.address}:#{service.data.ATL}"
@@ -68,7 +68,7 @@ class Network.AcceptorNetwork extends Network.Network
 
 	recuperationSubs : undefined
 
-	constructor:( port = 9999 ) ->
+	constructor:( port = 9998 ) ->
 		super( port )
 		@recuperationSubs = new Array()
 

@@ -21,9 +21,9 @@ class Acceptor.Acceptor
 			@id = @network.ip
 			@network.on 'message' , @processRequests
 		catch e
-			throw new Error(e.message)
+			throw new Error e.message
 		
-		winston.add(winston.transports.File, { filename: 'acceptor.log' });
+		winston.add winston.transports.File, { filename: 'acceptor.log' }
 		winston.info "Acceptor started"
 	
 

@@ -39,6 +39,8 @@ class Discover.Discover extends EventEmitter
 		@browser = mdns.createBrowser mdns.tcp( @serviceName )
 
 		@browser.on 'serviceUp' , ( service ) =>
+			if not service.addresses[1]?
+				return
 			data = 
 				address : service.addresses[1]
 				data : service.txtRecord

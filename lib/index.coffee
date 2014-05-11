@@ -17,7 +17,7 @@ discover = undefined
 
 txt_record = 
     roles:['A','R'],
-    'ATR':9999,
+    'ATR':9998,
     'RTA':8000
 
 processDiscoverUpMessage = ( service ) =>
@@ -61,6 +61,7 @@ else
 					when 'propose' then replicaObject.propose message.body
 					when 'adopted' then replicaObject.adopted message.body
 					when 'P1B'	   then replicaObject.leader.p1b message.body
+					when 'P2B'	   then replicaObject.leader.p2b message.body
 			
 			replicaObject = new Replica(network)
 			
