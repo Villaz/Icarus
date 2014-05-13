@@ -51,7 +51,7 @@ class Replica.Replica
 				
 		promiseDecided  = @operationsDecided.getValue  key 
 		promiseProposed = @operationsProposed.getValue key
-
+		
 		Q.spread [ promiseDecided , promiseProposed ] , ( decided , proposed = [] ) =>
 			if not decided? 
 				slot = do @_getNextSlotEmply
@@ -98,10 +98,12 @@ class Replica.Replica
 		@_operationSlotInDecided(operation).then ( slots ) =>
 			if @_slotsHaveMenorThanSlotNum slots , @slot_num
 				@slot_num = @slot_num + 1
+				do deferred.resolve
 			else
 				@slot_num = @slot_num + 1
-				#lanzar operation
-			deferred.resolve()
+				@execute(operation).then ( result ) =>
+					@network.response operation.client , result 
+					do deferred.resolve
 		deferred.promise
 
 	_reProposeOperations : ( operation ) =>
