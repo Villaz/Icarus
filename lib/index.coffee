@@ -1,7 +1,7 @@
 cluster = require('cluster')
 cpus    = require('os').cpus().length
 Acceptor = require('./acceptor').Acceptor
-Replica  = require('./replica').Replica
+Replica  = require('../server').Server
 Discover = require('./discover').Discover
 Network = require('./network')
 
@@ -58,7 +58,7 @@ else
 			network = new Network.ReplicaNetwork( ) 
 			network.on 'message' , ( message ) =>
 				switch message.type
-					when 'propose' then replicaObject.propose message.body
+					when 'propose' then replicaObject.propose message.body.operation
 					when 'adopted' then replicaObject.adopted message.body
 					when 'P1B'	   then replicaObject.leader.p1b message.body
 					when 'P2B'	   then replicaObject.leader.p2b message.body
