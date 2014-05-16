@@ -1,11 +1,12 @@
-cluster = require('cluster')
+cluster = require 'cluster'
 cpus    = require('os').cpus().length
 Acceptor = require('./acceptor').Acceptor
 Replica  = require('../server').Server
-Discover = require('./discover').Discover
+Discover = require('./discover')
 Network = require('./network')
-
 Ballot = require('./ballot').Ballot
+
+program = require 'commander'
 
 workerAcceptor = undefined
 workerReplica = undefined
@@ -15,10 +16,47 @@ replicaObject = undefined
 
 discover = undefined
 
+
+list = ( value ) ->
+	value.split ','
+
+program.version( "0.0.1" )
+		.option( '-r, --replica [port]' , 'Add Replica' )
+		.option( '-a, --acceptor [port]' , 'Add Aceptor' )
+		.option( '-dp, --discoverPort <port>' , 'Discover port')
+		.option( '-dt, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
+		.parse(process.argv)
+
 txt_record = 
     roles:['A','R'],
     'ATR':9998,
     'RTA':8000
+
+generateParams = ( ) ->
+	
+	txtRecord =
+		roles:[]
+	
+	acceptorPort = 9998
+	replicaPort = 8000
+	
+	if program.replica
+		txtRecord.roles.push 'R'
+		if program.replica isnt Number
+			program.replica = replicaPort
+		txtRecord.RTA = program.replica
+		
+	if program.acceptor
+		txtRecord.roles.push 'A'
+		if program.acceptor isnt Number
+			program.acceptor = acceptorPort
+		txtRecord.ATR = program.acceptor
+
+	if not program.discoverPort? then program.discoverPort = 9999
+	if not program.discoverType? then program.discoverType = 'Bonjour' 
+
+	return txtRecord
+
 
 processDiscoverUpMessage = ( service ) =>
 	workerAcceptor?.send service
@@ -26,16 +64,23 @@ processDiscoverUpMessage = ( service ) =>
 
 
 if cluster.isMaster
-  
+	txtRecord = do generateParams
+	console.log txtRecord
 	cluster.on 'exit', (worker) ->
     	console.log "Server #{worker.id} died. restart..."
-    	if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor'})
-    	if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica'})
+    	if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor' , port:program.acceptor })
+    	if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica' , port:program.replica })
 	
-	workerAcceptor = cluster.fork({type:'Acceptor'})
-	workerReplica = cluster.fork({type:'Replica'})
+	if program.acceptor
+		workerAcceptor = cluster.fork {type:'Acceptor' , port:program.acceptor }
+	if program.replica
+		workerReplica = cluster.fork {type:'Replica' , port:program.replica}
 
-	discover = new Discover "paxos" , 9999 , txt_record
+	if program.discoverType is 'Bonjour'
+		discover = new Discover.Discover "paxos" , program.discoverPort , txtRecord
+	else
+		discover = new Discover.UDP "paxos" , program.discoverPort , txtRecord
+	
 	discover.on 'up' , ( service ) =>
 		msg =
 			type: 'up'
@@ -55,7 +100,7 @@ else
 	switch process.env.type
 		when 'Acceptor' then acceptorObject = new Acceptor()
 		when 'Replica'
-			network = new Network.ReplicaNetwork( ) 
+			network = new Network.ReplicaNetwork( process.env.port ) 
 			network.on 'message' , ( message ) =>
 				switch message.type
 					when 'propose' then replicaObject.propose message.body.operation
