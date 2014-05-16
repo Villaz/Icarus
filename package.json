@@ -4,7 +4,7 @@
   "description": "A Coffescript Paxos implementation",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --compilers coffee:coffee-script"
   },
   "author": "",
   "license": "BSD",
@@ -18,7 +18,8 @@
     "hashmap":"*",
     "restify":"*",
     "socket.io":"*",
-    "measured":"*"
+    "measured":"*",
+    "commander":"*"
   },
   "devDependencies": {
     "should": "^3.2.0-beta1"
