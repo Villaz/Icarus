@@ -20,7 +20,7 @@
     "socket.io":"*",
     "measured":"*",
     "commander":"*",
-    "sleep":"*",
+    "sleep":"*"
   },
   "devDependencies": {
     "should": "^3.2.0-beta1"
