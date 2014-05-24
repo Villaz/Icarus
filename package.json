@@ -4,7 +4,8 @@
   "description": "A Coffescript Paxos implementation",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script"
+    "test": "mocha --compilers coffee:coffee-script",
+    "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script"
   },
   "author": "",
   "license": "BSD",
@@ -20,9 +21,14 @@
     "socket.io":"*",
     "measured":"*",
     "commander":"*",
-    "sleep":"*"
+    "sleep":"*",
+    "grunt": ">=0.4",
+    "grunt-cli": ">=0.1"
   },
   "devDependencies": {
-    "should": "^3.2.0-beta1"
+    "should": "^3.2.0-beta1",
+    "mocha": ">=1.18",
+    "mocha-bamboo-reporter": "*",
+    "nodeunit" : ">=0.8"
   }
 }
