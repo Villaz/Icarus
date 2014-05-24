@@ -4,8 +4,8 @@
   "description": "A Coffescript Paxos implementation",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script",
-    "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script"
+    "test": "mocha --compilers coffee:coffee-script/register",
+    "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register"
   },
   "author": "",
   "license": "BSD",
@@ -29,6 +29,7 @@
     "should": "^3.2.0-beta1",
     "mocha": ">=1.18",
     "mocha-bamboo-reporter": "*",
-    "nodeunit" : ">=0.8"
+    "nodeunit" : ">=0.8",
+    "coffee-script": "*"
   }
 }
