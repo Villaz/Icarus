@@ -19,7 +19,8 @@
     "restify":"*",
     "socket.io":"*",
     "measured":"*",
-    "commander":"*"
+    "commander":"*",
+    "sleep":"*",
   },
   "devDependencies": {
     "should": "^3.2.0-beta1"
