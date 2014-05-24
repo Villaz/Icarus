@@ -4,7 +4,6 @@ Network = exports? and exports or @Network = {}
 zmq 	 = require 'zmq'
 Discover = require('./discover').Discover
 Ballot 	 = require('./ballot').Ballot
-MetricServer = require('./metrics/metricServer').MetricServer
 
 
 {EventEmitter} = require 'events'
@@ -16,13 +15,10 @@ class Network.Network extends EventEmitter
 	socketPub  : undefined
 	socketSubs : []
 	
-	metricServer = undefined
-
 	replicas : []
 	acceptors : []
 	
 	constructor:( port = 9999 ) ->
-		#@metricServer = new MetricServer 3100
 		@socketPub = zmq.socket 'pub'
 		@socketPub.identity = "publisher#{process.pid}"
 		@ip = do @_getIP
@@ -42,8 +38,7 @@ class Network.Network extends EventEmitter
 
 	send:( message ) ->
 		@socketPub.send "#{message.type} #{JSON.stringify message}"
-		@metricServer?.addMetric message.type
-	
+		
 
 	upNode:( service ) ->
 		if not socketSubs[service.address]?
@@ -82,8 +77,8 @@ class Network.AcceptorNetwork extends Network.Network
 		socket.identity = "subscriber#{@socketSubs.length}#{process.pid}"
 		socket.subscribe 'P1A'
 		socket.subscribe 'P2A'
-		
 		socket.connect url
+		
 		socket.on 'message' , ( data ) =>
 			type = data.toString().substr 0 , data.toString().indexOf("{")-1
 			data = data.toString().substr data.toString().indexOf("{")
@@ -92,8 +87,7 @@ class Network.AcceptorNetwork extends Network.Network
 				"type":type,
 				"body":data.body
 			
-			@metricServer?.addMetric type
-			
+						
 			ballot = new Ballot(message.body.ballot.number,message.body.ballot.id)
 			message.body.ballot = ballot
 			@emit 'message' , message
@@ -144,6 +138,7 @@ class Network.ReplicaNetwork extends Network.Network
 		socket.identity = "subscriber#{@socketSubs.length}#{process.pid}"
 		socket.subscribe 'P1B'
 		socket.subscribe 'P2B'
+		
 		socket.connect url
 
 		socket.on 'message' ,( data ) =>

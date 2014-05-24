@@ -23,7 +23,8 @@
     "commander":"*",
     "sleep":"*",
     "grunt": ">=0.4",
-    "grunt-cli": ">=0.1"
+    "grunt-cli": ">=0.1",
+    "mocha-bamboo-reporter": "*"
   },
   "devDependencies": {
     "should": "^3.2.0-beta1",

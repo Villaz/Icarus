@@ -25,6 +25,7 @@ program.version( "0.0.1" )
 		.option( '-a, --acceptor [port]' , 'Add Aceptor' )
 		.option( '-dp, --discoverPort <port>' , 'Discover port')
 		.option( '-dt, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
+		.option( '-i, --interface [interface]' , "Select interface to send messages. default(eth0)")
 		.parse(process.argv)
 
 txt_record = 
@@ -54,6 +55,7 @@ generateParams = ( ) ->
 
 	if not program.discoverPort? then program.discoverPort = 9999
 	if not program.discoverType? then program.discoverType = 'Bonjour' 
+	if not program.interface? then program.interface = 'eth0'
 
 	return txtRecord
 
@@ -77,7 +79,7 @@ if cluster.isMaster
 		workerReplica = cluster.fork {type:'Replica' , port:program.replica}
 
 	if program.discoverType is 'Bonjour'
-		discover = new Discover.Discover "paxos" , program.discoverPort , txtRecord
+		discover = new Discover.Discover "paxos" , program.discoverPort , program.interface , txtRecord
 	else
 		discover = new Discover.UDP "paxos" , program.discoverPort , txtRecord
 	

@@ -20,7 +20,7 @@ describe 'Tests Replica' , ->
 			done(e)
 
 	beforeEach ( ) ->
-		@replica = new Replica.Replica( [] , true )
+		@replica = new Replica.Replica( undefined , true )
 
 
 	it 'Propose operation' , ( done ) ->

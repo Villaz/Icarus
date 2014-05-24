@@ -94,7 +94,7 @@ describe 'Tests Scout' , ->
     scout.on 'adopted', ( body )=>
       body.ballot.id.should.be.exactly ballot.id
       body.ballot.number.should.be.exactly ballot.number
-      body.pvalues.length.should.be.exactly 2
+      body.pvalues.count().should.be.exactly 2
       scout.adopted.should.be.exactly true
       done()
 

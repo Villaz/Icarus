@@ -105,6 +105,8 @@ class Map.Map extends Map.Map
 		@hashMap = new HashMap( )
 		@keys = new Array()
 
+	count:()->
+		return do @hashMap.count
 
 	getAllKeys:( ) ->
 

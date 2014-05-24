@@ -11,7 +11,7 @@ class Discover.Discover extends EventEmitter
 	browser : null
 	roles : {}
 
-	constructor:( @serviceName , @servicePort , @roles = {} ) ->
+	constructor:( @serviceName , @servicePort , @interface , @roles = {} ) ->
 
 	start:( advert = true )->
 		if not @serviceName? then throw new Error 'ServiceName cannot be null'
@@ -31,20 +31,26 @@ class Discover.Discover extends EventEmitter
 	
 	__startAdvertisement:( ) =>
 		mdns = require 'mdns2'
-		@advertisement = mdns.createAdvertisement mdns.tcp( @serviceName ) , @servicePort , {txtRecord: @roles}
+		@advertisement = mdns.createAdvertisement mdns.tcp( @serviceName ) , @servicePort , {txtRecord: @roles , networkInterface:@interface}
 		@advertisement.start();
 
 	__startBrowser:( ) ->
 		mdns = require 'mdns2'
-		@browser = mdns.createBrowser mdns.tcp( @serviceName )
+		@browser = mdns.createBrowser mdns.tcp( @serviceName ) , {networkInterface:@interface}
 
 		@browser.on 'serviceUp' , ( service ) =>
-			if not service.addresses[1]?
-				return
-			data = 
-				address : service.addresses[1]
-				data : service.txtRecord
-			@emit 'up' , data
+			if service.networkInterface is @interface
+
+				address = undefined
+				if not service.addresses[1]?
+					address = service.addresses[0]
+				else
+					address = service.addresses[1]
+				
+				data = 
+					address : address
+					data : service.txtRecord
+				@emit 'up' , data
 		
 		@browser.on 'serviceDown' , ( service ) =>
 			@emit 'down' , service 

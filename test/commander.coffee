@@ -22,16 +22,19 @@ describe 'Tests Commander' , ->
 
 
   it 'Constructor' , ( ) ->
-    acceptors = ['lyr','anu','balar']
+    network = 
+      acceptors :['lyr','anu','balar'],
+      sendMessageToAllAcceptors : ( ) ->
+
     operation =
       client:'127.0.0.1',
       client_op:1,
       ballot:new Ballot( 1 , '127.0.0.2' ),
       operation:'%$·'
 
-    commander = new Commander acceptors , 1 , operation
+    commander = new Commander  1 , operation , operation.ballot , network 
     commander.acceptors.length.should.be.exactly 3
-    commander.acceptors.should.equal acceptors
+    commander.acceptors.should.equal network.acceptors
     should.exists commander.operation
     commander.ballot.id.should.be.exactly '127.0.0.2'
     commander.ballot.number.should.be.exactly 1
@@ -39,15 +42,19 @@ describe 'Tests Commander' , ->
 
 
   it 'Receive P2B with different ballot' , ( done ) ->
-    acceptors = ['lyr','anu','balar']
+    network = 
+      acceptors :['lyr','anu','balar'],
+      sendMessageToAllAcceptors : ( ) ->
+
     ballot = new Ballot 3 , '127.0.0.3'
+
     operation =
       client:'127.0.0.1',
       client_op:1,
       ballot:new Ballot( 1 , '127.0.0.2' ),
       operation:'%$·'
 
-    commander = new Commander acceptors , 1 , operation
+    commander = new Commander 1 , operation , operation.ballot , network
     commander.on 'preempted' , ( ballotReceive ) =>
       ballotReceive.should.equal ballot
       do done
@@ -56,7 +63,10 @@ describe 'Tests Commander' , ->
 
 
   it 'Receive P2B with different ballot and unknown acceptor' , ( done ) ->
-    acceptors = ['lyr','anu','balar']
+    network = 
+      acceptors :['lyr','anu','balar'],
+      sendMessageToAllAcceptors : ( ) ->
+
     ballot = new Ballot 3 , '127.0.0.3'
     operation =
       client:'127.0.0.1',
@@ -64,7 +74,7 @@ describe 'Tests Commander' , ->
       ballot:new Ballot( 1 , '127.0.0.2' ),
       operation:'%$·'
 
-    commander = new Commander acceptors , 1 , operation
+    commander = new Commander 1 , operation, operation.ballot , network
     commander.on 'preempted' , ( ballotReceive ) =>
       done 'Fatal'
 
@@ -74,7 +84,10 @@ describe 'Tests Commander' , ->
 
 
   it 'Send decision' , ( done ) ->
-    acceptors = ['lyr','anu','balar']
+    network = 
+      acceptors :['lyr','anu','balar'],
+      sendMessageToAllAcceptors : ( ) ->
+
     ballot = new Ballot 1 , '127.0.0.2'
     operation =
       client:'127.0.0.1',
@@ -82,7 +95,7 @@ describe 'Tests Commander' , ->
       ballot:new Ballot( 1 , '127.0.0.2' ),
       operation:'%$·'
 
-    commander = new Commander acceptors , 1 , operation
+    commander = new Commander 1 , operation , operation.ballot , network
     commander.on 'decision' , ( operation ) =>
       operation.slot.should.be.exactly 1
       operation.operation.operation.should.be.exactly '%$·'

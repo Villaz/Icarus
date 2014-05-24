@@ -22,7 +22,7 @@ class Replica.Replica
 	network : undefined
 	leader : undefined
 
-	constructor:( @network ,test=false ) ->
+	constructor:( @network , @test=false ) ->
 		@slot_num = 0
 		@proposals = new Map.Map("proposalsReplica")
 		@decisions = new Map.Map("decisionsReplica")
@@ -68,10 +68,13 @@ class Replica.Replica
 
 
 	decision:( slot , operation ) =>
+		deferred = do Q.defer
+
 		#If the slot was decided dont do anything
 		if @lastSlotEmpltyInDecisions > slot
-			return Q.fcall () ->
-				false
+			deferred.resolve false
+			return deferred.promise
+
 
 		@decisions.addValue slot , operation
 		key = {id:operation.id,client:operation.client}
@@ -82,18 +85,18 @@ class Replica.Replica
 			@perform(operation).then whileDecisionsInSlot
 
 		whileDecisionsInSlot = ( ) =>
-				@decisions.getValue(@slot_num).then ( value ) =>
-					if value isnt undefined
-						@_reProposeOperations( operation ).then perform
-					else
-						return Q.fcall () ->
-							true
+			@decisions.getValue(@slot_num).then ( value ) =>
+				if value isnt undefined
+					@_reProposeOperations( operation ).then perform
+				else
+					deferred.resolve(true)
 
 		do whileDecisionsInSlot
+		return deferred.promise
 		
 
 
-	perform:( operation )->
+	perform:( operation ) =>
 		deferred = Q.defer()
 		@_operationSlotInDecided(operation).then ( slots ) =>
 			if @_slotsHaveMenorThanSlotNum slots , @slot_num
@@ -102,9 +105,13 @@ class Replica.Replica
 			else
 				@slot_num = @slot_num + 1
 				@execute(operation).then ( result ) =>
-					@network.response operation.client , result 
+					@network?.response operation.client , result 
 					do deferred.resolve
 		deferred.promise
+
+	execute:( operation ) ->
+		return Q.fcall ( ) ->
+			return true
 
 	_reProposeOperations : ( operation ) =>
 		
