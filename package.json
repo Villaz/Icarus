@@ -21,16 +21,14 @@
     "socket.io":"*",
     "measured":"*",
     "commander":"*",
-    "sleep":"*",
     "grunt": ">=0.4",
     "grunt-cli": ">=0.1",
-    "mocha-bamboo-reporter": "*"
   },
   "devDependencies": {
     "should": "^3.2.0-beta1",
     "mocha": ">=1.18",
     "mocha-bamboo-reporter": "*",
     "nodeunit" : ">=0.8",
-    "coffee-script": "*"
+    "sleep":"*"
   }
 }
