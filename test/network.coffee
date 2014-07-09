@@ -21,19 +21,19 @@ describe 'Network tests', ->
 
 	beforeEach () =>
 		do @network?.close
-		@network = new Network.AcceptorNetwork( counter ) if not @network?
+		@network = new Network.AcceptorNetwork( @counter ) if not @network?
 
 	afterEach ( ) =>
 		do @network?.close
-		counter++;
+		@counter++;
 
 
 	it 'Retrieve leader txt message' , =>
 		txt_record = 
-    		{ address: '192.168.4.68', data: { LTA: '8888', roles: 'L' } }
+    		{ address: '192.168.4.68', data: { RTA: '8888', roles: 'R' } }
 
     	txt_record2 = 
-    		{ address: '192.168.4.69', data: { LTA: '8888', roles: 'L' } }
+    		{ address: '192.168.4.69', data: { RTA: '8888', roles: 'R' } }
 
     	@network.upNode txt_record
     	Object.keys(@network.socketSubs).length.should.be.exactly 1
@@ -43,10 +43,10 @@ describe 'Network tests', ->
 
     it 'Retrieve multiple leader txt messages', =>
     	txt_record = 
-    		{ address: '192.168.4.68', data: { LTA: '8888', roles: 'L' } }
+    		{ address: '192.168.4.68', data: { RTA: '8888', roles: 'R' } }
 
     	txt_record2 = 
-    		{ address: '192.168.4.69', data: { LTA: '8888', roles: 'L' } }
+    		{ address: '192.168.4.69', data: { RTA: '8888', roles: 'R' } }
 
     	@network.upNode txt_record
     	Object.keys(@network.socketSubs).length.should.be.exactly 1

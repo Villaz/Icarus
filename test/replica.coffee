@@ -10,7 +10,7 @@ else
 
 describe 'Tests Replica' , ->
 
-	replica : undefined
+	replica = undefined
 
 	check = (done,f) ->
 		try
@@ -19,9 +19,12 @@ describe 'Tests Replica' , ->
 		catch e
 			done(e)
 
-	beforeEach ( ) ->
+	before ( ) ->
 		@replica = new Replica.Replica( )
-
+	
+	beforeEach ( ) ->
+		do @replica.start
+		
 
 	it 'Propose operation' , ( done ) ->
 		op1 = {id:1,client:1,op:{'hello'}}

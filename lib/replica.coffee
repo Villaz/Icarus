@@ -22,6 +22,9 @@ class Replica.Replica
 	leader : undefined
 
 	constructor:( ) ->
+		
+
+	start:( ) ->
 		@slot_num = 0
 		@proposals = new Map.Map("proposalsReplica")
 		@decisions = new Map.Map("decisionsReplica")
@@ -36,9 +39,10 @@ class Replica.Replica
 		
 		@leader = new Leader( )
 		@leader.on 'decision' , @decision
+
+		do @network?.close
 		@network = new Network.ReplicaNetwork( ) 
 		@network.on 'message' , @processRequests
-
 
 
 	processRequests:(message)=>
