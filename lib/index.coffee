@@ -18,15 +18,15 @@ discover = undefined
 
 
 list = ( value ) ->
-	value.split ','
+    value.split ','
 
 program.version( "0.0.1" )
-		.option( '-r, --replica [port]' , 'Add Replica' )
-		.option( '-a, --acceptor [port]' , 'Add Aceptor' )
-		.option( '-dp, --discoverPort <port>' , 'Discover port')
-		.option( '-dt, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
-		.option( '-i, --interface [interface]' , "Select interface to send messages. default(eth0)")
-		.parse(process.argv)
+        .option( '-r, --replica [port]' , 'Add Replica' )
+        .option( '-a, --acceptor [port]' , 'Add Aceptor' )
+        .option( '-dp, --discoverPort <port>' , 'Discover port')
+        .option( '-dt, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
+        .option( '-i, --interface [interface]' , "Select interface to send messages. default(eth0)")
+        .parse(process.argv)
 
 txt_record = 
     roles:['A','R'],
@@ -34,93 +34,93 @@ txt_record =
     'RTA':8000
 
 generateParams = ( ) ->
-	
-	txtRecord =
-		roles:[]
-	
-	acceptorPort = 9998
-	replicaPort = 8000
-	
-	if program.replica
-		txtRecord.roles.push 'R'
-		if program.replica isnt Number
-			program.replica = replicaPort
-		txtRecord.RTA = program.replica
-		
-	if program.acceptor
-		txtRecord.roles.push 'A'
-		if program.acceptor isnt Number
-			program.acceptor = acceptorPort
-		txtRecord.ATR = program.acceptor
+    
+    txtRecord =
+        roles:[]
+    
+    acceptorPort = 9998
+    replicaPort = 8000
+    
+    if program.replica
+        txtRecord.roles.push 'R'
+        if program.replica isnt Number
+            program.replica = replicaPort
+        txtRecord.RTA = program.replica
+        
+    if program.acceptor
+        txtRecord.roles.push 'A'
+        if program.acceptor isnt Number
+            program.acceptor = acceptorPort
+        txtRecord.ATR = program.acceptor
 
-	if not program.discoverPort? then program.discoverPort = 9999
-	if not program.discoverType? then program.discoverType = 'Bonjour' 
-	if not program.interface? then program.interface = 'eth0'
+    if not program.discoverPort? then program.discoverPort = 9999
+    if not program.discoverType? then program.discoverType = 'Bonjour' 
+    if not program.interface? then program.interface = 'eth0'
 
-	return txtRecord
+    return txtRecord
 
 
 processDiscoverUpMessage = ( service ) =>
-	workerAcceptor?.send service
-	replicaAcceptor?.send service
+    workerAcceptor?.send service
+    replicaAcceptor?.send service
 
 
 if cluster.isMaster
-	txtRecord = do generateParams
-	console.log txtRecord
-	cluster.on 'exit', (worker) ->
-    	console.log "Server #{worker.id} died. restart..."
-    	if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor' , port:program.acceptor })
-    	if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica' , port:program.replica })
-	
-	if program.acceptor
-		workerAcceptor = cluster.fork {type:'Acceptor' , port:program.acceptor }
-	if program.replica
-		workerReplica = cluster.fork {type:'Replica' , port:program.replica}
+    txtRecord = do generateParams
+    console.log txtRecord
+    cluster.on 'exit', (worker) ->
+        console.log "Server #{worker.id} died. restart..."
+        if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor' , port:program.acceptor })
+        if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica' , port:program.replica })
+    
+    if program.acceptor
+        workerAcceptor = cluster.fork {type:'Acceptor' , port:program.acceptor }
+    if program.replica
+        workerReplica = cluster.fork {type:'Replica' , port:program.replica}
 
-	if program.discoverType is 'Bonjour'
-		discover = new Discover.Discover "paxos" , program.discoverPort , program.interface , txtRecord
-	else
-		discover = new Discover.UDP "paxos" , program.discoverPort , txtRecord
-	
-	discover.on 'up' , ( service ) =>
-		msg =
-			type: 'up'
-			service: service
-		workerReplica?.send msg
-		workerAcceptor?.send msg
+    if program.discoverType is 'Bonjour'
+        discover = new Discover.Discover "paxos" , program.discoverPort , program.interface , txtRecord
+    else
+        discover = new Discover.UDP "paxos" , program.discoverPort , txtRecord
+    
+    discover.on 'up' , ( service ) =>
+        msg =
+            type: 'up'
+            service: service
+        workerReplica?.send msg
+        workerAcceptor?.send msg
 
-	discover.on 'down' , ( service ) =>
-		msg =
-			type: 'down'
-			service: service
-		workerReplica?.send 'down' , service
-		workerAcceptor?.send 'down' , service
-	discover.start()
-	
+    discover.on 'down' , ( service ) =>
+        msg =
+            type: 'down'
+            service: service
+        workerReplica?.send 'down' , service
+        workerAcceptor?.send 'down' , service
+    discover.start()
+    
 else
-	switch process.env.type
-		when 'Acceptor' then acceptorObject = new Acceptor()
-		when 'Replica'
-			network = new Network.ReplicaNetwork( process.env.port ) 
-			network.on 'message' , ( message ) =>
-				switch message.type
-					when 'propose' then replicaObject.propose message.body.operation
-					when 'adopted' then replicaObject.adopted message.body
-					when 'P1B'	   then replicaObject.leader.p1b message.body
-					when 'P2B'	   then replicaObject.leader.p2b message.body
-			
-			replicaObject = new Replica(network)
-			
+    switch process.env.type
+        when 'Acceptor' then acceptorObject = new Acceptor()
+        when 'Replica'
+            network = new Network.ReplicaNetwork( process.env.port ) 
+            network.on 'message' , ( message ) =>
+                switch message.type
+                    when 'propose' then replicaObject.propose message.body.operation
+                    when 'adopted' then replicaObject.adopted message.body
+                    when 'P1B'     then replicaObject.leader.p1b message.body
+                    when 'P2B'     then replicaObject.leader.p2b message.body
+            
+            replicaObject = new Replica(network)
+            
 
-	process.on? 'message' , ( msg ) ->
-		if msg.type is 'up'
-			acceptorObject?.network.upNode msg.service
-			replicaObject?.network.upNode msg.service
-		
-		if msg.type is 'down'
-			acceptorObject?.network.upNode msg.service
-			replicaObject?.network.upNode msg.service
+    process.on? 'message' , ( msg ) ->
+        if msg.type is 'up'
+            acceptorObject?.network.upNode msg.service
+            replicaObject?.network.upNode msg.service
+        
+        if msg.type is 'down'
+            acceptorObject?.network.upNode msg.service
+            replicaObject?.network.upNode msg.service
 
 
 

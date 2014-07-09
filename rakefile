@@ -5,7 +5,7 @@ end
 
 desc 'Run tests'
 task :test do
-   system 'mocha --compilers coffee:coffee-script'
+   system 'mocha --compilers coffee:coffee-script/register'
 end
 
 task :coverage do

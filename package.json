@@ -8,7 +8,7 @@
     "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register"
   },
   "author": "",
-  "license": "BSD",
+  "license": "GPL",
   "dependencies": {
     "mdns2": "*",
     "q": "*",
@@ -22,7 +22,7 @@
     "measured":"*",
     "commander":"*",
     "grunt": ">=0.4",
-    "grunt-cli": ">=0.1",
+    "grunt-cli": ">=0.1"
   },
   "devDependencies": {
     "should": "^3.2.0-beta1",

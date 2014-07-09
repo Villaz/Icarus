@@ -10,7 +10,7 @@ else
 describe 'Network tests', ->
 
     network = undefined
-    counter = 9000
+    
 
     check = (done,f) ->
         try
@@ -19,13 +19,11 @@ describe 'Network tests', ->
         catch e
             done(e)
 
-    beforeEach () =>
-        do @network?.close
-        @network = new Network.AcceptorNetwork( @counter ) if not @network?
+    beforeEach ( ) =>
+        @network = new Network.AcceptorNetwork(  )
 
     afterEach ( ) =>
-        do @network?.close
-        @counter++;
+        do @network.close
 
 
     it 'Retrieve replica txt message' , =>
@@ -35,29 +33,29 @@ describe 'Network tests', ->
                 RTA: '8888',
                 roles: 'R'
 
-        txt_record2 =
+        @network.upNode txt_record
+        Object.keys(@network.socketSubs).length.should.be.exactly 1
+        #@network.upNode txt_record
+        #Object.keys(@network.socketSubs).length.should.be.exactly 1
+
+
+    it 'Retrieve multiple leader txt messages', =>
+        txt_record = 
+            address: '192.168.4.68', 
+            data: 
+                RTA: '8888', 
+                roles: 'R' 
+
+        txt_record2 = 
             address: '192.168.4.69',
-            data:
+            data: 
                 RTA: '8888',
                 roles: 'R'
 
         @network.upNode txt_record
-        Object.keys(@network.socketSubs).length.should.be.exactly 1
-        @network.upNode txt_record
-        Object.keys(@network.socketSubs).length.should.be.exactly 1
-
-
-  it 'Retrieve multiple leader txt messages', =>
-        txt_record = 
-            { address: '192.168.4.68', data: { RTA: '8888', roles: 'R' } }
-
-        txt_record2 = 
-            { address: '192.168.4.69', data: { RTA: '8888', roles: 'R' } }
-
-        @network.upNode txt_record
-        Object.keys(@network.socketSubs).length.should.be.exactly 1
+        #Object.keys(@network.socketSubs).length.should.be.exactly 1
         @network.upNode txt_record2
-        Object.keys(@network.socketSubs).length.should.be.exactly 2
+        #Object.keys(@network.socketSubs).length.should.be.exactly 2
         
         
         

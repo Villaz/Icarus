@@ -17,6 +17,7 @@ class Network.Network extends EventEmitter
     acceptors : []
     
     constructor:( port = 9999 ) ->
+        @socketSubs = new Array()
         @socketPub = zmq.socket 'pub'
         @socketPub.identity = "publisher#{process.pid}"
         @ip = do @_getIP
@@ -30,6 +31,7 @@ class Network.Network extends EventEmitter
         try
             do @socketPub?.close
             do socket.close for socket in @socketSubs
+            @socketSubs = []
         catch e
             #console.log e
         
@@ -65,10 +67,13 @@ class Network.AcceptorNetwork extends Network.Network
         super( port )
         @recuperationSubs = new Array()
 
+
     close:( ) ->
         super( )
         if not @recuperationSubs?
             do socket.close for socket in @recuperationSubs
+        @recuperationSubs = new Array()
+
 
     _startClient:( url ) ->
         socket = zmq.socket 'sub'

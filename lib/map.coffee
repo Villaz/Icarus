@@ -6,187 +6,187 @@ underscore = require('./underscore')
 
 class Map.Map
 
-	getAllKeys:( ) ->
+    getAllKeys:( ) ->
 
-	addValue:( slot , value ) ->
+    addValue:( slot , value ) ->
 
-	getValue:( slot ) ->
+    getValue:( slot ) ->
 
-	getValues:( from , to ) ->
+    getValues:( from , to ) ->
 
-	clear:( ) ->
+    clear:( ) ->
 
-	remove:( slot ) ->
+    remove:( slot ) ->
 
-	close:() ->
+    close:() ->
 
 
-	_filterValues :( array , from , to ) ->
-		returnArray = new Array()
-		for value in array
-			if from is undefined and to is undefined  then returnArray.push value
+    _filterValues :( array , from , to ) ->
+        returnArray = new Array()
+        for value in array
+            if from is undefined and to is undefined  then returnArray.push value
 
-			if from isnt undefined and to is undefined and  value >= from then returnArray.push value
+            if from isnt undefined and to is undefined and  value >= from then returnArray.push value
 
-			if from is undefined and to isnt undefined and  value <= to then returnArray.push value
+            if from is undefined and to isnt undefined and  value <= to then returnArray.push value
 
-			if from isnt undefined and to isnt undefined and value >= from and value <= to then returnArray.push value
-		
-		returnArray  
+            if from isnt undefined and to isnt undefined and value >= from and value <= to then returnArray.push value
+        
+        returnArray  
 
 
 class Map.Redis extends Map.Map
 
-	redisClient = undefined
+    redisClient = undefined
 
-	constructor:( @db ) ->
-		@redisClient = require( "redis" ).createClient()
+    constructor:( @db ) ->
+        @redisClient = require( "redis" ).createClient()
 
-	getAllKeys:( ) ->
-		defer = Q.defer()
+    getAllKeys:( ) ->
+        defer = Q.defer()
 
-		callback = ( err , replies ) ->
-			list = [ ]
-			
-			forEach = (reply , i ) =>
-				list.push reply
-				if i is replies.length - 1 then defer.resolve( list )
+        callback = ( err , replies ) ->
+            list = [ ]
+            
+            forEach = (reply , i ) =>
+                list.push reply
+                if i is replies.length - 1 then defer.resolve( list )
 
-			replies.forEach forEach
+            replies.forEach forEach
 
-		@redisClient.hkeys @db , callback 
+        @redisClient.hkeys @db , callback 
 
-		return defer.promise
-
-
-	addValue:( slot , value ) ->
-		
-		slot = JSON.stringify(slot) if typeof slot is "object"
-
-		@redisClient.hset @db , slot , JSON.stringify value
-
-	getValue:( slot ) ->
-		defer = Q.defer()
-
-		slot = JSON.stringify(slot) if typeof slot is "object"
-		@redisClient.hget @db , slot , ( err , reply ) ->
-			defer.resolve( JSON.parse reply )
-		defer.promise
+        return defer.promise
 
 
-	getValues:( from , to ) ->
-		defer = Q.defer()
+    addValue:( slot , value ) ->
+        
+        slot = JSON.stringify(slot) if typeof slot is "object"
 
-		resultGetAllKeys = ( list ) =>
-			
-			filteredList = @_filterValues list , from , to
-								
-			@redisClient.hmget @db , filteredList , ( err , reply ) ->
-				map = reply.map ( x , y ) ->
-					{slot:parseInt(filteredList[y]) , operation: JSON.parse x}
-				defer.resolve map
-				
-		@getAllKeys().then resultGetAllKeys
-		return defer.promise
+        @redisClient.hset @db , slot , JSON.stringify value
 
-	clear:( ) ->
-		@redisClient.del @db
+    getValue:( slot ) ->
+        defer = Q.defer()
 
-	close:( ) ->
-		@redisClient.quit()
+        slot = JSON.stringify(slot) if typeof slot is "object"
+        @redisClient.hget @db , slot , ( err , reply ) ->
+            defer.resolve( JSON.parse reply )
+        defer.promise
+
+
+    getValues:( from , to ) ->
+        defer = Q.defer()
+
+        resultGetAllKeys = ( list ) =>
+            
+            filteredList = @_filterValues list , from , to
+                                
+            @redisClient.hmget @db , filteredList , ( err , reply ) ->
+                map = reply.map ( x , y ) ->
+                    {slot:parseInt(filteredList[y]) , operation: JSON.parse x}
+                defer.resolve map
+                
+        @getAllKeys().then resultGetAllKeys
+        return defer.promise
+
+    clear:( ) ->
+        @redisClient.del @db
+
+    close:( ) ->
+        @redisClient.quit()
 
 
 class Map.Map extends Map.Map
 
-	hashMap : undefined
-	keys : undefined
+    hashMap : undefined
+    keys : undefined
 
-	constructor:()->
-		@hashMap = new HashMap( )
-		@keys = new Array()
+    constructor:()->
+        @hashMap = new HashMap( )
+        @keys = new Array()
 
-	count:()->
-		return do @hashMap.count
+    count:()->
+        return do @hashMap.count
 
-	getAllKeys:( ) ->
+    getAllKeys:( ) ->
 
-		returnKeys = ( ) =>
-			return @keys
-		Q.fcall returnKeys
+        returnKeys = ( ) =>
+            return @keys
+        Q.fcall returnKeys
 
-	getAllValues:( ) ->
+    getAllValues:( ) ->
 
-		values = [ ]
-		for key in @keys
-			values.push @hashMap.get key
+        values = [ ]
+        for key in @keys
+            values.push @hashMap.get key
 
-		Q.fcall ( ) =>
-			values
+        Q.fcall ( ) =>
+            values
 
-	addValue:( slot , value ) ->
-		if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
+    addValue:( slot , value ) ->
+        if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
 
-		@hashMap.set(slot,value)
-		@keys.push slot if @keys.indexOf(slot) < 0
-			
-	addValues:( slot , value ) ->
-		if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
+        @hashMap.set(slot,value)
+        @keys.push slot if @keys.indexOf(slot) < 0
+            
+    addValues:( slot , value ) ->
+        if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
 
-		if not @hashMap.get(slot)?
-			@hashMap.set slot , [value]
-		else
-			array = @hashMap.get(slot)
-			array.push value
-			@hashMap.set slot , array
+        if not @hashMap.get(slot)?
+            @hashMap.set slot , [value]
+        else
+            array = @hashMap.get(slot)
+            array.push value
+            @hashMap.set slot , array
 
-	getValue:( slot ) ->
-		if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
+    getValue:( slot ) ->
+        if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
 
-		returnValues =  () =>
-			return @hashMap.get(slot)
-		
-		Q.fcall returnValues
+        returnValues =  () =>
+            return @hashMap.get(slot)
+        
+        Q.fcall returnValues
 
-	remove: ( slot ) ->
-		if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
-		@hashMap.remove slot
-
-
-	getValues:( from , to ) ->
-		returnValues = ( ) =>
-						
-			filteredList = @_filterValues @keys , from , to
-			returnMap = []
-			for slot in filteredList
-				returnMap.push {slot: parseInt(slot) , operation: @hashMap.get(slot) }
-			
-			return returnMap
-
-		Q.fcall returnValues
+    remove: ( slot ) ->
+        if typeof slot is "object" then slot = JSON.stringify(slot) else slot = slot.toString()
+        @hashMap.remove slot
 
 
-	clear:( ) ->
-		do @hashMap.clear
+    getValues:( from , to ) ->
+        returnValues = ( ) =>
+                        
+            filteredList = @_filterValues @keys , from , to
+            returnMap = []
+            for slot in filteredList
+                returnMap.push {slot: parseInt(slot) , operation: @hashMap.get(slot) }
+            
+            return returnMap
+
+        Q.fcall returnValues
 
 
-	update : ( x ) ->
-		deferred = Q.defer()
-
-		values = [ ]
-		for key in @keys
-			values.push @hashMap.get key
-		
-		for key in x.keys when (key not in @keys) and not @_inArray(x.hashMap.get(key), values)
-			@addValue(key , x.hashMap.get(key) )
-		
-		deferred.resolve()
-		return deferred.promise
+    clear:( ) ->
+        do @hashMap.clear
 
 
-	_inArray:(obj , values) ->
-		for value in values
-			if underscore._.isEqual obj , value then return true
-		return false
-	close:()->
+    update : ( x ) ->
+        deferred = Q.defer()
 
-	
+        values = [ ]
+        for key in @keys
+            values.push @hashMap.get key
+        
+        for key in x.keys when (key not in @keys) and not @_inArray(x.hashMap.get(key), values)
+            @addValue(key , x.hashMap.get(key) )
+        
+        deferred.resolve()
+        return deferred.promise
+
+
+    _inArray:(obj , values) ->
+        for value in values
+            if underscore._.isEqual obj , value then return true
+        return false
+    close:()->
+
+    
