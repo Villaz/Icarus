@@ -1,7 +1,7 @@
 cluster = require 'cluster'
 cpus    = require('os').cpus().length
 Acceptor = require('./acceptor').Acceptor
-Replica  = require('./server').Server
+Replica  = require('./replica').Replica
 Discover = require('./discover')
 Network = require('./network')
 Ballot = require('./ballot').Ballot
@@ -23,8 +23,8 @@ list = ( value ) ->
 program.version( "0.0.1" )
         .option( '-r, --replica [port]' , 'Add Replica' )
         .option( '-a, --acceptor [port]' , 'Add Aceptor' )
-        .option( '-p, --discoverPort <port>' , 'Discover port')
-        .option( '-t, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
+        .option( '-dp, --discoverPort <port>' , 'Discover port')
+        .option( '-dt, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
         .option( '-i, --interface [interface]' , "Select interface to send messages. default(eth0)")
         .parse(process.argv)
 
@@ -55,7 +55,7 @@ generateParams = ( ) ->
 
     if not program.discoverPort? then program.discoverPort = 9999
     if not program.discoverType? then program.discoverType = 'Bonjour' 
-    if not program.interface? then program.interface = 'eth0'
+    if not program.interface? then program.interface = network_interface()
 
     return txtRecord
 
@@ -64,9 +64,18 @@ processDiscoverUpMessage = ( service ) =>
     workerAcceptor?.send service
     replicaAcceptor?.send service
 
+network_interface = ( ) ->
+    for name, value of require('os').networkInterfaces()
+        if name is 'eth0' then return 'eth0'
+        if name is 'en0' then return 'en0'
+
+        for net in value
+            if net.family is 'IPv4' and net.internal is false then return name
+
 
 if cluster.isMaster
     txtRecord = do generateParams
+    console.log txtRecord
     cluster.on 'exit', (worker) ->
         console.log "Server #{worker.id} died. restart..."
         if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor' , port:program.acceptor })
@@ -80,7 +89,7 @@ if cluster.isMaster
     if program.discoverType is 'Bonjour'
         discover = new Discover.Discover "paxos" , program.discoverPort , program.interface , txtRecord
     else
-        discover = new Discover.UDP "paxos" , program.discoverPort , program.interface , txtRecord
+        discover = new Discover.UDP "paxos" , program.discoverPort , txtRecord
     
     discover.on 'up' , ( service ) =>
         msg =
@@ -108,6 +117,7 @@ else
                     when 'adopted' then replicaObject.adopted message.body
                     when 'P1B'     then replicaObject.leader.p1b message.body
                     when 'P2B'     then replicaObject.leader.p2b message.body
+            
             replicaObject = new Replica(network)
             
 
@@ -119,7 +129,4 @@ else
         if msg.type is 'down'
             acceptorObject?.network.upNode msg.service
             replicaObject?.network.upNode msg.service
-
-
-
 
