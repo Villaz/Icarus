@@ -26,6 +26,8 @@ class Leader.Leader  extends EventEmitter
         @active = false
         @proposals = new Map.Map "proposalsLeader"
         @proposalsInSlot = new Map.Map "proposalsInSlot"
+
+        winston?.info "Leader started"
         
     
     start:( )->
@@ -90,6 +92,7 @@ class Leader.Leader  extends EventEmitter
             return 0
         @scout.on 'adopted' , ( body ) =>
             @adopted body.ballot , body.pvalues , body.pvaluesSlot
+            winston?.info "#{JSON.stringify body.ballot} adopted"
         
         do @scout.start
         
