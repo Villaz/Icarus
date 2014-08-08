@@ -63,7 +63,7 @@ class Discover.UDP extends EventEmitter
 
     nodes : undefined
 
-    constructor:( @serviceName , @servicePort , @roles = {} )->
+    constructor:( @serviceName , @servicePort , @interface , @roles = {} )->
         @nodes = {}
 
     start:()->
@@ -80,10 +80,16 @@ class Discover.UDP extends EventEmitter
         setInterval @_sendUDP , 60000
         setInterval @_checkDown , 180000
         do @_sendUDP
+    
+
+    _retrieve_ip:( ) =>
+        return require('os').networkInterfaces()[@interface][0]['address']
+    
+
 
     _sendUDP:( )=>
         message = 
-            address : require("os").hostname()
+            address : @_retrieve_ip()
             data : @roles
 
         message = new Buffer(JSON.stringify message);
