@@ -51,6 +51,7 @@ class Ballot.Ballot
             bytes.push(parseInt(char, 16))
         return bytes
 
+
     _getValue:( str ) ->
         sum = 0
         sum += value for value in @_getBytes( str ) when not isNaN(value)
