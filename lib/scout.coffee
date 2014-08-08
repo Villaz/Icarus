@@ -71,7 +71,6 @@ class Scout.Scout extends EventEmitter
         ballot: @ballot,
         pvalues: pvaluesMap,
         pvaluesSlot: pvaluesInSlotMap
-
       this.emit 'adopted' , body
 
 

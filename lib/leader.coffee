@@ -53,7 +53,6 @@ class Leader.Leader  extends EventEmitter
             @active = true
             deferred.resolve(true)
         
-
         sendToCommander = ( keys ) =>
             @_sendToCommanderAllproposals keys
 
@@ -118,7 +117,6 @@ class Leader.Leader  extends EventEmitter
             @emit 'decision' , message
             do deferred.resolve
             
-
         commander.on 'preempted' , ( message ) =>
             @commanders.slice @commanders.indexOf( commander ) , 1
             do referred.resolve
