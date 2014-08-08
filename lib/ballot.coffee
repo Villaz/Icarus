@@ -35,23 +35,23 @@ class Ballot.Ballot
 
 
     _getBytes:( str ) ->
-    bytes = []
-    char = undefined
-    str = encodeURI(str)
+        bytes = []
+        char = undefined
+        str = encodeURI(str)
 
-    while(str.length)
-        char = str.slice 0, 1
-        str = str.slice 1;
+        while(str.length)
+            char = str.slice 0, 1
+            str = str.slice 1;
 
-        if ('%' isnt char)
-            bytes.push(char.charCodeAt(0))
-        else
-            char = str.slice 0, 2
-            str = str.slice 2
-      bytes.push(parseInt(char, 16))
-    return bytes
+            if ('%' isnt char)
+                bytes.push(char.charCodeAt(0))
+            else
+                char = str.slice 0, 2
+                str = str.slice 2
+            bytes.push(parseInt(char, 16))
+        return bytes
 
-  _getValue:( str ) ->
-    sum = 0
-    sum += value for value in @_getBytes( str ) when not isNaN(value)
-    return sum
+    _getValue:( str ) ->
+        sum = 0
+        sum += value for value in @_getBytes( str ) when not isNaN(value)
+        return sum
