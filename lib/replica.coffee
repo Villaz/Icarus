@@ -105,9 +105,13 @@ class Replica.Replica
             else
                 @slot_num = @slot_num + 1
                 @execute(operation).then ( result ) =>
-                    @network?.response operation.client , result 
+                    @network?.response operation.client , result
+                    @resolved(result) 
                     do deferred.resolve
         deferred.promise
+
+
+    resolved:(result) ->
 
     execute:( operation ) ->
         return Q.fcall ( ) ->
