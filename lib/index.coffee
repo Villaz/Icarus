@@ -21,9 +21,9 @@ list = ( value ) ->
     value.split ','
 
 program.version( "0.0.1" )
-        .option( '-r, --replica [port]' , 'Add Replica' )
-        .option( '-a, --acceptor [port]' , 'Add Aceptor' )
-        .option( '-dp, --discoverPort <port>' , 'Discover port')
+        .option( '-r, --replica [port]' , 'Add Replica' , parseInt )
+        .option( '-a, --acceptor [port]' , 'Add Aceptor' , parseInt )
+        .option( '-dp, --discoverPort <port>' , 'Discover port' , parseInt )
         .option( '-dt, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
         .option( '-i, --interface [interface]' , "Select interface to send messages. default(eth0)")
         .parse(process.argv)
@@ -43,14 +43,12 @@ generateParams = ( ) ->
     
     if program.replica
         txtRecord.roles.push 'R'
-        if program.replica isnt Number
-            program.replica = replicaPort
+        program.replica = parseInt( program.replica ) || replicaPort
         txtRecord.RTA = program.replica
         
     if program.acceptor
         txtRecord.roles.push 'A'
-        if program.acceptor isnt Number
-            program.acceptor = acceptorPort
+        program.acceptor = parseInt( program.acceptor ) || acceptorPort
         txtRecord.ATR = program.acceptor
 
     if not program.discoverPort? then program.discoverPort = 9999
@@ -127,6 +125,6 @@ else
             replicaObject?.network.upNode msg.service
         
         if msg.type is 'down'
-            acceptorObject?.network.upNode msg.service
-            replicaObject?.network.upNode msg.service
+            acceptorObject?.network.downNode msg.service
+            replicaObject?.network.downNode msg.service
 
