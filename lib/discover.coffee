@@ -13,6 +13,7 @@ class Discover.Discover extends EventEmitter
 
     constructor:( @serviceName , @servicePort , @interface , @roles = {} ) ->
 
+
     start:( advert = true )->
         if not @serviceName? then throw new Error 'ServiceName cannot be null'
         if not @servicePort? then throw new Error 'ServicePort cannot be null'
@@ -24,6 +25,7 @@ class Discover.Discover extends EventEmitter
     stop:( )->
         @advertisement.stop()
 
+
     updateRoles:( @roles ) ->
         @stop( )
         setTimeout @__startAdvertisement , 5000
@@ -34,19 +36,18 @@ class Discover.Discover extends EventEmitter
         @advertisement = mdns.createAdvertisement mdns.tcp( @serviceName ) , @servicePort , {txtRecord: @roles , networkInterface:@interface}
         @advertisement.start();
 
+
     __startBrowser:( ) ->
         mdns = require 'mdns2'
         @browser = mdns.createBrowser mdns.tcp( @serviceName ) , {networkInterface:@interface}
 
         @browser.on 'serviceUp' , ( service ) =>
             if service.networkInterface is @interface
-
                 address = undefined
-                if not service.addresses[1]?
-                    address = service.addresses[0]
-                else
-                    address = service.addresses[1]
-                
+                for addr in service.addresses when @__isIPv4(addr)
+                    address = addr
+                    break
+                         
                 data = 
                     address : address
                     data : service.txtRecord
@@ -58,6 +59,14 @@ class Discover.Discover extends EventEmitter
         @browser.on 'serviceChanged', ( service ) =>
         
         @browser.start()
+
+
+    __isIPv4:( address ) ->
+        regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        if address.match(regex)
+            return true
+
+
 
 class Discover.UDP extends EventEmitter
 
