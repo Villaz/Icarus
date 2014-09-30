@@ -174,3 +174,9 @@ class Network.ReplicaNetwork extends Network.Network
         if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.ATR? )
             @socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATR}" 
             @acceptors.push service.address
+
+
+    downNode:( service ) =>
+        if( service.data.roles.indexOf('A') isnt -1 ) and @socketSubs[service.address] and service.data.ATR
+            do@socketSubs[service.address].disconnect
+            @acceptors.splice( @acceptors.indexOf( service.address ) , 1 )
