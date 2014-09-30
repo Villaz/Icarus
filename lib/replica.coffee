@@ -69,7 +69,9 @@ class Replica.Replica
                     @leader?.propose slot , operation
             else
                 deferred.resolve()
-        
+            
+            if @test
+                deferred.resolve()
         return deferred.promise
 
 
