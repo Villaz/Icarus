@@ -19,6 +19,8 @@ class Replica.Replica
     lastSlotEmpltyInProposals: undefined
     lastSlotEmpltyInDecisions: undefined
 
+    promisesPerSlot: undefined
+
     network : undefined
     leader : undefined
 
@@ -30,6 +32,8 @@ class Replica.Replica
 
         @operationsProposed = new Map.Map("operationsProposed")
         @operationsDecided  = new Map.Map("operationsDecided")
+
+        @promisesPerSlot  = {}
 
         @lastSlotEmpltyInDecisions = 0
         @lastSlotEmpltyInProposals = 0
@@ -59,11 +63,15 @@ class Replica.Replica
                 if slot not in proposed
                     @proposals.addValues slot , operation
                     @operationsProposed.addValues key , slot
-                    
+                    @promisesPerSlot[slot] = deferred
+
                     @lastSlotEmpltyInProposals++
                     @leader?.propose slot , operation
-            deferred.resolve()
-        
+            else
+                deferred.resolve()
+            
+            if @test
+                deferred.resolve()
         return deferred.promise
 
 
@@ -99,15 +107,21 @@ class Replica.Replica
     perform:( operation ) =>
         deferred = Q.defer()
         @_operationSlotInDecided(operation).then ( slots ) =>
+            slot = @slot_num
             if @_slotsHaveMenorThanSlotNum slots , @slot_num
                 @slot_num = @slot_num + 1
                 do deferred.resolve
             else
                 @slot_num = @slot_num + 1
                 @execute(operation).then ( result ) =>
+                    promise = @promisesPerSlot[slot]
+                    delete @promisesPerSlot[slot]
+                    
                     @network?.response operation.client , result
                     @resolved(result) 
+
                     do deferred.resolve
+                    promise.resolve( result )
         deferred.promise
 
 
