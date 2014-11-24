@@ -106,7 +106,7 @@ if cluster.isMaster
     
 else
     switch process.env.type
-        when 'Acceptor' then acceptorObject = new Acceptor()
+        when 'Acceptor' then acceptorObject = new Acceptor( process.env.port )
         when 'Replica'
             network = new Network.ReplicaNetwork( process.env.port ) 
             network.on 'message' , ( message ) =>
