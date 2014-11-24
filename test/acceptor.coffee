@@ -22,10 +22,10 @@ describe 'Acceptor tests', ->
 	
 	beforeEach () ->
 		try
-			@acceptor = new Acceptor( true ) if not @acceptor?
+			@acceptor = new Acceptor( undefined, true ) if not @acceptor?
 		catch e
 			sleep.sleep 5
-			@acceptor = new Acceptor( true ) if not @acceptor?
+			@acceptor = new Acceptor( undefined, true ) if not @acceptor?
 		
 
 	afterEach ( ) ->

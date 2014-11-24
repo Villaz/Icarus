@@ -23,8 +23,8 @@ list = ( value ) ->
 program.version( "0.0.1" )
         .option( '-r, --replica [port]' , 'Add Replica' , parseInt )
         .option( '-a, --acceptor [port]' , 'Add Aceptor' , parseInt )
-        .option( '-dp, --discoverPort <port>' , 'Discover port' , parseInt )
-        .option( '-dt, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
+        .option( '-p, --discoverPort <port>' , 'Discover port' , parseInt )
+        .option( '-t, --discoverType <type>' , 'Discover type(UDP,Bonjour)')
         .option( '-i, --interface [interface]' , "Select interface to send messages. default(eth0)")
         .parse(process.argv)
 
@@ -87,7 +87,7 @@ if cluster.isMaster
     if program.discoverType is 'Bonjour'
         discover = new Discover.Discover "paxos" , program.discoverPort , program.interface , txtRecord
     else
-        discover = new Discover.UDP "paxos" , program.discoverPort , txtRecord
+        discover = new Discover.UDP "paxos" , program.discoverPort , program.interface , txtRecord
     
     discover.on 'up' , ( service ) =>
         msg =
@@ -106,7 +106,7 @@ if cluster.isMaster
     
 else
     switch process.env.type
-        when 'Acceptor' then acceptorObject = new Acceptor()
+        when 'Acceptor' then acceptorObject = new Acceptor( process.env.port )
         when 'Replica'
             network = new Network.ReplicaNetwork( process.env.port ) 
             network.on 'message' , ( message ) =>

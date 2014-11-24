@@ -13,13 +13,13 @@ class Acceptor.Acceptor
     mapOfValues     : undefined
     network         : undefined
     
-    constructor:( @test=false ) ->
+    constructor:( port=8888 , @test=false ) ->
         @actualBallot = new Ballot()
         @mapOfValues = new Map.Map("acceptor")
 
         if not test
             try
-                @network = new Network.AcceptorNetwork( )
+                @network = new Network.AcceptorNetwork port 
                 @id = @network.ip
                 @network.on 'message' , @processRequests
             catch e
