@@ -21,6 +21,7 @@ list = ( value ) ->
     value.split ','
 
 program.version( "0.0.1" )
+        .option( '-c, --client [port]' , 'Client port petitions' , parseInt )
         .option( '-r, --replica [port]' , 'Add Replica' , parseInt )
         .option( '-a, --acceptor [port]' , 'Add Aceptor' , parseInt )
         .option( '-p, --discoverPort <port>' , 'Discover port' , parseInt )
@@ -77,7 +78,7 @@ if cluster.isMaster
     cluster.on 'exit', (worker) ->
         console.log "Server #{worker.id} died. restart..."
         if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor' , port:program.acceptor })
-        if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica' , port:program.replica })
+        if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica' , port:program.replica , client:program.client })
     
     if program.acceptor
         workerAcceptor = cluster.fork {type:'Acceptor' , port:program.acceptor }
@@ -108,7 +109,10 @@ else
     switch process.env.type
         when 'Acceptor' then acceptorObject = new Acceptor( process.env.port )
         when 'Replica'
-            network = new Network.ReplicaNetwork( process.env.port ) 
+            if not process.env.client?
+                network = new Network.ReplicaNetwork( process.env.client )
+            else
+                network = new Network.ReplicaNetwork( process.env.port ) 
             network.on 'message' , ( message ) =>
                 switch message.type
                     when 'propose' then replicaObject.propose message.body.operation
