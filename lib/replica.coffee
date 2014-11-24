@@ -116,10 +116,10 @@ class Replica.Replica
                 @execute(operation).then ( result ) =>
                     promise = @promisesPerSlot[slot]
                     delete @promisesPerSlot[slot]
-                    
+
                     @network?.response operation.client , result
                     @resolved(result) 
-
+                    
                     do deferred.resolve
                     promise.resolve( result )
         deferred.promise

@@ -133,7 +133,9 @@ class Network.ReplicaNetwork extends Network.Network
         
 
     response:(client, data) ->
-        @server.send [ @clientSockets[client] , '' , data ]
+        if client of @clientSockets
+            @server.send [ @clientSockets[client] , '' , data ]
+            delete @clientSockets[client]
     
 
     _startClient:( url ) ->
