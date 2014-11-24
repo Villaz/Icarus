@@ -10,7 +10,7 @@
   "author": "Luis Villazon",
   "license": "GPL",
   "dependencies": {
-    "mdns2": "*",
+    "mdns": "*",
     "q": "*",
     "zmq": "*",
     "winston":"*",
