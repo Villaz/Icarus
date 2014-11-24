@@ -32,13 +32,13 @@ class Discover.Discover extends EventEmitter
     
     
     __startAdvertisement:( ) =>
-        mdns = require 'mdns2'
+        mdns = require 'mdns'
         @advertisement = mdns.createAdvertisement mdns.tcp( @serviceName ) , @servicePort , {txtRecord: @roles , networkInterface:@interface}
         @advertisement.start();
 
 
     __startBrowser:( ) ->
-        mdns = require 'mdns2'
+        mdns = require 'mdns'
         @browser = mdns.createBrowser mdns.tcp( @serviceName ) , {networkInterface:@interface}
 
         @browser.on 'serviceUp' , ( service ) =>
@@ -85,6 +85,8 @@ class Discover.UDP extends EventEmitter
         server.on 'message' , processMessage
         server.bind 8080 , ( )->
             server.setBroadcast true
+            server.setMulticastTTL 128
+            server.addMembership '230.185.192.108'
             
         setInterval @_sendUDP , 60000
         setInterval @_checkDown , 180000
@@ -105,7 +107,9 @@ class Discover.UDP extends EventEmitter
         client = dgram.createSocket("udp4");
         client.bind 5001 , ( ) =>
             client.setBroadcast true
-        client.send message, 0, message.length,8080, "128.141.156.127", (err, bytes) ->
+            client.setMulticastTTL 128
+            client.addMembership '230.185.192.108'
+        client.send message, 0, message.length,8080, "128.141.72.127", (err, bytes) ->
             client.close()
 
     _checkDown:( )=>
