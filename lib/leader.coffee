@@ -92,7 +92,8 @@ class Leader.Leader  extends EventEmitter
             return 0
         @scout.on 'adopted' , ( body ) =>
             @adopted body.ballot , body.pvalues , body.pvaluesSlot
-            winston?.info "#{JSON.stringify body.ballot} adopted"
+            winston?.info "#{body.ballot.id} is the new leader ballot #{JSON.stringify body.ballot} adopted"
+            
         
         do @scout.start
         

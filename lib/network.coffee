@@ -3,7 +3,7 @@ Network = exports? and exports or @Network = {}
 
 zmq      = require 'zmq'
 Ballot   = require('./ballot').Ballot
-
+winston = require 'winston'
 
 {EventEmitter} = require 'events'
 
@@ -26,6 +26,7 @@ class Network.Network extends EventEmitter
         catch e
             console.log e
             throw new Error(e.message)
+        
         
     close:( ) ->
         try
@@ -66,7 +67,7 @@ class Network.AcceptorNetwork extends Network.Network
     constructor:( port = 9998 ) ->
         super( port )
         @recuperationSubs = new Array()
-
+        
 
     close:( ) ->
         super( )
@@ -99,9 +100,11 @@ class Network.AcceptorNetwork extends Network.Network
     upNode:( service ) =>
         if (service.data.roles.indexOf('A') isnt -1 ) and ( not @recuperationSubs[service.address]? ) and ( service.data.ATA? )
             @recuperationSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATA}"
+            winston.info "Acceptor added to network #{service.address}"
 
         if (service.data.roles.indexOf('R') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.RTA? )
-            @socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.RTA}"     
+            @socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.RTA}"    
+            winston.info "Replica added to network #{service.address}" 
 
 
 class Network.ReplicaNetwork extends Network.Network
@@ -119,7 +122,7 @@ class Network.ReplicaNetwork extends Network.Network
         @server.on 'message' , @processMessage
         @pendingMessagesToAcceptors = []
         setInterval @_checkPending , 2000
-
+        
 
     close:( ) ->
         super()
@@ -176,6 +179,7 @@ class Network.ReplicaNetwork extends Network.Network
         if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.ATR? )
             @socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATR}" 
             @acceptors.push service.address
+            winston.info "Acceptor added to network #{service.address}"
 
 
     downNode:( service ) =>
