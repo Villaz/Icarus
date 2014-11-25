@@ -26,7 +26,7 @@ class Acceptor.Acceptor
                 throw new Error e.message
         
             winston.add winston.transports.File, { filename: 'acceptor.log' }
-            winston.info "Acceptor started"
+            winston.info "Acceptor started #{@id}:#{port}"
     
 
     clear: ( ) ->
@@ -36,7 +36,6 @@ class Acceptor.Acceptor
 
 
     processRequests:( message ) =>
-        winston.info "Received message #{message.type}"
         switch message.type
             when 'P1A' then @processP1A message.body.ballot , message.body.leader
             when 'P2A' then @processP2A message.body
@@ -45,6 +44,7 @@ class Acceptor.Acceptor
     processP1A:( ballot , to )->
         ballot = new Ballot  ballot.number , ballot.id 
         if ballot.isMayorThanOtherBallot @actualBallot
+            winston.info "P1A Updated ballot to #{JSON.stringify ballot}"
             @actualBallot = ballot
         @sendP1B @id , to
 
@@ -66,8 +66,10 @@ class Acceptor.Acceptor
         ballot = new Ballot value.ballot.number , value.ballot.id
         
         if ballot.isMayorOrEqualThanOtherBallot @actualBallot
+            winston.info "P2A Updated ballot to #{JSON.stringify ballot}" if ballot.isMayorThanOtherBallot @actualBallot
             @actualBallot = ballot
             @mapOfValues.addValue value.slot , value.operation
+            winston.info "P2A Added operation #{value.operation} to slot #{value.slot}"
 
         do @sendP2B
 
