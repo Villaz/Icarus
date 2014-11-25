@@ -1,7 +1,7 @@
 cluster = require 'cluster'
 cpus    = require('os').cpus().length
 Acceptor = require('./acceptor').Acceptor
-Replica  = require('./replica').Replica
+Replica  = require('./server').Server
 Discover = require('./discover')
 Network = require('./network')
 Ballot = require('./ballot').Ballot
@@ -77,13 +77,13 @@ if cluster.isMaster
     console.log txtRecord
     cluster.on 'exit', (worker) ->
         console.log "Server #{worker.id} died. restart..."
-        if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor' , port:program.acceptor })
-        if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica' , port:program.replica , client:program.client })
+        if worker.id is workerAcceptor.id then workerAcceptor = cluster.fork({type:'Acceptor' , port:process.env.acceptor })
+        if worker.id is workerReplica.id then workerReplica = cluster.fork({type:'Replica' , port:process.env.replica , client:process.env.client })
     
     if program.acceptor
         workerAcceptor = cluster.fork {type:'Acceptor' , port:program.acceptor }
     if program.replica
-        workerReplica = cluster.fork {type:'Replica' , port:program.replica}
+        workerReplica = cluster.fork {type:'Replica' , port:program.replica , client:program.client }
 
     if program.discoverType is 'Bonjour'
         discover = new Discover.Discover "paxos" , program.discoverPort , program.interface , txtRecord
@@ -109,8 +109,8 @@ else
     switch process.env.type
         when 'Acceptor' then acceptorObject = new Acceptor( process.env.port )
         when 'Replica'
-            if not process.env.client?
-                network = new Network.ReplicaNetwork( process.env.client )
+            if  not process.env.client?
+                network = new Network.ReplicaNetwork( process.env.port, process.env.client )
             else
                 network = new Network.ReplicaNetwork( process.env.port ) 
             network.on 'message' , ( message ) =>
