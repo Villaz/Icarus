@@ -1,3 +1,10 @@
 language: node_js
 node_js:
   - "0.11"
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y wget gcc g++ python git make avahi-daemon avahi-utils libavahi-compat-libdnssd-dev
+install:
+  - wget http://download.zeromq.org/zeromq-4.1.0-rc1.tar.gz
+  - tar xzvf zeromq-4.1.0-rc1.tar.gz
+  - cd zeromq-4.1.0 && ./configure && make && make install
