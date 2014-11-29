@@ -33,5 +33,3 @@ RUN npm install
 RUN mkdir -p /var/run/dbus 
 RUN mkdir -p /mnt/keys 
 VOLUME [“/var/run/dbus”, “/mnt/keys”]
-
-ENTRYPOINT /bin/bash -c 'avahi-daemon –no-drop-root'
