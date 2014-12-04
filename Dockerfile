@@ -30,4 +30,7 @@ RUN git clone https://github.com/Villaz/Icarus.git
 WORKDIR /Icarus 
 RUN npm install
 
-CMD /usr/sbin/avahi-daemon
+RUN mkdir -p /var/run/dbus/
+RUN chown messagebus:messagebus /var/run/dbus
+
+CMD dbus-daemon --system; /usr/sbin/avahi-daemon
