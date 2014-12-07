@@ -20,6 +20,7 @@ class Network.Network extends EventEmitter
         @socketSubs = new Array()
         @socketPub = zmq.socket 'pub'
         @socketPub.identity = "publisher#{process.pid}"
+        @socketPub.setsockopt 31 , 0
         @ip = do @_getIP
         try
             @socketPub.bindSync("tcp://*:#{port}")
@@ -42,21 +43,22 @@ class Network.Network extends EventEmitter
         
 
     upNode:( service ) ->
-        if not socketSubs[service.address]?
-            @socketSubs[service.address] = @startClient "tcp://#{service.address}:#{service.data.ATL}"
+        if not socketSubs[service.name]?
+            @socketSubs[service.name] = @startClient service.addresses , service.data.ATL
 
 
     downNode:( service ) ->
-        @socketSubs[service.address]?.close()
+        @socketSubs[service.name]?.close()
 
 
     _getIP:( ) ->
-        os = require 'os'
-        ifaces = do os.networkInterfaces
-    
-        for dev , addresses of ifaces 
-            for address in addresses when address.family is 'IPv4' and address.internal is false
-                return address.address
+        return do require('os').hostname
+
+
+    _isIPv4:( address ) ->
+        regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        if address.match(regex)
+            return true
 
 
 
@@ -76,12 +78,16 @@ class Network.AcceptorNetwork extends Network.Network
         @recuperationSubs = new Array()
 
 
-    _startClient:( url ) ->
+    _startClient:( urls , port , inf ) ->
         socket = zmq.socket 'sub'
+        socket.setsockopt 31 , 0 #only IPv4
+        #socket.setsockopt 42 , 1 #support IPv6
         socket.identity = "subscriber#{@socketSubs.length}#{process.pid}"
         socket.subscribe 'P1A'
         socket.subscribe 'P2A'
-        socket.connect url
+        for url in urls
+            if not @_isIPv4 url then url = "tcp://#{url}%en0:#{port}" else url = "tcp://#{url}:#{port}"
+            socket.connect url
         
         socket.on 'message' , ( data ) =>
             type = data.toString().substr 0 , data.toString().indexOf("{")-1
@@ -98,13 +104,13 @@ class Network.AcceptorNetwork extends Network.Network
 
 
     upNode:( service ) =>
-        if (service.data.roles.indexOf('A') isnt -1 ) and ( not @recuperationSubs[service.address]? ) and ( service.data.ATA? )
-            @recuperationSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATA}"
+        if (service.data.roles.indexOf('A') isnt -1 ) and ( not @recuperationSubs[service.name]? ) and ( service.data.ATA? )
+            @recuperationSubs[service.name] = @_startClient service.addresses , service.data.ATA , service.interface
             winston.info "Acceptor added to network #{service.address}"
 
         if (service.data.roles.indexOf('R') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.RTA? )
-            @socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.RTA}"    
-            winston.info "Replica added to network #{service.address}" 
+            @socketSubs[service.name] = @_startClient service.addresses , service.data.RTA , service.interface
+            winston.info "Replica #{service.name} added" 
 
 
 class Network.ReplicaNetwork extends Network.Network
@@ -116,7 +122,7 @@ class Network.ReplicaNetwork extends Network.Network
     constructor:( port = 8000 , portClient = 8181 )->
         super( port )
         @clientSockets = {}
-        @server = zmq.socket( 'router' )
+        @server = zmq.socket 'router'
         @server.identity = "replicaServer#{process.pid}"
         @server.bindSync("tcp://*:#{portClient}")
         @server.on 'message' , @processMessage
@@ -135,19 +141,22 @@ class Network.ReplicaNetwork extends Network.Network
         @emit 'message' , data
         
 
-    response:(client, data) ->
+    response:(client , data) ->
         if client of @clientSockets
             @server.send [ @clientSockets[client] , '' , data ]
             delete @clientSockets[client]
     
 
-    _startClient:( url ) ->
+    _startClient:( urls , port ) ->
         socket = zmq.socket 'sub'
+        socket.setsockopt 31 , 0 #only IPv4
+        socket.setsockopt 42 , 1 #support IPv6
         socket.identity = "subscriber#{@socketSubs.length}#{process.pid}"
         socket.subscribe 'P1B'
         socket.subscribe 'P2B'
-        
-        socket.connect url
+        for url in urls
+            if not @_isIPv4 url then url = "tcp://#{url}%en0:#{port}" else url = "tcp://#{url}:#{port}"
+            socket.connect url 
 
         socket.on 'message' ,( data ) =>
             type = data.toString().substr 0 , data.toString().indexOf("{")-1
@@ -176,13 +185,13 @@ class Network.ReplicaNetwork extends Network.Network
             
 
     upNode:( service ) =>
-        if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.ATR? )
-            @socketSubs[service.address] = @_startClient "tcp://#{service.address}:#{service.data.ATR}" 
+        if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.name]? ) and ( service.data.ATR? )
+            @socketSubs[service.name] = @_startClient service.addresses , service.data.ATR , service.interface
             @acceptors.push service.address
-            winston.info "Acceptor added to network #{service.address}"
+            winston.info "Acceptor #{service.name} added"
 
 
     downNode:( service ) =>
-        if( service.data.roles.indexOf('A') isnt -1 ) and @socketSubs[service.address] and service.data.ATR
-            do@socketSubs[service.address].disconnect
+        if( service.data.roles.indexOf('A') isnt -1 ) and @socketSubs[service.name] and service.data.ATR
+            do @socketSubs[service.name].disconnect
             @acceptors.splice( @acceptors.indexOf( service.address ) , 1 )

@@ -33,25 +33,21 @@ class Discover.Discover extends EventEmitter
     
     __startAdvertisement:( ) =>
         mdns = require 'mdns'
-        @advertisement = mdns.createAdvertisement mdns.tcp( @serviceName ) , @servicePort , {txtRecord: @roles , networkInterface:@interface}
+        @advertisement = mdns.createAdvertisement mdns.tcp( @serviceName ) , @servicePort , {txtRecord: @roles}
         @advertisement.start();
 
 
     __startBrowser:( ) ->
         mdns = require 'mdns'
-        @browser = mdns.createBrowser mdns.tcp( @serviceName ) , {networkInterface:@interface}
+        @browser = mdns.createBrowser mdns.tcp( @serviceName ) 
 
-        @browser.on 'serviceUp' , ( service ) =>
-            if service.networkInterface is @interface
-                address = undefined
-                for addr in service.addresses when @__isIPv4(addr)
-                    address = addr
-                    break
-                         
-                data = 
-                    address : address
-                    data : service.txtRecord
-                @emit 'up' , data
+        @browser.on 'serviceUp' , ( service ) =>                              
+            data = 
+                addresses : service.addresses
+                data : service.txtRecord
+                name : service.name
+                interface: service.networkInterface
+            @emit 'up' , data
         
         @browser.on 'serviceDown' , ( service ) =>
             @emit 'down' , service 
@@ -59,12 +55,6 @@ class Discover.Discover extends EventEmitter
         @browser.on 'serviceChanged', ( service ) =>
         
         @browser.start()
-
-
-    __isIPv4:( address ) ->
-        regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-        if address.match(regex)
-            return true
 
 
 
