@@ -70,11 +70,13 @@ class Leader.Leader  extends EventEmitter
         deferred.promise
 
 
-    preempted:( ballot ) ->
+    preempted:( ballot , slot , operation ) ->
         if ballot.isMayorThanOtherBallot @ballot
             @active = false
             @ballot.number = ballot.number + 1
-            do @_spawnScout
+            #do @_spawnScout
+            if not slot?
+                @emit 'preempted' , { slot:slot, operation:operation, replica:ballot.id}
 
 
     p1b:( message ) ->
@@ -89,7 +91,7 @@ class Leader.Leader  extends EventEmitter
         @scout = new Scout @ballot , @lastSlotReceived , @network 
         
         @scout.on 'preempted' , ( body ) =>
-            return 0
+            @preempted body.ballot 
         @scout.on 'adopted' , ( body ) =>
             @adopted body.ballot , body.pvalues , body.pvaluesSlot
             winston?.info "#{body.ballot.id} is the new leader ballot #{JSON.stringify body.ballot} adopted"
@@ -123,5 +125,7 @@ class Leader.Leader  extends EventEmitter
             
         commander.on 'preempted' , ( message ) =>
             @commanders.slice @commanders.indexOf( commander ) , 1
+            @preempted( message.ballot , message.slot , message.operation )
             do referred.resolve
+        return deferred.promise
 
