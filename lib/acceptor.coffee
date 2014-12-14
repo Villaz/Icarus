@@ -17,7 +17,7 @@ class Acceptor.Acceptor
         @actualBallot = new Ballot()
         @mapOfValues = new Map.Map("acceptor")
 
-        if not test
+        if not @test
             try
                 @network = new Network.AcceptorNetwork port 
                 @id = @network.ip

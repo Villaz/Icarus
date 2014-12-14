@@ -1,7 +1,7 @@
 cluster = require 'cluster'
 cpus    = require('os').cpus().length
 Acceptor = require('./acceptor').Acceptor
-Replica  = require('./server').Server
+Replica  = require('./replica').Replica
 Discover = require('./discover')
 Network = require('./network')
 Ballot = require('./ballot').Ballot

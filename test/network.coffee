@@ -28,7 +28,7 @@ describe 'Network tests', ->
 
     it 'Retrieve replica txt message' , =>
         txt_record = 
-            address: '192.168.4.68',
+            addresses: ['192.168.4.68'],
             data:
                 RTA: '8888',
                 roles: 'R'
@@ -41,13 +41,13 @@ describe 'Network tests', ->
 
     it 'Retrieve multiple leader txt messages', =>
         txt_record = 
-            address: '192.168.4.68', 
+            addresses: ['192.168.4.68'], 
             data: 
                 RTA: '8888', 
                 roles: 'R' 
 
         txt_record2 = 
-            address: '192.168.4.69',
+            addresses: ['192.168.4.69'],
             data: 
                 RTA: '8888',
                 roles: 'R'

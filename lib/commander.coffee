@@ -35,5 +35,5 @@ class Commander.Commander extends EventEmitter
         @emit 'decision' , {slot:@slot , operation:@operation}
     else
       @decidided = true
-      @emit 'preempted' , {ballot:ballot , slot:@slot , operation:@operation }
+      @emit 'preempted' , ballot # , slot:@slot , operation:@operation }
 
