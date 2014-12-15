@@ -63,6 +63,7 @@ class Acceptor.Acceptor
 
 
     processP2A:( value ) ->
+        winston?.info "Received P2A #{value}"
         ballot = new Ballot value.ballot.number , value.ballot.id
         
         if ballot.isMayorOrEqualThanOtherBallot @actualBallot
