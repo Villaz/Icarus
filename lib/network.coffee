@@ -21,6 +21,7 @@ class Network.Network extends EventEmitter
         @socketPub = zmq.socket 'pub'
         @socketPub.identity = "publisher#{process.pid}"
         @socketPub.setsockopt 31 , 0
+        @socketPub.setsockopt 42 , 1 #support IPv6
         @ip = do @_getIP
         try
             @socketPub.bindSync("tcp://*:#{port}")
@@ -81,7 +82,7 @@ class Network.AcceptorNetwork extends Network.Network
     _startClient:( urls , port , inf ) ->
         socket = zmq.socket 'sub'
         socket.setsockopt 31 , 0 #only IPv4
-        #socket.setsockopt 42 , 1 #support IPv6
+        socket.setsockopt 42 , 1 #support IPv6
         socket.identity = "subscriber#{@socketSubs.length}#{process.pid}"
         socket.subscribe 'P1A'
         socket.subscribe 'P2A'
@@ -134,7 +135,10 @@ class Network.ReplicaNetwork extends Network.Network
         super()
         do @server.close
 
-    processMessage:( envelope , black , data ) =>
+    processMessage:( envelope , data , data2 ) =>
+        #allow clients with req and dealer
+        if data.length is 0
+            data = data2
         data = JSON.parse data.toString()
         @clientSockets[data.ip] = envelope
         data.type = 'propose'
@@ -187,11 +191,11 @@ class Network.ReplicaNetwork extends Network.Network
     upNode:( service ) =>
         if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.name]? ) and ( service.data.ATR? )
             @socketSubs[service.name] = @_startClient service.addresses , service.data.ATR , service.interface
-            @acceptors.push service.address
+            @acceptors.push service.name
             winston.info "Acceptor #{service.name} added"
 
 
     downNode:( service ) =>
         if( service.data.roles.indexOf('A') isnt -1 ) and @socketSubs[service.name] and service.data.ATR
             do @socketSubs[service.name].disconnect
-            @acceptors.splice( @acceptors.indexOf( service.address ) , 1 )
+            @acceptors.splice( @acceptors.indexOf( service.name ) , 1 )
