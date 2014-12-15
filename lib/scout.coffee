@@ -37,11 +37,11 @@ class Scout.Scout extends EventEmitter
   process:( message ) =>
     if message.type is 'P1B'
       ballot = message.body.ballot
-
+    
     if @ballot.isEqual( ballot ) and not @adopted
       @_updateAcceptedValuesAndAcceptorsResponse message
       @_ifResponseMayorOfAcceptorsSendAdopted()
-    else
+    else if not @ballot.isEqual( ballot )
       @_sendPreemptedMessage message.body.ballot
 
 
@@ -76,7 +76,6 @@ class Scout.Scout extends EventEmitter
 
   _sendPreemptedMessage: ( ballot ) =>
     body =
-      ballot: ballot
+      ballot: new Ballot ballot.number , ballot.id 
       pvalues: @pvalues
-
     this.emit 'preempted' , body
