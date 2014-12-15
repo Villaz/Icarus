@@ -49,6 +49,7 @@ class Replica.Replica
 
 
     propose:( operation ) ->
+        winston.info "Operation received #{JSON.stringify operation}"
         deferred = Q.defer()
 
         key = {id:operation.id,client:operation.client}
@@ -68,6 +69,8 @@ class Replica.Replica
                     @lastSlotEmpltyInProposals++
                     @leader?.propose slot , operation
             else
+                winston.info "Operation is just decided #{operation}"
+                @network?.response operation.client , JSON.stringify {status:300,result:"Duplicated operation, the operation was decided yet"}
                 deferred.resolve()
             
             if @test
@@ -76,6 +79,7 @@ class Replica.Replica
 
 
     decision:( slot , operation ) =>
+        winston.info "Decision to slot #{slot} for operation #{JSON.stringify operation}"
         deferred = do Q.defer
 
         #If the slot was decided dont do anything
