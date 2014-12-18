@@ -20,7 +20,7 @@ describe 'Network tests', ->
             done(e)
 
     beforeEach ( ) =>
-        @network = new Network.AcceptorNetwork(  )
+        @network = new Network.AcceptorNetwork 9999 , true
 
     afterEach ( ) =>
         do @network.close
