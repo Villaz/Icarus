@@ -38,7 +38,7 @@ class Replica.Replica
         @lastSlotEmpltyInDecisions = 0
         @lastSlotEmpltyInProposals = 0
         
-        if not test
+        if not @test
             @leader = new Leader( @network )
             @leader.on 'decision' , ( message ) =>
                 @decision message.slot , message.operation
@@ -49,7 +49,7 @@ class Replica.Replica
 
 
     propose:( operation ) ->
-        winston.info "Operation received #{JSON.stringify operation}"
+        winston.info "Operation received #{JSON.stringify operation}" unless @test
         deferred = Q.defer()
 
         key = {id:operation.id,client:operation.client}
@@ -68,8 +68,9 @@ class Replica.Replica
 
                     @lastSlotEmpltyInProposals++
                     @leader?.propose slot , operation
+                    deferred.resolve()
             else
-                winston.info "Operation is just decided #{operation}"
+                winston.info "Operation is just decided #{operation}" unless @test
                 @network?.response operation.client , JSON.stringify {status:300,result:"Duplicated operation, the operation was decided yet"}
                 deferred.resolve()
             
@@ -79,7 +80,7 @@ class Replica.Replica
 
 
     decision:( slot , operation ) =>
-        winston.info "Decision to slot #{slot} for operation #{JSON.stringify operation}"
+        winston.info "Decision to slot #{slot} for operation #{JSON.stringify operation}" unless @test
         deferred = do Q.defer
 
         #If the slot was decided dont do anything
@@ -136,7 +137,6 @@ class Replica.Replica
             return true
 
     _reProposeOperations : ( operation ) =>
-        
         @proposals.getValue(@slot_num).then ( proposalsInSlot ) =>
             promises = []
             if proposalsInSlot is undefined
