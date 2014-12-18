@@ -16,7 +16,7 @@ class Network.Network extends EventEmitter
     replicas : []
     acceptors : []
     
-    constructor:( port = 9999 ) ->
+    constructor:( port = 9999 , @test=false ) ->
         @socketSubs = new Array()
         @socketPub = zmq.socket 'pub'
         @socketPub.identity = "publisher#{process.pid}"
@@ -107,11 +107,11 @@ class Network.AcceptorNetwork extends Network.Network
     upNode:( service ) =>
         if (service.data.roles.indexOf('A') isnt -1 ) and ( not @recuperationSubs[service.name]? ) and ( service.data.ATA? )
             @recuperationSubs[service.name] = @_startClient service.addresses , service.data.ATA , service.interface
-            winston.info "Acceptor added to network #{service.address}"
+            winston.info "Acceptor added to network #{service.address}" unless @test
 
-        if (service.data.roles.indexOf('R') isnt -1) and ( not @socketSubs[service.address]? ) and ( service.data.RTA? )
+        if (service.data.roles.indexOf('R') isnt -1) and ( not @socketSubs[service.name]? ) and ( service.data.RTA? )
             @socketSubs[service.name] = @_startClient service.addresses , service.data.RTA , service.interface
-            winston.info "Replica #{service.name} added" 
+            winston.info "Replica #{service.name} added"  unless @test
 
 
 class Network.ReplicaNetwork extends Network.Network
@@ -146,9 +146,10 @@ class Network.ReplicaNetwork extends Network.Network
         
 
     response:(client , data) ->
+        console.log data
         if client of @clientSockets
             @server.send [ @clientSockets[client] , '' , data ]
-            delete @clientSockets[client]
+            #delete @clientSockets[client]
     
 
     _startClient:( urls , port ) ->
@@ -192,7 +193,7 @@ class Network.ReplicaNetwork extends Network.Network
         if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.name]? ) and ( service.data.ATR? )
             @socketSubs[service.name] = @_startClient service.addresses , service.data.ATR , service.interface
             @acceptors.push service.name
-            winston.info "Acceptor #{service.name} added"
+            winston.info "Acceptor #{service.name} added" unless @test
 
 
     downNode:( service ) =>
