@@ -44,7 +44,7 @@ class Acceptor.Acceptor
     processP1A:( ballot , to )->
         ballot = new Ballot  ballot.number , ballot.id 
         if ballot.isMayorThanOtherBallot @actualBallot
-            winston.info "P1A Updated ballot to #{JSON.stringify ballot}"
+            winston.info "P1A Updated ballot to #{JSON.stringify ballot}" unless @test
             @actualBallot = ballot
         @sendP1B @id , to
 
@@ -63,16 +63,24 @@ class Acceptor.Acceptor
 
 
     processP2A:( value ) ->
-        winston?.info "Received P2A #{value}"
-        ballot = new Ballot value.ballot.number , value.ballot.id
-        
-        if ballot.isMayorOrEqualThanOtherBallot @actualBallot
-            winston.info "P2A Updated ballot to #{JSON.stringify ballot}" if ballot.isMayorThanOtherBallot @actualBallot
-            @actualBallot = ballot
-            @mapOfValues.addValue value.slot , value.operation
-            winston.info "P2A Added operation #{value.operation} to slot #{value.slot}"
+        updateValuesAndSendResponse = ( ) =>
+            winston.info "Received P2A #{JSON.stringify value}" unless @test
+            ballot = new Ballot value.ballot.number , value.ballot.id
 
-        do @sendP2B
+            if ballot.isMayorOrEqualThanOtherBallot @actualBallot
+                winston.info "P2A Updated ballot to #{JSON.stringify ballot}" if ballot.isMayorThanOtherBallot @actualBallot and not @test
+                @actualBallot = ballot
+                @mapOfValues.addValue value.slot , value.operation
+                winston.info "P2A Added operation #{JSON.stringify value.operation} to slot #{value.slot}" unless @test
+
+            do @sendP2B
+
+        @mapOfValues.getValues(value.slot).then (operation)=>
+            operation = operation[0]
+            if operation? and operation.client is value.operation.client and operation.id is value.operation.client.id
+                return
+            else
+                do updateValuesAndSendResponse
 
 
     sendP2B:( value )->
