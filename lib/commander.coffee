@@ -22,7 +22,6 @@ class Commander.Commander extends EventEmitter
         slot: @slot,
         operation: @operation
         ballot: @ballot
-
     @network.sendMessageToAllAcceptors message
 
 

@@ -74,7 +74,7 @@ class Scout.Scout extends EventEmitter
       this.emit 'adopted' , body
 
 
-  _sendPreemptedMessage: ( ballot ) =>
+  _sendPreemptedMessage:( ballot ) =>
     body =
       ballot: new Ballot ballot.number , ballot.id 
       pvalues: @pvalues

@@ -21,13 +21,13 @@ class Leader.Leader  extends EventEmitter
 
     commanders : []
 
-    constructor:( @network ) ->
+    constructor:( @network , @test = false) ->
         @ballot = new Ballot 1 , @network?.ip
         @active = false
         @proposals = new Map.Map "proposalsLeader"
         @proposalsInSlot = new Map.Map "proposalsInSlot"
 
-        winston?.info "Leader started"
+        winston.info "Leader started" unless @test
         
     
     start:( )->
@@ -35,7 +35,7 @@ class Leader.Leader  extends EventEmitter
 
 
     propose:( slot , operation ) ->
-        winston?.info "Proposing for slot #{slot} operation #{JSON.stringify operation}"
+        winston.info "Proposing for slot #{slot} operation #{JSON.stringify operation}" unless @test
         deferred = Q.defer()
 
         @proposals.getValue(slot).then (value) =>
@@ -55,7 +55,7 @@ class Leader.Leader  extends EventEmitter
         finishAdopted = ( ) =>
             @active = true
             deferred.resolve true
-            winston?.info "Leader #{@network?.ip} is active!!!"
+            winston.info "Leader #{@network?.ip} is active!!!" unless @test
         
         sendToCommander = ( keys ) =>
             @_sendToCommanderAllproposals keys
@@ -96,7 +96,7 @@ class Leader.Leader  extends EventEmitter
             @preempted body.ballot 
         @scout.on 'adopted' , ( body ) =>
             @adopted body.ballot , body.pvalues , body.pvaluesSlot
-            winston?.info "#{body.ballot.id} is the new leader; ballot #{JSON.stringify body.ballot} adopted"    
+            winston.info "#{body.ballot.id} is the new leader; ballot #{JSON.stringify body.ballot} adopted" unless @test
         
         do @scout.start
         
@@ -114,7 +114,7 @@ class Leader.Leader  extends EventEmitter
 
 
     _spawnCommander:( slot , operation ) =>
-        winston?.info "Spawn Commander on #{slot} to #{JSON.stringify operation}"
+        winston.info "Spawn Commander on #{slot} to #{JSON.stringify operation}" unless @test
         deferred = do Q.defer
         
         commander = new Commander slot , operation , @ballot , @network
