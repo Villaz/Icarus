@@ -41,7 +41,8 @@ class Discover.Discover extends EventEmitter
         mdns = require 'mdns'
         @browser = mdns.createBrowser mdns.tcp( @serviceName ) 
 
-        @browser.on 'serviceUp' , ( service ) =>                  
+        @browser.on 'serviceUp' , ( service ) =>   
+            console.log service        
             data = 
                 addresses : service.addresses
                 data : service.txtRecord
@@ -53,7 +54,7 @@ class Discover.Discover extends EventEmitter
             data = 
                 addresses : service.addresses
                 data : service.txtRecord
-                name : service.host.substring(0, service.host.length-1);
+                name : service.name;
                 interface: service.networkInterface
             @emit 'down' , data 
 

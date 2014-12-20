@@ -101,8 +101,8 @@ if cluster.isMaster
         msg =
             type: 'down'
             service: service
-        workerReplica?.send 'down' , service
-        workerAcceptor?.send 'down' , service
+        workerReplica?.send 'down' , msg
+        workerAcceptor?.send 'down' , msg
     discover.start()
     
 else
