@@ -42,7 +42,6 @@ class Discover.Discover extends EventEmitter
         @browser = mdns.createBrowser mdns.tcp( @serviceName ) 
 
         @browser.on 'serviceUp' , ( service ) =>   
-            console.log service        
             data = 
                 addresses : service.addresses
                 data : service.txtRecord
