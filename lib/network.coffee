@@ -62,6 +62,18 @@ class Network.Network extends EventEmitter
             return true
 
 
+    _isLocalIPv6:( address ) ->
+        return address.match("fe80*")
+
+
+    _getLocalInterface:( address ) ->
+        for int , addresses of require('os').networkInterfaces()
+            for addr in addresses
+                if addr['address'] is address then return int
+        return undefined
+
+
+
 
 class Network.AcceptorNetwork extends Network.Network 
 
@@ -87,7 +99,10 @@ class Network.AcceptorNetwork extends Network.Network
         socket.subscribe 'P1A'
         socket.subscribe 'P2A'
         for url in urls
-            if not @_isIPv4 url then url = "tcp://#{url}%en0:#{port}" else url = "tcp://#{url}:#{port}"
+            if not @_isIPv4 url
+                if @_isLocalIPv6 url then url = "tcp://#{url}%#{@_getLocalInterface url}:#{port}" else url = "tcp://[#{url}]:#{port}" 
+            else 
+                url = "tcp://#{url}:#{port}"
             socket.connect url
         
         socket.on 'message' , ( data ) =>
@@ -160,7 +175,10 @@ class Network.ReplicaNetwork extends Network.Network
         socket.subscribe 'P1B'
         socket.subscribe 'P2B'
         for url in urls
-            if not @_isIPv4 url then url = "tcp://#{url}%en0:#{port}" else url = "tcp://#{url}:#{port}"
+            if not @_isIPv4 url
+                if @_isLocalIPv6 url then url = "tcp://#{url}%#{@_getLocalInterface url}:#{port}" else url = "tcp://[#{url}]:#{port}" 
+            else 
+                url = "tcp://#{url}:#{port}"
             socket.connect url 
 
         socket.on 'message' ,( data ) =>
