@@ -50,7 +50,12 @@ class Discover.Discover extends EventEmitter
             @emit 'up' , data
         
         @browser.on 'serviceDown' , ( service ) =>
-            @emit 'down' , service 
+            data = 
+                addresses : service.addresses
+                data : service.txtRecord
+                name : service.host.substring(0, service.host.length-1);
+                interface: service.networkInterface
+            @emit 'down' , data 
 
         @browser.on 'serviceChanged', ( service ) =>
         
