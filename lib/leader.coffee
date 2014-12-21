@@ -79,6 +79,7 @@ class Leader.Leader  extends EventEmitter
             #do @_spawnScout
             if not slot?
                 @emit 'preempted' , { slot:slot, operation:operation, replica:ballot.id}
+            winston.info "Leader is preempted, the actual leader is #{JSON.stringify ballot}" unless @test
 
 
     p1b:( message ) ->
@@ -93,7 +94,7 @@ class Leader.Leader  extends EventEmitter
         @scout = new Scout @ballot , @lastSlotReceived , @network 
         
         @scout.on 'preempted' , ( body ) =>
-            @preempted body.ballot 
+            @preempted body.ballot , undefined , undefined
         @scout.on 'adopted' , ( body ) =>
             @adopted body.ballot , body.pvalues , body.pvaluesSlot
             winston.info "#{body.ballot.id} is the new leader; ballot #{JSON.stringify body.ballot} adopted" unless @test
