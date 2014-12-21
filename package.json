@@ -18,7 +18,8 @@
     "measured":"*",
     "commander":"*",
     "grunt": ">=0.4",
-    "grunt-cli": ">=0.1"
+    "grunt-cli": ">=0.1",
+    "crc":"*"
   },
   "devDependencies": {
     "should": "^3.2.0-beta1",
