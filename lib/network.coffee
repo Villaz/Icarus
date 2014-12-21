@@ -218,6 +218,8 @@ class Network.ReplicaNetwork extends Network.Network
         if Object.keys(@socketSubs).length is 0
             @pendingMessagesToAcceptors.push message
         else
+            message['crc'] = crc.crc32(JSON.stringify message).toString(16);
+            message['timestamp'] = Date.now()
             @socketPub.send "#{message.type} #{JSON.stringify message}"
             
 
