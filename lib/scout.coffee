@@ -57,7 +57,8 @@ class Scout.Scout extends EventEmitter
 
 
   _ifResponseMayorOfAcceptorsSendAdopted:( ) =>
-    if @acceptorsResponsed.length >= Math.round(( @acceptors.length ) / 2)
+    if @acceptors.length is 2 then numberAcceptors = 3 else numberAcceptors = @acceptors.length
+    if @acceptorsResponsed.length >= Math.round( numberAcceptors / 2 )
       @adopted = true
       @acceptorsResponsed = []
 
