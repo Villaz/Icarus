@@ -4,6 +4,7 @@ Network = exports? and exports or @Network = {}
 zmq      = require 'zmq'
 Ballot   = require('./ballot').Ballot
 winston = require 'winston'
+crc     = require 'crc'
 
 {EventEmitter} = require 'events'
 
@@ -40,6 +41,8 @@ class Network.Network extends EventEmitter
         
 
     send:( message ) ->
+        message['crc'] = crc.crc32(JSON.stringify message).toString(16);
+        message['timestamp'] = Date.now()
         @socketPub.send "#{message.type} #{JSON.stringify message}"
         
 
@@ -78,6 +81,7 @@ class Network.Network extends EventEmitter
 class Network.AcceptorNetwork extends Network.Network 
 
     recuperationSubs : undefined
+    receivedMessages : []
 
     constructor:( port = 9998 ) ->
         super( port )
@@ -109,6 +113,11 @@ class Network.AcceptorNetwork extends Network.Network
             type = data.toString().substr 0 , data.toString().indexOf("{")-1
             data = data.toString().substr data.toString().indexOf("{")
             data = JSON.parse data
+
+            if not @receivedMessages[data.from]? then @receivedMessages[data.from] = []
+            for obj in @receivedMessages[data.from] when obj.crc is data.crc and obj.timestamp is data.timestamp then return
+            @receivedMessages[data.from].push {crc:data.crc, timestamp:data.timestamp}
+
             message =
                 "type":type,
                 "body":data.body
@@ -133,6 +142,7 @@ class Network.ReplicaNetwork extends Network.Network
 
     clientSockets : undefined
     pendingMessagesToAcceptors : undefined
+    receivedMessages : []
 
 
     constructor:( port = 8000 , portClient = 8181 )->
@@ -184,11 +194,15 @@ class Network.ReplicaNetwork extends Network.Network
         socket.on 'message' ,( data ) =>
             type = data.toString().substr 0 , data.toString().indexOf("{")-1
             data = data.toString().substr data.toString().indexOf("{")
+            data = JSON.parse data
+            
+            if not @receivedMessages[data.from]? then @receivedMessages[data.from] = []
+            for obj in @receivedMessages[data.from] when obj.crc is data.crc and obj.timestamp is data.timestamp then return
+            @receivedMessages[data.from].push {crc:data.crc, timestamp:data.timestamp}
             
             message =
                 "type":type,
-                "body":JSON.parse data
-
+                "body":data
             @emit 'message' , message
         return socket
 
