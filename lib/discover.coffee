@@ -45,7 +45,7 @@ class Discover.Discover extends EventEmitter
             data = 
                 addresses : service.addresses
                 data : service.txtRecord
-                name : service.host.substring(0, service.host.length-1);
+                name : service.host.substring(0, service.host.length-1)
                 interface: service.networkInterface
             @emit 'up' , data
         
@@ -53,7 +53,7 @@ class Discover.Discover extends EventEmitter
             data = 
                 addresses : service.addresses
                 data : service.txtRecord
-                name : service.name;
+                name : service.name
                 interface: service.networkInterface
             @emit 'down' , data 
 
