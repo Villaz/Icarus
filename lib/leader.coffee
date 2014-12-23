@@ -18,6 +18,7 @@ class Leader.Leader  extends EventEmitter
     scout : undefined
     lastSlotReceived: undefined
     network : undefined
+    actualLeader: undefined
 
     commanders : []
 
@@ -76,6 +77,7 @@ class Leader.Leader  extends EventEmitter
         if ballot.isMayorThanOtherBallot @ballot
             @active = false
             @ballot.number = ballot.number + 1
+            @actualLeader = ballot.id
             #do @_spawnScout
             if not slot?
                 @emit 'preempted' , { slot:slot, operation:operation, replica:ballot.id}

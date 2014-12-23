@@ -52,8 +52,9 @@ class Replica.Replica
         winston.info "Operation received #{JSON.stringify operation}" unless @test
         deferred = Q.defer()
         
-        if not @leader?.active and not @leader?.ballot.id is @network?.ip
-            @network.sendTo @leader.ballot.id operation
+        if not (@leader?.active) and not (@leader?.actualLeader is @network?.ip)
+            console.log JSON.stringify operation
+            @network.sendTo @leader.actualLeader , operation
             deferred.resolve()
             return deferred.promise 
 
