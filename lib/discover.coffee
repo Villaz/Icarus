@@ -45,7 +45,7 @@ class Discover.Discover extends EventEmitter
             data = 
                 addresses : service.addresses
                 data : service.txtRecord
-                name : service.host.substring(0, service.host.length-1)
+                name : service.host.substring(0, service.host.length-1).replace(".local","")
                 interface: service.networkInterface
             @emit 'up' , data
         
