@@ -17,7 +17,7 @@ class Network.Network extends EventEmitter
     replicas : []
     acceptors : []
     
-    constructor:( port = 9999 , @test=false ) ->
+    constructor:( @port = 9999 , @test=false ) ->
         @socketSubs = new Array()
         @socketPub = zmq.socket 'pub'
         @socketPub.identity = "publisher#{process.pid}"
@@ -45,7 +45,7 @@ class Network.Network extends EventEmitter
         message['timestamp'] = Date.now()
         @socketPub.send "#{message.type} #{JSON.stringify message}"
         
-
+ 
     upNode:( service ) ->
         if not socketSubs[service.name]?
             @socketSubs[service.name] = @startClient service.addresses , service.data.ATL
@@ -145,7 +145,7 @@ class Network.ReplicaNetwork extends Network.Network
     receivedMessages : []
 
 
-    constructor:( port = 8000 , portClient = 8181 )->
+    constructor:( @port = 8000 , portClient = 8181 )->
         super( port )
         @clientSockets = {}
         @server = zmq.socket 'router'
@@ -213,6 +213,14 @@ class Network.ReplicaNetwork extends Network.Network
                 @sendMessageToAllAcceptors message
                 @pendingMessagesToAcceptors.splice(@pendingMessagesToAcceptors.indexOf(message),1)
 
+    
+    sendTo:( to , message ) ->
+        message['crc'] = crc.crc32(JSON.stringify message).toString(16);
+        message['timestamp'] = Date.now()
+
+        client = zmq.socket 'dealer'
+        client.connect "tcp://#{to}:#{@port}"
+        client.send JSON.stringify message
 
     sendMessageToAllAcceptors:( message )->
         if Object.keys(@socketSubs).length is 0
