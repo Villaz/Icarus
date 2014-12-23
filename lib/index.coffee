@@ -32,7 +32,8 @@ program.version( "0.0.1" )
 txt_record = 
     roles:['A','R'],
     'ATR':9998,
-    'RTA':8000
+    'RTA':8000,
+    'RTR':8282
 
 generateParams = ( ) ->
     
@@ -46,6 +47,7 @@ generateParams = ( ) ->
         txtRecord.roles.push 'R'
         program.replica = parseInt( program.replica ) || replicaPort
         txtRecord.RTA = program.replica
+        txtRecord.RTR = 8282
         
     if program.acceptor
         txtRecord.roles.push 'A'
