@@ -51,6 +51,11 @@ class Replica.Replica
     propose:( operation ) ->
         winston.info "Operation received #{JSON.stringify operation}" unless @test
         deferred = Q.defer()
+        
+        if not @leader?.active and not @leader?.ballot.id is @network?.ip
+            @network.sendTo @leader.ballot.id operation
+            deferred.resolve()
+            return deferred.promise 
 
         key = {id:operation.id,client:operation.client}
                 
