@@ -56,7 +56,7 @@ class Network.Network extends EventEmitter
 
 
     _getIP:( ) ->
-        return do require('os').hostname
+        return require('os').hostname().replace(".local","")
 
 
     _isIPv4:( address ) ->
@@ -141,20 +141,35 @@ class Network.AcceptorNetwork extends Network.Network
 class Network.ReplicaNetwork extends Network.Network
 
     clientSockets : undefined
+    replicaPubServer: undefined
     pendingMessagesToAcceptors : undefined
+    socketSubsReplica : []
     receivedMessages : []
 
 
-    constructor:( @port = 8000 , portClient = 8181 )->
+    constructor:( @port = 8000 , @portClient = 8181 , @portReplica = 8282 )->
         super( port )
         @clientSockets = {}
         @server = zmq.socket 'router'
         @server.identity = "replicaServer#{process.pid}"
-        @server.bindSync("tcp://*:#{portClient}")
+        @server.bindSync("tcp://*:#{@portClient}")
         @server.on 'message' , @processMessage
         @pendingMessagesToAcceptors = []
+        do @createReplicaPubServer
         setInterval @_checkPending , 2000
         
+
+    createReplicaPubServer:()->
+        @replicaPubServer = zmq.socket 'pub'
+        @replicaPubServer.identity = "publisher#{process.pid}"
+        @replicaPubServer.setsockopt 31 , 0
+        @replicaPubServer.setsockopt 42 , 1 #support IPv6
+        try
+            @replicaPubServer.bindSync("tcp://*:#{@portReplica}")
+        catch e
+            console.log e
+            throw new Error(e.message)
+
 
     close:( ) ->
         super()
@@ -177,7 +192,7 @@ class Network.ReplicaNetwork extends Network.Network
             #delete @clientSockets[client]
     
 
-    _startClient:( urls , port ) ->
+    _startAcceptorClient:( urls , port ) ->
         socket = zmq.socket 'sub'
         socket.setsockopt 31 , 0 #only IPv4
         socket.setsockopt 42 , 1 #support IPv6
@@ -206,6 +221,34 @@ class Network.ReplicaNetwork extends Network.Network
             @emit 'message' , message
         return socket
 
+    
+    _startReplicaClient:( urls , port ) ->
+        socket = zmq.socket 'sub'
+        socket.setsockopt 31 , 0 #only IPv4
+        socket.setsockopt 42 , 1 #support IPv6
+        socket.identity = "subscriberReplica#{@socketSubs.length}#{process.pid}"
+        socket.subscribe 'Decision'
+        for url in urls
+            if not @_isIPv4 url
+                if @_isLocalIPv6 url then url = "tcp://#{url}%#{@_getLocalInterface url}:#{port}" else url = "tcp://[#{url}]:#{port}" 
+            else 
+                url = "tcp://#{url}:#{port}"
+            socket.connect url 
+
+        socket.on 'message' ,( data ) =>
+            type = data.toString().substr 0 , data.toString().indexOf("{")-1
+            data = data.toString().substr data.toString().indexOf("{")
+            data = JSON.parse data
+            
+            if not @receivedMessages[data.from]? then @receivedMessages[data.from] = []
+            for obj in @receivedMessages[data.from] when obj.crc is data.crc and obj.timestamp is data.timestamp then return
+            @receivedMessages[data.from].push {crc:data.crc, timestamp:data.timestamp}
+            
+            message =
+                "type":type,
+                "body":data
+            @emit 'message' , message
+        return socket
 
     _checkPending:( ) =>
         if @pendingMessagesToAcceptors.length > 0 and Object.keys(@socketSubs).length > 0
@@ -215,12 +258,13 @@ class Network.ReplicaNetwork extends Network.Network
 
     
     sendTo:( to , message ) ->
-        message['crc'] = crc.crc32(JSON.stringify message).toString(16);
-        message['timestamp'] = Date.now()
+        msg =
+            body: message
 
         client = zmq.socket 'dealer'
-        client.connect "tcp://#{to}:#{@port}"
-        client.send JSON.stringify message
+        client.connect "tcp://#{to}:#{@portClient}"
+        client.send JSON.stringify msg
+
 
     sendMessageToAllAcceptors:( message )->
         if Object.keys(@socketSubs).length is 0
@@ -233,9 +277,13 @@ class Network.ReplicaNetwork extends Network.Network
 
     upNode:( service ) =>
         if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.name]? ) and ( service.data.ATR? )
-            @socketSubs[service.name] = @_startClient service.addresses , service.data.ATR , service.interface
-            @acceptors.push service.name
+            @socketSubs[service.name] = @_startAcceptorClient service.addresses , service.data.ATR , service.interface
+            @replicas.push service.name
             winston.info "Acceptor #{service.name} added" unless @test
+        if (service.data.roles.indexOf('R') isnt -1) and ( not @socketSubsReplica[service.name]? ) and ( service.data.RTR? )
+            @socketSubsReplica[service.name] = @_startReplicaClient service.addresses , service.data.RTR , service.interface
+            @replicas.push service.name
+            winston.info "Replica #{service.name} added" unless @test
 
 
     downNode:( service ) =>
