@@ -72,8 +72,7 @@ class Acceptor.Acceptor
                 @actualBallot = ballot
                 @mapOfValues.addValue value.slot , value.operation
                 winston.info "P2A Added operation #{JSON.stringify value.operation} to slot #{value.slot}" unless @test
-
-            do @sendP2B
+            @sendP2B value.slot , value.operation
 
         @mapOfValues.getValues(value.slot).then (operation)=>
             operation = operation[0]
@@ -83,10 +82,11 @@ class Acceptor.Acceptor
                 do updateValuesAndSendResponse
 
 
-    sendP2B:( value )->
+    sendP2B:( slot , operation )->
         message =
             type: 'P2B'
             acceptor: @id
             ballot: @actualBallot
-
+            slot: slot
+            operation: operation
         @network?.send message

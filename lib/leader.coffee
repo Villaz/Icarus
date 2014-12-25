@@ -16,11 +16,11 @@ class Leader.Leader  extends EventEmitter
     proposals : undefined
     proposalsInSlot : undefined
     scout : undefined
+    commander : undefined
     lastSlotReceived: undefined
     network : undefined
     actualLeader: undefined
 
-    commanders : []
 
     constructor:( @network , @test = false) ->
         @ballot = new Ballot 1 , @network?.ip
@@ -33,6 +33,7 @@ class Leader.Leader  extends EventEmitter
     
     start:( )->
         do @_spawnScout
+        do @_spawnCommander
 
 
     propose:( slot , operation ) ->
@@ -43,7 +44,7 @@ class Leader.Leader  extends EventEmitter
             if value is undefined
                 @proposalsInSlot.addValue operation , slot
                 @proposals.addValue slot , operation
-                if @active then  Q.when(@_spawnCommander(slot , operation),deferred.resolve) else deferred.resolve(true)
+                if @active then  Q.when(@commander.sendP2A( slot, operation , @ballot ),deferred.resolve) else deferred.resolve(true)
             else
                 deferred.resolve(false)
         
@@ -88,8 +89,7 @@ class Leader.Leader  extends EventEmitter
         if @scout? then @scout.process message
 
     p2b:( message ) ->
-        for commander in @commanders
-            commander.receiveP2B message.acceptor , message.ballot
+        @commander.receiveP2B message.acceptor , message.ballot , message.slot , message.operation
 
     
     _spawnScout:( ) ->
@@ -100,9 +100,16 @@ class Leader.Leader  extends EventEmitter
         @scout.on 'adopted' , ( body ) =>
             @adopted body.ballot , body.pvalues , body.pvaluesSlot
             winston.info "#{body.ballot.id} is the new leader; ballot #{JSON.stringify body.ballot} adopted" unless @test
-        
         do @scout.start
         
+    
+    _spawnCommander:( ) ->
+        @commander = new Commander @network
+        @commander.on 'decision' , ( message ) =>
+            @emit 'decision' , message
+            
+        @commander.on 'preempted' , ( message ) =>
+            @preempted( message.ballot , message.slot , message.operation )
 
 
     _sendToCommanderAllproposals:( keys ) =>
@@ -110,27 +117,10 @@ class Leader.Leader  extends EventEmitter
         for key in keys
             deferred = do Q.defer
             promises.push deferred
-            @proposals.getValue(key).then (operation)=>
+            @proposals.getValue(key).then (operation) =>
+                @commander.sendP2A key , operation , @ballot
                 @_spawnCommander key , operation
                 deferred.resolve()
         Q.all promises
 
-
-    _spawnCommander:( slot , operation ) =>
-        winston.info "Spawn Commander on #{slot} to #{JSON.stringify operation}" unless @test
-        deferred = do Q.defer
-        
-        commander = new Commander slot , operation , @ballot , @network
-        @commanders.push commander
-                
-        commander.on 'decision' , ( message ) =>
-            @commanders.slice @commanders.indexOf( commander ) , 1
-            @emit 'decision' , message
-            do deferred.resolve
-            
-        commander.on 'preempted' , ( message ) =>
-            @commanders.slice @commanders.indexOf( commander ) , 1
-            @preempted( message.ballot , message.slot , message.operation )
-            do referred.resolve
-        return deferred.promise
 
