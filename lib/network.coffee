@@ -278,7 +278,7 @@ class Network.ReplicaNetwork extends Network.Network
     upNode:( service ) =>
         if (service.data.roles.indexOf('A') isnt -1) and ( not @socketSubs[service.name]? ) and ( service.data.ATR? )
             @socketSubs[service.name] = @_startAcceptorClient service.addresses , service.data.ATR , service.interface
-            @replicas.push service.name
+            @acceptors.push service.name
             winston.info "Acceptor #{service.name} added" unless @test
         if (service.data.roles.indexOf('R') isnt -1) and ( not @socketSubsReplica[service.name]? ) and ( service.data.RTR? )
             @socketSubsReplica[service.name] = @_startReplicaClient service.addresses , service.data.RTR , service.interface
