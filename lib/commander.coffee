@@ -7,16 +7,16 @@ Ballot = require('./ballot').Ballot
 {EventEmitter} = require 'events'
 class Commander.Commander extends EventEmitter
 
-    slots : []  
+    slots : {}  
     
     constructor:( @network ) ->
         
 
     sendP2A:( slot , operation , ballot ) ->
         deferred = do Q.defer
-        if slot in @slots then @emit 'preempted' , @slots[slot]['ballot']
+        if "#{slot}" of @slots then @emit 'preempted' , @slots[slot]['ballot']
         else 
-            @slots[slot] =
+            @slots["#{slot}"] =
                 ballot: ballot
                 operation: operation
                 decided: false
@@ -37,7 +37,8 @@ class Commander.Commander extends EventEmitter
 
 
     receiveP2B:( acceptor , ballot , slot , operation ) ->
-        if slot not in @slots
+        slot = "#{slot}"
+        if slot not of @slots
             @slots[slot] =
                 ballot: new Ballot ballot.number , ballot.id
                 operation: operation
@@ -45,7 +46,7 @@ class Commander.Commander extends EventEmitter
                 acceptorsResponse:[]
                 acceptors: @network.acceptors
 
-        return if acceptor not in @slots[slot].acceptors or @slots[slot].decided
+        return if (acceptor not in @slots[slot].acceptors) or @slots[slot].decided
         
         if @slots[slot].ballot.isEqual ballot 
             @slots[slot].acceptorsResponse.push acceptor if acceptor not in @slots[slot].acceptorsResponse
