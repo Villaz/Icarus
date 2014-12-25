@@ -37,6 +37,14 @@ class Commander.Commander extends EventEmitter
 
 
     receiveP2B:( acceptor , ballot , slot , operation ) ->
+        if slot not in @slots
+            @slots[slot] =
+                ballot: ballot
+                operation: operation
+                decided: false
+                acceptorsResponse:[]
+                acceptors: @network.acceptors
+                
         return if acceptor not in @slots[slot].acceptors or @slots[slot].decided
         
         if @slots[slot].ballot.isEqual ballot 
