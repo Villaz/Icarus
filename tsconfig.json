@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "outDir": "./lib/",
+        "sourceMap": true,
+        "declaration":true
+    },
+    "files": [
+        "./src/ballot.ts",
+        "./src/map.ts",
+        "./src/acceptor.ts"
+    ]
+}

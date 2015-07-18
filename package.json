@@ -10,22 +10,28 @@
   "author": "Luis Villazon",
   "license": "GPL",
   "dependencies": {
-    "mdns": "*",
-    "q": "*",
-    "zmq": "*",
-    "winston":"*",
-    "hashmap":"*",
-    "measured":"*",
-    "commander":"*",
+    "commander": "*",
+    "crc": "*",
     "grunt": ">=0.4",
     "grunt-cli": ">=0.1",
-    "crc":"*"
+    "hashmap": "*",
+    "mdns": "*",
+    "measured": "*",
+    "q": "*",
+    "underscore": "^1.8.3",
+    "winston": "*",
+    "zmq": "*"
   },
   "devDependencies": {
-    "should": "^3.2.0-beta1",
-    "mocha": ">=1.18",
+    "blanket": "^1.1.7",
+    "grunt": "^0.4.5",
+    "grunt-mocha-test": "^0.12.7",
+    "grunt-plato": "^1.2.1",
+    "grunt-shell": "^1.1.2",
+    "mocha": "^2.2.5",
     "mocha-bamboo-reporter": "*",
-    "nodeunit" : ">=0.8",
-    "sleep":"*"
+    "nodeunit": ">=0.8",
+    "should": "^3.2.0-beta1",
+    "sleep": "*"
   }
 }
