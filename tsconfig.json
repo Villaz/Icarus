@@ -11,6 +11,9 @@
     "files": [
         "./src/ballot.ts",
         "./src/map.ts",
-        "./src/acceptor.ts"
+        "./src/acceptor.ts",
+        "./src/leader.ts",
+        "./src/commander.ts",
+        "./src/utils.ts"
     ]
 }

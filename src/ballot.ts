@@ -47,7 +47,7 @@ export class Ballot{
   */
   public isMayorOrEqualThanOtherBallot(ballot:Ballot){
       if(this.isEqual(ballot)) return true
-      else  this.isMayorThanOtherBallot(ballot)
+      else  return this.isMayorThanOtherBallot(ballot)
   }
 
 
