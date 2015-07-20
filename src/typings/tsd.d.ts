@@ -3,7 +3,7 @@
 /// <reference path="ballot.d.ts" />
 /// <reference path="utils.d.ts" />
 
-declare interface ParamsLeader{
+interface ParamsLeader{
   slot?:number;
   operation?:any;
   ballot?:Ballot;
@@ -11,7 +11,7 @@ declare interface ParamsLeader{
 
 
 
-declare interface P2AMessage{
+interface P2AMessage{
   from:string;
   type:string;
   body:{

@@ -82,12 +82,12 @@
           documentation_yuidoc:{
             command:'yuidoc -e .ts src',
           },
-          documentation_docco:{
+        /*  documentation_docco:{
             command:'docco src/*.ts',
           },
           documentation_doxx:{
             command:'doxx --source src --target docs',
-          }
+          }*/
         }
 
     });

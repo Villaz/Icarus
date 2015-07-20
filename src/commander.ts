@@ -16,16 +16,20 @@ import Emitter = require('./icarus_utils')
 export class Commander extends Emitter.Emitter{
 
   private slots:Object
+  private operation:Object
   private network:any
 
   constructor( params:{network:any} ){
     super()
     this.network = params.network
+    this.slots = {}
   }
 
   public sendP2A( params:ParamsLeader ){
-      if(this.slots[params.slot] !== undefined)
-        this.emit('preempted', {ballot:this.slots[params.slot].ballot})
+      if(this.slots[params.slot] !== undefined){
+        this.emit('preempted', this.slots[params.slot].ballot)
+        return
+      }
       else{
         this.slots[params.slot] = {
           ballot: params.ballot,
@@ -49,6 +53,10 @@ export class Commander extends Emitter.Emitter{
     }
 
     public receiveP2B( params:{acceptor:any; ballot:Ballot; slot:number , operation:any} ){
+
+        if(!this.existsInArray(this.network.acceptors, params.acceptor))
+          return
+
         if(this.slots[params.slot] === undefined){
           this.slots[params.slot] = {
               ballot: params.ballot,
@@ -57,21 +65,29 @@ export class Commander extends Emitter.Emitter{
               acceptorsResponse:[],
               acceptors: this.network.acceptors}
         }
-        var exists = underscore._.find(this.slots[params.slot].acceptors,(a:any)=>{ return a === params.acceptor })
-        if(exists < 0 || this.slots[params.slot].decided) return
+        var existsAcceptor = this.existsInArray(this.slots[params.slot].acceptors, params.acceptor)
+        if(!existsAcceptor || this.slots[params.slot].decided) return
 
         if(this.slots[params.slot].ballot.isEqual(params.ballot)){
-          var exists = underscore._.find(this.slots[params.slot].acceptorsResponse,(a:any)=>{ return a === params.acceptor })
-          if(exists < 0)
+          if(!this.existsInArray(this.slots[params.slot].acceptorsResponse, params.acceptor))
             this.slots[params.slot].acceptorsResponse.push(params.acceptor)
+        }
+
+        if(params.ballot.isMayorThanOtherBallot(this.slots[params.slot].ballot)){
+            this.emit('preempted', params.ballot)
+            return
         }
 
         if(this.slots[params.slot].acceptorsResponse.length >= Math.round(( this.slots[params.slot].acceptors.length ) / 2)){
             this.slots[params.slot].decided = true
             this.emit('decision', {slot:params.slot , operation: params.operation})
-        }else{
-            this.slots[params.slot].decidided = true
-            this.emit('preempted', {ballot:ballot})
         }
       }
+
+    private existsInArray<T>(array:Array<T>, value:T){
+      for(var val of array){
+        if(val === value) return true
+      }
+      return false
+    }
 }

@@ -1,4 +1,3 @@
-/// <reference path="../src/typings/node/node.d.ts" />
 import events = require('events');
 export declare class Emitter extends events.EventEmitter {
     addListener(event: string, listener: Function): events.EventEmitter;

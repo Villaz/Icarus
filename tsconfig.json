@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
         "outDir": "./lib/",
@@ -14,6 +14,6 @@
         "./src/acceptor.ts",
         "./src/leader.ts",
         "./src/commander.ts",
-        "./src/utils.ts"
+        "./src/icarus_utils.ts"
     ]
 }
