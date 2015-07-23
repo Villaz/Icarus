@@ -3,7 +3,6 @@
 
 var Promise = require("bluebird")
 var ballot = require("./ballot")
-var map = require("./map").Map
 var winston = require('winston')
 var underscore = require("underscore")
 

@@ -6,7 +6,8 @@
         "preserveConstEnums": true,
         "outDir": "./lib/",
         "sourceMap": true,
-        "declaration":true
+        "declaration":true,
+        "target": "es5"
     },
     "files": [
         "./src/ballot.ts",
@@ -14,6 +15,7 @@
         "./src/acceptor.ts",
         "./src/leader.ts",
         "./src/commander.ts",
+        "./src/scout.ts",
         "./src/icarus_utils.ts"
     ]
 }
