@@ -17,6 +17,7 @@
     "hashmap": "*",
     "mdns": "*",
     "measured": "*",
+    "bluebird":"*",
     "q": "*",
     "underscore": "^1.8.3",
     "winston": "*",
