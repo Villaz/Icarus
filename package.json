@@ -4,7 +4,7 @@
   "description": "A Coffescript Paxos implementation",
   "main": "lib/index.js",
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script/register",
+    "test": "mocha",
     "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register"
   },
   "author": "Luis Villazon",
