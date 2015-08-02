@@ -3,3 +3,7 @@ node_js:
   - "0.11"
 before_install:
   - sudo apt-get update
+  - sudo apt-get install libavahi-compat-libdnssd-dev
+  - sudo add-apt-repository ppa:chris-lea/zeromq
+  - sudo apt-get update
+  - sudo apt-get install libzmq3-dbg libzmq3-dev libzmq3
