@@ -15,7 +15,6 @@
     "grunt": ">=0.4",
     "grunt-cli": ">=0.1",
     "hashmap": "*",
-    "mdns": "*",
     "measured": "*",
     "bluebird":"*",
     "q": "*",
