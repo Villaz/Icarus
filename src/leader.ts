@@ -6,6 +6,8 @@ var ballot = require("./ballot")
 var map = require("./map").Map
 var winston = require('winston')
 var commander = require('commander')
+var Network = require('./network').LeaderNetwork
+var Scout = require('./scout')
 
 /**
  * Class Leader
@@ -25,10 +27,10 @@ export class Leader{
 
   test:boolean = false
 
-  constructor(params?:{test:boolean}){
-      this.ballot = new ballot.Ballot(1, this.network.ip)
+  constructor(params?:{test?:boolean, network?:{ip:string, membership:number,publisher:number}}){
+      this.ballot = new ballot.Ballot(1, params.network.ip)
       this.active = false
-      this.proposals = new map.Map()
+      this.proposals = new Map()
       this.proposalsInSlot = {}
 
       if(params !== undefined && params.test !== undefined)
@@ -42,8 +44,17 @@ export class Leader{
       process.on('decision',(message:{slot:number,operation:any})=>{
         process.emit('decision', message)
       })
+      
+      if(!params.test && params.network !== undefined) this.startNetwork(params.network)
   }
 
+  private startNetwork(params:{membership:number,publisher:number}){
+    this.network = new Network({membership:8887,publisher:8788})
+    this.network.on('acceptor',(info)=>{
+      if(this.network.acceptors.length > 0)
+        this.start()
+    })
+  }
 
   public start(){
       this.spawnScout()
@@ -51,7 +62,7 @@ export class Leader{
   }
 
   private spawnScout(){
-    //this.scout = new Scout({ballot:this.ballot, slot:this.lastSlotReceived, network:this.network})
+    this.scout = new Scout({ballot:this.ballot, slot:this.lastSlotReceived, network:this.network})
 
     this.scout.on('preempted', ( body:any ) =>{
         this.preempted({ballot:body.ballot})
@@ -133,3 +144,5 @@ export class Leader{
   }
 
 }
+
+var l = new Leader({test:false,network:{ip:'127.0.0.1',membership:8887,publisher:8886}})

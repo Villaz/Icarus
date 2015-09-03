@@ -3,6 +3,7 @@
 var ballot = require("./ballot")
 var map = require("./map").Map
 var winston = require('winston')
+var Network = require('./network').AcceptorNetwork
 
 export class Acceptor{
 
@@ -14,17 +15,24 @@ export class Acceptor{
   private test:boolean
 
 
-  constructor(params?:{test?:boolean}){
+  constructor(params?:{test?:boolean, network?:{membership:{ip:string,port:number},publisher:number}}){
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new map()
 
-    this.test = params.test
-    if(!params.test){
+    if(params !== undefined && params.test !== undefined) this.test = params.test
+    else this.test = false
+    
+    if(!this.test){
       winston.add(winston.transports.File, { filename: 'acceptor.log' })
-      winston.info("Acceptor %s started in port %s ",this.id, "")
+      if(params !== undefined && params.network !== undefined)
+        winston.info("Acceptor %s started in port %s ",this.id, params.network.publisher)
     }
+    if(params !== undefined && !this.test && params.network !== undefined) this.startNetwork(params.network)
   }
 
+  private startNetwork(params:{membership:{ip:string,port:number},publisher:number}){
+    this.network = new Network()
+  }
 
   public clear(){
     this.actualBallot = new ballot.Ballot()
@@ -82,3 +90,5 @@ export class Acceptor{
     }
 
 }
+
+var a = new Acceptor({network:{membership:{ip:'127.0.0.1',port:8887},publisher:8889}})

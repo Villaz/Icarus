@@ -16,6 +16,7 @@
         "./src/leader.ts",
         "./src/commander.ts",
         "./src/scout.ts",
+        "./src/network.ts",
         "./src/icarus_utils.ts"
     ]
 }
