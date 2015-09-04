@@ -5,9 +5,9 @@ var Promise = require("bluebird")
 var ballot = require("./ballot")
 var map = require("./map").Map
 var winston = require('winston')
-var commander = require('commander')
+var commander = require('./commander')
 var Network = require('./network').LeaderNetwork
-var Scout = require('./scout')
+var Scout = require('./scout').Scout
 
 /**
  * Class Leader
@@ -49,10 +49,10 @@ export class Leader{
   }
 
   private startNetwork(params:{membership:number,publisher:number}){
-    this.network = new Network({membership:8887,publisher:8788})
+    this.network = new Network(params)
     this.network.on('acceptor',(info)=>{
       if(this.network.acceptors.length > 0)
-        this.start()
+        setTimeout(()=>{this.start()},5000)
     })
   }
 

@@ -54,7 +54,6 @@ export class AcceptorNetwork extends Network {
                 }
                 if(!exists)
                 {
-                    console.log(leader)
                     this.leaders.push(leader)
                     this.startLeaderSubscription(leader.ip, leader.ports.acceptors)
                 }
@@ -93,6 +92,7 @@ export class AcceptorNetwork extends Network {
                 this.emit('message', message)
             })
         }
+        console.log("tcp://"+url + ":" + port)
         this.subscriber.connect("tcp://"+url + ":" + port)
     }
 }
@@ -158,6 +158,11 @@ export class LeaderNetwork extends Network {
         }
         this.acceptorSubscriber.connect("tcp://"+info.ip + ":" + info.port)
         
+    }
+    
+    public sendMessageToAllAcceptors(message){
+        console.log("Sending message")
+        this.acceptorPublisher.send(message.type+" "+JSON.stringify(message))
     }
 }
 

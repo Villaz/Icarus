@@ -46,7 +46,7 @@ export class Scout extends Emitter.Emitter{
         lastSlotReceived: this.lastSlotReceived
       }
     }
-    //network.sendMessageToAllAcceptors(message)
+    this.network.sendMessageToAllAcceptors(message)
     return message
   }
 
