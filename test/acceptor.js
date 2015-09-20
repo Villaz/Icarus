@@ -3,11 +3,16 @@ var Acceptor = require('../lib/acceptor.js').Acceptor;
 var Ballot = require('../lib/ballot.js').Ballot;
 
 describe('Acceptor tests', function(){
-
+    
+    var network = {
+        acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
+        send : function () { }
+    }
     var acceptor = undefined
 
     beforeEach(function(){
-        acceptor = new Acceptor({test:true})
+        acceptor = new Acceptor({ test: true })
+        acceptor.network = network
     })
 
   	it('constructor', function(){

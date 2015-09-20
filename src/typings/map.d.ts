@@ -1,3 +1,19 @@
+declare class Discover {
+    private name: string
+    private port: number
+    private roles: any
+    static createDiscover(discoverType: string, params: { name: string, port: number, roles: any }):Discover;
+}
+
+declare class DiscoverBonjour extends Discover {
+    constructor(params: { name: string, port: number, roles: any });
+    start(advert: boolean): void;
+    stop(): void;
+    updateRoles(roles: any): void;
+    private startAdvertisement(): void;
+    private startBrowser(): void;
+}
+
 declare class Map {
     private hashMap;
     private keys;

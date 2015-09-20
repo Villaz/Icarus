@@ -10,17 +10,19 @@
   "author": "Luis Villazon",
   "license": "GPL",
   "dependencies": {
+    "bluebird": "^2.10.0",
     "commander": "*",
     "crc": "*",
     "grunt": ">=0.4",
     "grunt-cli": ">=0.1",
     "hashmap": "*",
-    "measured": "*",
-    "bluebird":"*",
-    "q": "*",
+    "mdns": "^2.2.10",
+    "measured": "^1.0.2",
+    "moment": ">=2.10.6",
+    "q": "^2.0.3",
     "underscore": "^1.8.3",
     "winston": "*",
-    "zmq": "*"
+    "zmq": "^2.13.0"
   },
   "devDependencies": {
     "blanket": "^1.1.7",

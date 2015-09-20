@@ -7,7 +7,7 @@ var Network = require('./network').AcceptorNetwork
 
 export class Acceptor{
 
-  private id:number
+  private id:string
   private actualBallot:Ballot
   private mapOfValues:Map
   private network:any
@@ -15,23 +15,32 @@ export class Acceptor{
   private test:boolean
 
 
-  constructor(params?:{test?:boolean, network?:{membership:{ip:string,port:number},publisher:number}}){
+  constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any }}){
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new map()
 
+    this.id = params.name
     if(params !== undefined && params.test !== undefined) this.test = params.test
     else this.test = false
     
     if(!this.test){
       winston.add(winston.transports.File, { filename: 'acceptor.log' })
       if(params !== undefined && params.network !== undefined)
-        winston.info("Acceptor %s started in port %s ",this.id, params.network.publisher)
+        winston.info("Acceptor %s started in port %s ",this.id, params.network.ports.port)
     }
     if(params !== undefined && !this.test && params.network !== undefined) this.startNetwork(params.network)
   }
 
-  private startNetwork(params:{membership:{ip:string,port:number},publisher:number}){
-    this.network = new Network()
+  private startNetwork(params: { discover: Discover, ports:any }) {
+      this.network = new Network(params.discover, params.ports)
+      var self = this
+      this.network.on('message', (message) => {
+          message = message[0]
+          switch (message.type) {
+              case 'P1A':
+                  self.processP1A(message.body.ballot, message.body.from)
+          }
+      })
   }
 
   public clear(){
@@ -46,19 +55,19 @@ export class Acceptor{
       if(!this.test) winston.info("P1A Updated ballot to %s", JSON.stringify(ballot))
       this.actualBallot = ballot
     }
-    this.sendP1B(this.id, to)
+    this.sendP1B(0, to)
   }
 
 
   public sendP1B( from:number , to:number ){
     var values = this.mapOfValues.getValues({start:from, end:to})
     var message = { type:'P1B',
-                    from: from,
+                    from: this.id,
                     body:{
                       ballot:this.actualBallot,
                       accepted: values
                       }}
-    //network.send(message)
+    this.network.send(message)
   }
 
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
@@ -90,5 +99,3 @@ export class Acceptor{
     }
 
 }
-
-var a = new Acceptor({network:{membership:{ip:'127.0.0.1',port:8887},publisher:8889}})

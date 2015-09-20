@@ -29,11 +29,12 @@ export class Scout extends Emitter.Emitter{
     this.slotsOfValues = []
     this.pvalues = []
     this.acceptorsResponsed = []
-    this.acceptors = []
+    this.acceptors = params.network.acceptors
     this.adopted = false
     this.ballot = params.ballot
     this.lastSlotReceived = params.lastSlotReceived
     this.network = params.network
+    this.network.on('message', (message) => { this.process(message[0]) })
 
   }
 
@@ -51,8 +52,8 @@ export class Scout extends Emitter.Emitter{
   }
 
 
-  process(message:any){
-    if(message.type == 'P1B') var ballot = message.body.ballot
+  private process(message:any){
+    if (message.type == 'P1B') var ballot = message.body.ballot
     if(this.ballot.isEqual(ballot) && !this.adopted){
       this.updateAcceptedValuesAndAcceptorsResponse(message)
       this.ifResponseMayorOfAcceptorsSendAdopted()
@@ -63,13 +64,13 @@ export class Scout extends Emitter.Emitter{
 
   private updateAcceptedValuesAndAcceptorsResponse(message:any){
     this.addAcceptedToPValues(message.body.accepted)
-    if(this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors.indexOf(message.from) >= 0)
+    if(this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors[message.from] !== undefined)
       this.acceptorsResponsed.push(message.from)
   }
 
   private ifResponseMayorOfAcceptorsSendAdopted(){
-    var numberAcceptors = this.acceptors.length
-    if(this.acceptors.length == 2)
+    var numberAcceptors = Object.keys(this.acceptors).length
+    if (numberAcceptors == 2)
       numberAcceptors = 3
 
     if(this.acceptorsResponsed.length >= Math.round( numberAcceptors / 2 )){

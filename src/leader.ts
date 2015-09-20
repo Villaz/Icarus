@@ -14,7 +14,8 @@ var Scout = require('./scout').Scout
  * @class Leader
  */
 export class Leader{
-
+ 
+  id:string
   ballot:Ballot
   active:boolean
   proposals : any
@@ -24,18 +25,19 @@ export class Leader{
   lastSlotReceived:any
   network :any
   actualLeader:any
-
+  started: boolean = false
   test:boolean = false
 
-  constructor(params?:{test?:boolean, network?:{ip:string, membership:number,publisher:number}}){
-      this.ballot = new ballot.Ballot(1, params.network.ip)
+  constructor(params?: { name: string, test?: boolean, network?: { discover: any, ports: any } }) {
+      this.id = params.name
+      this.ballot = new ballot.Ballot({ number: 1, id: params.name })
       this.active = false
       this.proposals = new Map()
       this.proposalsInSlot = {}
 
       if(params !== undefined && params.test !== undefined)
         this.test = params.test
-      if(!params.test) winston.info("Leader started")
+      if(!params.test) winston.info("Leader %s started on port %s", params.name, params.network.ports.port)
 
       process.on('preempted',(message:ParamsLeader)=>{
         this.preempted(message)
@@ -48,12 +50,15 @@ export class Leader{
       if(!params.test && params.network !== undefined) this.startNetwork(params.network)
   }
 
-  private startNetwork(params:{membership:number,publisher:number}){
-    this.network = new Network(params)
-    this.network.on('acceptor',(info)=>{
-      if(this.network.acceptors.length > 0)
-        setTimeout(()=>{this.start()},5000)
-    })
+  private startNetwork(params: { discover: any, ports: any }){
+    this.network = new Network(params.discover, params.ports)
+    var self = this;
+    this.network.on('acceptor', (info) => {
+        if (!self.started) {
+            self.started = true
+            setTimeout(() => { this.start() }, 5000)
+        }
+    });
   }
 
   public start(){
@@ -65,12 +70,13 @@ export class Leader{
     this.scout = new Scout({ballot:this.ballot, slot:this.lastSlotReceived, network:this.network})
 
     this.scout.on('preempted', ( body:any ) =>{
-        this.preempted({ballot:body.ballot})
+        this.preempted({ballot:body[0].ballot})
     })
-    this.scout.on('adopted', ( body:any ) => {
+    this.scout.on('adopted', (body: any) => {
+        body = body[0]
         this.adopted(body)
         if(!this.test)
-        winston.info("%s is the new leader; ballot %s adopted", body.ballot.id, JSON.stringify(body.ballot))
+            winston.info("%s is the new leader; ballot %s adopted", body.ballot.id, JSON.stringify(body.ballot))
     })
     this.scout.start()
 
@@ -102,13 +108,10 @@ export class Leader{
         Promise.all([promise1,promise2]).then(()=>{
             this.proposals = params.pvalues
             this.proposalsInSlot = params.pvaluesSlot
-            var promise:any = this.sendToCommanderAllproposals(this.proposals.getAllKeys())
-            promise.then(()=>{
-                this.active = true
-                if(!this.test)
-                  winston.info("Leader %s is active!!!", this.network.ip)
-            })
-
+            this.sendToCommanderAllproposals(this.proposals.getAllKeys())
+            this.active = true
+            if(!this.test)
+                winston.info("Leader %s is active!!!", this.id)
         })
   }
 
@@ -144,5 +147,3 @@ export class Leader{
   }
 
 }
-
-var l = new Leader({test:false,network:{ip:'127.0.0.1',membership:8887,publisher:8886}})

@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "umd",
         "noImplicitAny": false,
         "removeComments": true,
         "preserveConstEnums": true,
@@ -17,6 +17,8 @@
         "./src/commander.ts",
         "./src/scout.ts",
         "./src/network.ts",
-        "./src/icarus_utils.ts"
+        "./src/icarus_utils.ts",
+        "./src/discover.ts",
+        "./src/name_generator.ts"
     ]
 }

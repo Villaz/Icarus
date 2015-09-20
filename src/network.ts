@@ -1,67 +1,61 @@
 ﻿///<reference path='./typings/tsd.d.ts' />
 
-var ballot = require("./ballot")
+import {Ballot} from "./ballot";
 var map = require("./map").Map
 var winston = require('winston')
 var zmq = require('zmq')
 var Promise = require("bluebird")
+var Discover = require('./discover')
 
 import Emitter = require('./icarus_utils')
 
 export class Network extends Emitter.Emitter{
     replicas: Array<any>
     leaders: Array<any>
-    acceptors:Array<any>
+    acceptors: any
+    discover: any
 
-    constructor() {
+    constructor(discover:any, connection: { port: number }) {
         super()
         this.replicas = []
         this.leaders = []
         this.acceptors = []
+        this.discover = discover
+        this.discover.on('up', (service)=> this.upNode(service))
+        this.discover.on('down', (service)=> this.downNode(service))
     }
     
+    public upNode(service) {
+       
     }
+    
+    public downNode(service) { }    
+}
 
 
 export class AcceptorNetwork extends Network {
 
     subscriber: any
     receivedMessages: Array<any>
+    private leaderPublisher: any
 
-    constructor() {
-        super()
-        this.memembership("127.0.0.1",8887)
+    constructor(discover: any, connection: { port: number }) {
+        super(discover, connection)
+        this.startPublisher(connection.port)
         this.subscriber = undefined
         this.receivedMessages = []
     }
 
-    private memembership(url:string, port:number) {
-        //send message UP to Leader
-        var message = {
-            type: 'UP', self: { ip: '127.0.0.1', rol: 'A', port: 8787 }
-        }
-        var client = zmq.socket('req')
-        client.connect("tcp://"+url+":"+port)
-        client.on('message',(message)=>{
-            let info = JSON.parse(message.toString())
-            for(let leader of info.leaders){
-                let exists = false
-                for(let le of this.leaders){
-                    if(le.ip === leader.ip && le.ports.acceptors === leader.ports.acceptors){
-                        exists = true
-                        break
-                    }
-                }
-                if(!exists)
-                {
-                    this.leaders.push(leader)
-                    this.startLeaderSubscription(leader.ip, leader.ports.acceptors)
-                }
-            }
-        })
-        client.send(JSON.stringify(message))
+    private startPublisher(port: number) {
+        this.leaderPublisher = zmq.socket('pub')
+        this.leaderPublisher.identity = 'leaderPublisher' + process.pid
+        this.leaderPublisher.bindSync('tcp://*:' + port)
     }
 
+    public send(message: any) {
+        this.leaderPublisher.send(message.type + " " + JSON.stringify(message))
+    }
+    
     public startLeaderSubscription(url:string, port:number) {
         if (this.subscriber === undefined){
             this.subscriber = zmq.socket('sub')
@@ -87,14 +81,27 @@ export class AcceptorNetwork extends Network {
                     "type": messageType,
                     "body": data.body
                 }
-
                 message.body.ballot = new Ballot({ number: message.body.ballot.number, id: message.body.ballot.id })
                 this.emit('message', message)
             })
         }
-        console.log("tcp://"+url + ":" + port)
         this.subscriber.connect("tcp://"+url + ":" + port)
     }
+
+    public upNode(node) {
+        node = node[0]
+        if (node.data.LTA !== undefined) {
+            if (this.leaders[node.name] === undefined) {
+                this.leaders[node.name] = []
+            }
+            if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
+                this.leaders[node.name].push(node.addresses[0])
+                this.startLeaderSubscription(node.addresses[0], node.data.LTA)
+            }
+        }
+    }
+
+    public downNode(node) { }
 }
 
 export class LeaderNetwork extends Network {
@@ -103,11 +110,9 @@ export class LeaderNetwork extends Network {
     private acceptorSubscriber: any
     private acceptorPublisher: any
 
-    constructor(ports:{membership:number, publisher:number}) {
-        super()
-        this.leaders.push({ip:'127.0.0.1', ports:{acceptors:ports.publisher, replicas:0}})
-        this.startPublisher(ports.publisher)
-        this.startMembershipServer(ports.membership)
+    constructor(discover: any, connection: { port: number }) {
+        super(discover, connection)
+        this.startPublisher(connection.port)
     }
     
     private startPublisher(port:number){
@@ -116,37 +121,7 @@ export class LeaderNetwork extends Network {
         this.acceptorPublisher.bindSync('tcp://*:'+port)
     }
     
-    private startMembershipServer(port:number){
-        this.membershipServer = zmq.socket('router')
-        this.membershipServer.identity = 'membershipServer' + process.pid
-        this.membershipServer.bindSync("tcp://*:"+port)
-        this.membershipServer.on('message',(envelope, data, dataRequest)=>{
-            let message = JSON.parse(dataRequest.toString())
-            switch(message.type){
-                case 'UP':
-                    this.addNode(message.self)
-                    let messageToSend = {leaders:this.leaders, acceptors:this.acceptors}
-                    this.membershipServer.send([envelope,'',JSON.stringify(messageToSend)])
-            }
-        })
-    }
-    
-    private addNode(nodeInfo:{ip:string, port:number, rol:string}){
-        let exists = false
-        for(let acceptor in this.acceptors){
-            if(acceptor.ip === nodeInfo.ip && acceptor.port === nodeInfo.port){
-                exists = true
-                return
-            }
-        }
-        if(!exists){
-            this.acceptors.push({ip:nodeInfo.ip, ports:{leaders:nodeInfo.port}})
-            this.connectAcceptor(nodeInfo)
-            this.emit('acceptor', nodeInfo)
-        }
-        
-    }
-    
+          
     private connectAcceptor(info:{ip:string, port:number}){
         if(this.acceptorSubscriber === undefined){
             this.acceptorSubscriber = zmq.socket('sub')
@@ -155,6 +130,19 @@ export class LeaderNetwork extends Network {
             this.acceptorSubscriber.identity = "acceptorSubscriber" + process.pid
             this.acceptorSubscriber.subscribe('P1B')
             this.acceptorSubscriber.subscribe('P2B')
+            this.acceptorSubscriber.on('message', (data) => {
+                var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
+                data = data.toString().substr(data.toString().indexOf("{"))
+                data = JSON.parse(data)
+                                
+                var message = {
+                    type: messageType,
+                    from: data.from,
+                    body: data.body
+                }
+                message.body.ballot = new Ballot({ number: message.body.ballot.number, id: message.body.ballot.id })
+                this.emit('message', message)
+            })
         }
         this.acceptorSubscriber.connect("tcp://"+info.ip + ":" + info.port)
         
@@ -164,9 +152,24 @@ export class LeaderNetwork extends Network {
         console.log("Sending message")
         this.acceptorPublisher.send(message.type+" "+JSON.stringify(message))
     }
+
+    public upNode(node) {
+        node = node[0]
+        if (node.data.ATL !== undefined) {
+            if (this.acceptors[node.name] === undefined) {
+                this.acceptors[node.name] = []
+            }
+            if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
+                this.acceptors[node.name].push(node.addresses[0])
+                this.connectAcceptor({ ip: node.addresses[0], port: node.data.ATL })
+                this.emit('acceptor', node.addresses[0])
+            }
+        }
+    }
 }
 
 /*
-var leader = new LeaderNetwork({membership:8887,publisher:8788})
-var acceptor = new AcceptorNetwork()
+var d = Discover.Discover.createDiscover('bonjour', { name: 'pepe', port: 8888, roles: { 'ATL': 8889 , 'LTA':8890 } })
+var acceptor = new AcceptorNetwork(d, { port: 8889 })
+var leader = new LeaderNetwork(d, { port: 8890 })
 */

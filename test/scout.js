@@ -3,12 +3,17 @@ var Ballot = require('../lib/ballot').Ballot
 var Map = require('../lib/map').Map
 var Scout = require('../lib/scout').Scout
 
+var network = {
+    acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
+    sendMessageToAllAcceptors : function () { },
+    on: function () { }
+}
 
 describe('Tests Scout', function(){
-
+ 
   it('Constructor', function( ){
     var ballot = new Ballot({number:1, id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network:network})
 
     should.exists(scout.ballot)
     scout.lastSlotReceived.should.be.exactly(1)
@@ -20,7 +25,7 @@ describe('Tests Scout', function(){
 
   it('start', function( ){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
 
     var message = scout.start()
     message.type.should.be.exactly('P1A')
@@ -34,7 +39,7 @@ describe('Tests Scout', function(){
   it('Process Preempted message', function(done){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
     var ballot2 = new Ballot({number:2 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
     scout.acceptors = [ '127.0.0.1', '127.0.0.2' ]
 
     scout.on('preempted' , function( body ){
@@ -56,7 +61,7 @@ describe('Tests Scout', function(){
 
   it('Process accepted message' , function( ){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
     scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
 
     var message = {
@@ -78,9 +83,8 @@ describe('Tests Scout', function(){
 
   it('Process accepted message and adopted', function(done){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
-    scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
-
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
+   
     scout.on('adopted', function( body ){
       body = body[0]
       body.ballot.id.should.be.exactly(ballot.id)
@@ -92,7 +96,7 @@ describe('Tests Scout', function(){
 
     var message1 ={
       type:'P1B',
-      from:'127.0.0.2',
+      from:'lyr',
       body:{
         ballot:ballot,
         accepted:[
@@ -103,7 +107,7 @@ describe('Tests Scout', function(){
 
     var message2 = {
       type:'P1B',
-      from:'127.0.0.3',
+      from:'anu',
       body:{
         ballot:ballot,
         accepted:[
@@ -117,10 +121,14 @@ describe('Tests Scout', function(){
 
 
   it('Process accepted message and adopted with 2 acceptors', function(done){
-    var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
-    scout.acceptors = [ '127.0.0.1', '127.0.0.2' ]
-
+    var ballot = new Ballot({ number: 1 , id: '127.0.0.1' })
+    var network = {
+        acceptors : { 'lyr': {}, 'anu': {} },
+        sendMessageToAllAcceptors : function () { },
+        on: function () { }
+    }
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
+   
     scout.on('adopted', function( body ){
       body = body[0]
       body.ballot.id.should.be.exactly(ballot.id)
@@ -132,7 +140,7 @@ describe('Tests Scout', function(){
 
     var message1 ={
       type:'P1B',
-      from:'127.0.0.2',
+      from:'lyr',
       body:{
         ballot:ballot,
         accepted:[
@@ -143,7 +151,7 @@ describe('Tests Scout', function(){
 
     var message2 = {
       type:'P1B',
-      from:'127.0.0.1',
+      from:'anu',
       body:{
         ballot:ballot,
         accepted:[
@@ -158,7 +166,7 @@ describe('Tests Scout', function(){
 
   it('if unknown acceptor sends message, should not process it' ,function(done){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
     scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
 
     scout.on('adopted', function( body ){
@@ -198,7 +206,7 @@ describe('Tests Scout', function(){
 
   it('Preempted if adopted is true', function( done ){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
     scout.acceptors = [ '127.0.0.1', '127.0.0.2' ]
     scout.adopted = true
     scout.pvalues = [{slot:1},{slot:2}]
@@ -224,11 +232,11 @@ describe('Tests Scout', function(){
 
   it('updateAcceptedValuesAndAcceptorsResponse',function(){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
-    scout.acceptors = [ '127.0.0.1', '127.0.0.2' ]
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
+    
     var message = {
       type:'P1B',
-      from:'127.0.0.1',
+      from:'anu',
       body:{
         ballot:ballot,
         accepted:[{slot:1},{slot:2}],
@@ -246,7 +254,7 @@ describe('Tests Scout', function(){
     var accepted1 = [{slot:1},{slot:2},{slot:3}]
     var accepted2 = [{slot:2},{slot:3},{slot:4}]
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1})
+    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
     scout.addAcceptedToPValues(accepted1)
     scout.addAcceptedToPValues(accepted2)
 

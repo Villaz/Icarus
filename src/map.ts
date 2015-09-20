@@ -132,8 +132,13 @@ export class Map{
   *@param {Map} x
   */
   public update(x:Map){
-    var values = this.getAllValues()
-    for(var key of x.keys){
+      var values = this.getAllValues()
+    let keys:any
+    if (x.keys === undefined) 
+        keys = Object.keys(x)
+    else
+        keys = x.keys
+    for(var key of keys){
       if((this.keys.indexOf(key) < 0) && ! this.inArray(x.getValue(key), values))
         this.addValue(key, x.getValue(key))
     }
