@@ -22,7 +22,8 @@
     "q": "^2.0.3",
     "underscore": "^1.8.3",
     "winston": "*",
-    "zmq": "^2.13.0"
+    "zmq": "^2.13.0",
+    "shuffle-array": "^0.1.0"
   },
   "devDependencies": {
     "blanket": "^1.1.7",

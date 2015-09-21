@@ -4,6 +4,7 @@ var ballot = require("./ballot")
 var map = require("./map").Map
 var winston = require('winston')
 var Network = require('./network').AcceptorNetwork
+var shuffle = require('shuffle-array')
 
 export class Acceptor{
 
@@ -23,12 +24,15 @@ export class Acceptor{
     if(params !== undefined && params.test !== undefined) this.test = params.test
     else this.test = false
     
-    if(!this.test){
-      winston.add(winston.transports.File, { filename: 'acceptor.log' })
+    if (!this.test) {
+        try {
+            winston.add(winston.transports.File, { filename: 'acceptor' + this.id + '.log' })
+        } catch (e){ }
       if(params !== undefined && params.network !== undefined)
         winston.info("Acceptor %s started in port %s ",this.id, params.network.ports.port)
     }
-    if(params !== undefined && !this.test && params.network !== undefined) this.startNetwork(params.network)
+    if (params !== undefined && !this.test && params.network !== undefined) this.startNetwork(params.network)
+    setTimeout(() => { this.sendRecuperation() },3000)
   }
 
   private startNetwork(params: { discover: Discover, ports:any }) {
@@ -39,6 +43,10 @@ export class Acceptor{
           switch (message.type) {
               case 'P1A':
                   self.processP1A(message.body.ballot, message.body.from)
+                  break
+              case 'REC':
+                  self.recuperation()
+                  break
           }
       })
   }
@@ -96,6 +104,35 @@ export class Acceptor{
           operation: operation
         }
       //@network?.send message
-    }
+  }
+
+  private sendRecuperation(from:number=0,to?:number) {
+      let acceptors = []
+      let acceptorsMap = {}
+      for (var acceptor in this.network.acceptors) {
+          if(acceptor !== this.id) acceptors.push(acceptor)
+      }
+      var interval = (to - from) / acceptors.length
+      var begin = from
+
+      for (var acceptor in shuffle(acceptors)) {
+          acceptorsMap[acceptor] = { begin: begin, to: begin + interval }
+          begin += interval
+      }
+      var message = {
+          type: 'REC',
+          body: {
+              from: 0,
+              acceptor: this.id,
+              port: 7777,
+              intervals: acceptorsMap
+          }
+      }
+      this.network.send(message)
+  }
+
+  private recuperation() {
+  }
 
 }
+

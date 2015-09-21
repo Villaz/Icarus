@@ -36,8 +36,10 @@ export class Network extends Emitter.Emitter{
 export class AcceptorNetwork extends Network {
 
     subscriber: any
+    private acceptorSubscriber: any
     receivedMessages: Array<any>
     private leaderPublisher: any
+    private counter:number=0
 
     constructor(discover: any, connection: { port: number }) {
         super(discover, connection)
@@ -56,47 +58,71 @@ export class AcceptorNetwork extends Network {
         this.leaderPublisher.send(message.type + " " + JSON.stringify(message))
     }
     
-    public startLeaderSubscription(url:string, port:number) {
-        if (this.subscriber === undefined){
-            this.subscriber = zmq.socket('sub')
-            this.subscriber.setsockopt(31, 0) //only IPv4
-            this.subscriber.setsockopt(42, 1) //support IPv6
-            this.subscriber.identity = "subscriber" + process.pid
-            this.subscriber.subscribe('P1A')
-            this.subscriber.subscribe('P2A')
-
-            this.subscriber.on('message', (data) => {
-                console.log(data.toString())
-                var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
-                data = data.toString().substr(data.toString().indexOf("{"))
-                data = JSON.parse(data)
-
-                if (!this.receivedMessages[data.from])
-                    this.receivedMessages[data.from] = []
-                for (var obj of this.receivedMessages[data.from])
-                    if (obj.crc === data.crc && obj.timestamp == data.timestamp) return
-                this.receivedMessages[data.from].push({ crc: data.crc, timestamp: data.timestamp })
-
-                var message = {
-                    "type": messageType,
-                    "body": data.body
-                }
-                message.body.ballot = new Ballot({ number: message.body.ballot.number, id: message.body.ballot.id })
-                this.emit('message', message)
-            })
-        }
-        this.subscriber.connect("tcp://"+url + ":" + port)
+    public startLeaderSubscription(url: string, port: number) {
+        if(this.subscriber === undefined)
+            this.subscriber = this.createSubscription("subscriberLeader", ['P1A', 'P2A'], url, port)
+        this.subscriber.connect("tcp://" + url + ":" + port)
     }
+
+    private startAcceptorSubscription(url: string, port: number) {
+        if (this.acceptorSubscriber === undefined) {
+            this.acceptorSubscriber = this.createSubscription("subscriberAceptor", ['REC'], url, port)
+        }
+        this.acceptorSubscriber.connect("tcp://" + url + ":" + port)
+    }
+
+    private createSubscription(name:string, subscriptions:Array<string>, url:string, port:number) {
+        let subscriber = zmq.socket('sub')
+        subscriber.setsockopt(31, 0) //only IPv4
+        subscriber.setsockopt(42, 1) //support IPv6
+        subscriber.identity = name + process.pid
+        for (var sub of subscriptions) {
+            subscriber.subscribe(sub)
+        }
+            
+        subscriber.on('message', (data) => {
+            var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
+            data = data.toString().substr(data.toString().indexOf("{"))
+            data = JSON.parse(data)
+
+            if (!this.receivedMessages[data.from])
+                this.receivedMessages[data.from] = []
+            //for (var obj of this.receivedMessages[data.from])
+            //    if (obj.crc === data.crc && obj.timestamp == data.timestamp) return
+            //this.receivedMessages[data.from].push({ crc: data.crc, timestamp: data.timestamp })
+
+            var message = {
+                "type": messageType,
+                "body": data.body
+            }
+            if(messageType !== 'REC')
+                message.body.ballot = new Ballot({ number: message.body.ballot.number, id: message.body.ballot.id })
+            console.log(JSON.stringify(message))
+            this.emit('message', message)
+        })
+        return subscriber
+   }
+        
+   
 
     public upNode(node) {
         node = node[0]
-        if (node.data.LTA !== undefined) {
+        if (node.data.L !== undefined) {
             if (this.leaders[node.name] === undefined) {
                 this.leaders[node.name] = []
             }
             if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
                 this.leaders[node.name].push(node.addresses[0])
-                this.startLeaderSubscription(node.addresses[0], node.data.LTA)
+                this.startLeaderSubscription(node.addresses[0], node.data.L)
+            }
+        }
+        if (node.data.A !== undefined) {
+            if (this.acceptors[node.name] === undefined) {
+                this.acceptors[node.name] = []
+            }
+            if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
+                this.acceptors[node.name].push(node.addresses[0])
+                this.startAcceptorSubscription(node.addresses[0], node.data.A)
             }
         }
     }
@@ -155,13 +181,13 @@ export class LeaderNetwork extends Network {
 
     public upNode(node) {
         node = node[0]
-        if (node.data.ATL !== undefined) {
+        if (node.data.A !== undefined) {
             if (this.acceptors[node.name] === undefined) {
                 this.acceptors[node.name] = []
             }
             if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
                 this.acceptors[node.name].push(node.addresses[0])
-                this.connectAcceptor({ ip: node.addresses[0], port: node.data.ATL })
+                this.connectAcceptor({ ip: node.addresses[0], port: node.data.A })
                 this.emit('acceptor', node.addresses[0])
             }
         }
