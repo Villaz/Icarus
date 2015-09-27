@@ -93,5 +93,5 @@
     });
 
     grunt.registerTask('default', ['mochaTest','shell']);
-    grunt.registerTask('jenkins', ['shell:compile_ts','shell:create_conf_dir','mochaTest','plato'])
+    grunt.registerTask('jenkins', ['shell:compile_ts','mochaTest','plato'])
 };
