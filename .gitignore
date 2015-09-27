@@ -1,2 +1,8 @@
 node_modules/*
 stats/node_modules/*
+coverage.html
+out/
+lib/ballot.js
+lib/
+docs/
+
