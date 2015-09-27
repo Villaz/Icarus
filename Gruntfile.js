@@ -44,7 +44,7 @@
           },
           metrics: {
             files: {
-              'dist/metrics': [ 'lib/**/*.js' ]
+              'dist/metrics': [ 'src/**/*.ts' ]
             }
           }
         },
