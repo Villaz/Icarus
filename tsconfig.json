@@ -19,6 +19,7 @@
         "./src/network.ts",
         "./src/icarus_utils.ts",
         "./src/discover.ts",
-        "./src/name_generator.ts"
+        "./src/name_generator.ts",
+        "./src/message.ts"
     ]
 }

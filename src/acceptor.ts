@@ -5,6 +5,7 @@ var map = require("./map").Map
 var winston = require('winston')
 var Network = require('./network').AcceptorNetwork
 var shuffle = require('shuffle-array')
+import * as Message from "./message"
 
 export class Acceptor{
 
@@ -13,6 +14,7 @@ export class Acceptor{
   private mapOfValues:Map
   private network:any
 
+  private messages_sended: number = 0
   private test:boolean
 
 
@@ -119,15 +121,11 @@ export class Acceptor{
           acceptorsMap[acceptor] = { begin: begin, to: begin + interval }
           begin += interval
       }
-      var message = {
-          type: 'REC',
-          body: {
-              from: 0,
-              acceptor: this.id,
-              port: 7777,
-              intervals: acceptorsMap
-          }
+      var body = {
+          port: 7777,
+          intervals: acceptorsMap
       }
+      var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
       this.network.send(message)
   }
 

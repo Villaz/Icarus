@@ -14,6 +14,7 @@ export class Network extends Emitter.Emitter{
     leaders: Array<any>
     acceptors: any
     discover: any
+    name: string
 
     constructor(discover:any, connection: { port: number }) {
         super()
@@ -41,8 +42,8 @@ export class AcceptorNetwork extends Network {
     private leaderPublisher: any
     private counter:number=0
 
-    constructor(discover: any, connection: { port: number }) {
-        super(discover, connection)
+    constructor(name:string, discover: any, connection: { port: number }) {
+        super(name, discover, connection)
         this.startPublisher(connection.port)
         this.subscriber = undefined
         this.receivedMessages = []
@@ -79,24 +80,26 @@ export class AcceptorNetwork extends Network {
         for (var sub of subscriptions) {
             subscriber.subscribe(sub)
         }
-            
+        
+        var self = this;
         subscriber.on('message', (data) => {
             var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
             data = data.toString().substr(data.toString().indexOf("{"))
             data = JSON.parse(data)
-
-            if (!this.receivedMessages[data.from])
-                this.receivedMessages[data.from] = []
-            //for (var obj of this.receivedMessages[data.from])
-            //    if (obj.crc === data.crc && obj.timestamp == data.timestamp) return
-            //this.receivedMessages[data.from].push({ crc: data.crc, timestamp: data.timestamp })
+            if (!self.receivedMessages[data.from])
+                self.receivedMessages[data.from] = []
+            for (var obj of self.receivedMessages[data.from])
+                if (obj.crc === data.crc && obj.timestamp == data.timestamp)
+                    return
+            self.receivedMessages[data.from].push({ crc: data.crc, timestamp: data.timestamp })
 
             var message = {
                 "type": messageType,
-                "body": data.body
+                "operation": data.operation,
+                "from": data.from
             }
             if(messageType !== 'REC')
-                message.body.ballot = new Ballot({ number: message.body.ballot.number, id: message.body.ballot.id })
+                message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
             console.log(JSON.stringify(message))
             this.emit('message', message)
         })
@@ -107,6 +110,7 @@ export class AcceptorNetwork extends Network {
 
     public upNode(node) {
         node = node[0]
+        if (node.name == this.discover.name) return
         if (node.data.L !== undefined) {
             if (this.leaders[node.name] === undefined) {
                 this.leaders[node.name] = []
@@ -136,8 +140,8 @@ export class LeaderNetwork extends Network {
     private acceptorSubscriber: any
     private acceptorPublisher: any
 
-    constructor(discover: any, connection: { port: number }) {
-        super(discover, connection)
+    constructor(name:string, discover: any, connection: { port: number }) {
+        super(name, discover, connection)
         this.startPublisher(connection.port)
     }
     
@@ -181,6 +185,7 @@ export class LeaderNetwork extends Network {
 
     public upNode(node) {
         node = node[0]
+        if(node.name == this.discover.name) return
         if (node.data.A !== undefined) {
             if (this.acceptors[node.name] === undefined) {
                 this.acceptors[node.name] = []
