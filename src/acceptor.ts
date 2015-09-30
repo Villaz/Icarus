@@ -5,7 +5,7 @@ var map = require("./map").Map
 var winston = require('winston')
 var Network = require('./network').AcceptorNetwork
 var shuffle = require('shuffle-array')
-import * as Message from "./message"
+import * as Message from "./message";
 
 export class Acceptor{
 
@@ -44,7 +44,7 @@ export class Acceptor{
           message = message[0]
           switch (message.type) {
               case 'P1A':
-                  self.processP1A(message.body.ballot, message.body.from)
+                  self.processP1A(message.operation.ballot, message.operation.from)
                   break
               case 'REC':
                   self.recuperation()
@@ -70,14 +70,13 @@ export class Acceptor{
 
 
   public sendP1B( from:number , to:number ){
-    var values = this.mapOfValues.getValues({start:from, end:to})
-    var message = { type:'P1B',
-                    from: this.id,
-                    body:{
-                      ballot:this.actualBallot,
-                      accepted: values
-                      }}
-    this.network.send(message)
+    var values = this.mapOfValues.getValues({ start: from, end: to });
+    var operation = {
+        ballot: this.actualBallot,
+        accepted: values
+    };
+    var message = new Message.Message({type:'P1B', from:this.id,command_id:0, operation:operation});
+    this.network.send(message);
   }
 
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){

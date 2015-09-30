@@ -14,16 +14,15 @@ export class Network extends Emitter.Emitter{
     leaders: Array<any>
     acceptors: any
     discover: any
-    name: string
-
+   
     constructor(discover:any, connection: { port: number }) {
-        super()
-        this.replicas = []
-        this.leaders = []
-        this.acceptors = []
-        this.discover = discover
-        this.discover.on('up', (service)=> this.upNode(service))
-        this.discover.on('down', (service)=> this.downNode(service))
+        super();
+        this.replicas = [];
+        this.leaders = [];
+        this.acceptors = [];
+        this.discover = discover;
+        this.discover.on('up', (service)=> this.upNode(service));
+        this.discover.on('down', (service)=> this.downNode(service));
     }
     
     public upNode(service) {
@@ -42,8 +41,8 @@ export class AcceptorNetwork extends Network {
     private leaderPublisher: any
     private counter:number=0
 
-    constructor(name:string, discover: any, connection: { port: number }) {
-        super(name, discover, connection)
+    constructor(discover: any, connection: { port: number }) {
+        super(discover, connection)
         this.startPublisher(connection.port)
         this.subscriber = undefined
         this.receivedMessages = []
@@ -140,8 +139,8 @@ export class LeaderNetwork extends Network {
     private acceptorSubscriber: any
     private acceptorPublisher: any
 
-    constructor(name:string, discover: any, connection: { port: number }) {
-        super(name, discover, connection)
+    constructor(discover: any, connection: { port: number }) {
+        super(discover, connection)
         this.startPublisher(connection.port)
     }
     
@@ -168,9 +167,9 @@ export class LeaderNetwork extends Network {
                 var message = {
                     type: messageType,
                     from: data.from,
-                    body: data.body
+                    operation: data.operation
                 }
-                message.body.ballot = new Ballot({ number: message.body.ballot.number, id: message.body.ballot.id })
+                message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
                 this.emit('message', message)
             })
         }

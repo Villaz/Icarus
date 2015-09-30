@@ -8,6 +8,8 @@ var winston = require('winston')
 var underscore = require("underscore")
 
 import Emitter = require('./icarus_utils')
+import * as Message from "./message";
+
 //import * as Emitter from "./icarus_utils";
 /**
  * Class Scout
@@ -39,21 +41,19 @@ export class Scout extends Emitter.Emitter{
   }
 
   start( ){
-    var message = {
-      type:'P1A',
-      body:{
-        leader: this.ballot.id,
-        ballot: this.ballot,
-        lastSlotReceived: this.lastSlotReceived
-      }
-    }
-    this.network.sendMessageToAllAcceptors(message)
-    return message
+      var operation = {
+          leader: this.ballot.id,
+          ballot: this.ballot,
+          lastSlotReceived: this.lastSlotReceived
+      };
+    var message = new Message.Message({ type: 'P1A', from: this.ballot.id, command_id: 0, operation: operation });
+    this.network.sendMessageToAllAcceptors(message);
+    return message;
   }
 
 
   private process(message:any){
-    if (message.type == 'P1B') var ballot = message.body.ballot
+    if (message.type == 'P1B') var ballot = message.operation.ballot
     if(this.ballot.isEqual(ballot) && !this.adopted){
       this.updateAcceptedValuesAndAcceptorsResponse(message)
       this.ifResponseMayorOfAcceptorsSendAdopted()
@@ -63,7 +63,7 @@ export class Scout extends Emitter.Emitter{
   }
 
   private updateAcceptedValuesAndAcceptorsResponse(message:any){
-    this.addAcceptedToPValues(message.body.accepted)
+    this.addAcceptedToPValues(message.operation.accepted)
     if(this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors[message.from] !== undefined)
       this.acceptorsResponsed.push(message.from)
   }
