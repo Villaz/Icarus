@@ -11,7 +11,7 @@ describe('Acceptor tests', function(){
     var acceptor = undefined
 
     beforeEach(function(){
-        acceptor = new Acceptor({ test: true })
+        acceptor = new Acceptor({name:'test', test: true })
         acceptor.network = network
     })
 

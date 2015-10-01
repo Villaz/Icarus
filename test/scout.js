@@ -29,10 +29,10 @@ describe('Tests Scout', function(){
 
     var message = scout.start()
     message.type.should.be.exactly('P1A')
-    message.body.leader.should.be.exactly('127.0.0.1')
-    message.body.ballot.number.should.be.exactly(ballot.number)
-    message.body.ballot.id.should.be.exactly(ballot.id)
-    message.body.lastSlotReceived.should.be.exactly(1)
+    message.operation.leader.should.be.exactly('127.0.0.1')
+    message.operation.ballot.number.should.be.exactly(ballot.number)
+    message.operation.ballot.id.should.be.exactly(ballot.id)
+    message.operation.lastSlotReceived.should.be.exactly(1)
   });
 
 
@@ -51,7 +51,7 @@ describe('Tests Scout', function(){
 
     var message = {
       type:'P1B',
-      body:{
+      operation:{
         ballot:ballot2
       }
     }
@@ -66,7 +66,7 @@ describe('Tests Scout', function(){
 
     var message = {
       type:'P1B',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[
           {slot:1},{slot:2}
@@ -97,7 +97,7 @@ describe('Tests Scout', function(){
     var message1 ={
       type:'P1B',
       from:'lyr',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[
           {slot:1}
@@ -108,7 +108,7 @@ describe('Tests Scout', function(){
     var message2 = {
       type:'P1B',
       from:'anu',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[
           {slot:2}
@@ -141,7 +141,7 @@ describe('Tests Scout', function(){
     var message1 ={
       type:'P1B',
       from:'lyr',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[
           {slot:1}
@@ -152,7 +152,7 @@ describe('Tests Scout', function(){
     var message2 = {
       type:'P1B',
       from:'anu',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[
           {slot:2}
@@ -180,7 +180,7 @@ describe('Tests Scout', function(){
     var message1 ={
       type:'P1B',
       from:'127.0.0.2',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[
           {slot:1}
@@ -190,7 +190,7 @@ describe('Tests Scout', function(){
     var message2 ={
       type:'P1B',
       from:'127.0.0.4',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[
           {slot:2}
@@ -221,7 +221,7 @@ describe('Tests Scout', function(){
 
     var message ={
       type:'P1B',
-      body:{
+      operation:{
         ballot:ballot
       }
     }
@@ -237,7 +237,7 @@ describe('Tests Scout', function(){
     var message = {
       type:'P1B',
       from:'anu',
-      body:{
+      operation:{
         ballot:ballot,
         accepted:[{slot:1},{slot:2}],
       }
