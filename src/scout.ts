@@ -52,13 +52,14 @@ export class Scout extends Emitter.Emitter{
   }
 
 
-  private process(message:any){
-    if (message.type == 'P1B') var ballot = message.operation.ballot
-    if(this.ballot.isEqual(ballot) && !this.adopted){
-      this.updateAcceptedValuesAndAcceptorsResponse(message)
-      this.ifResponseMayorOfAcceptorsSendAdopted()
+  private process(message: any) {
+    if (this.adopted) return;
+    if (message.type == 'P1B') var ballot = message.operation.ballot;
+    if(this.ballot.isEqual(ballot)){
+        this.updateAcceptedValuesAndAcceptorsResponse(message);
+        this.ifResponseMayorOfAcceptorsSendAdopted();
     }else if(!this.ballot.isEqual(ballot) || this.adopted){
-      this.sendPreemptedMessage(ballot)
+        this.sendPreemptedMessage(ballot);
     }
   }
 
@@ -89,16 +90,19 @@ export class Scout extends Emitter.Emitter{
         pvalues: pvaluesMap,
         pvaluesSlot: pvaluesInSlotMap
       }
-      this.emit('adopted', body)
+      this.emit('adopted', body);
+      this.network.removeAllListeners('message');
     }
   }
 
   private sendPreemptedMessage(ballot:Ballot){
-    var body = {
-      ballot: ballot,
-      pvalues: this.pvalues
-    }
-    this.emit('preempted', body)
+      var body = {
+          ballot: ballot,
+          pvalues: this.pvalues
+      };
+    this.adopted = true;
+    this.emit('preempted', body);
+    this.network.removeAllListeners('message');
   }
 
   private addAcceptedToPValues(accepted:any){

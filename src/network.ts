@@ -194,6 +194,22 @@ export class LeaderNetwork extends Network {
                 this.connectAcceptor({ ip: node.addresses[0], port: node.data.A })
                 this.emit('acceptor', node.addresses[0])
             }
+        } else if (node.data.L !== undefined) {
+            if (this.leaders[node.name] === undefined) {
+                this.leaders[node.name] = []
+            }
+            if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
+                this.leaders[node.name].push(node.addresses[0])
+            }
+        }
+    }
+
+    public downNode(node) {
+        node = node[0];
+        if (node.name === this.discover.name) return
+        if (this.leaders[node.name] !== undefined) {
+            delete this.leaders[node.name];
+            this.emit('leaderDown', node.name);
         }
     }
 }

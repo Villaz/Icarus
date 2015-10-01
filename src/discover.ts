@@ -70,7 +70,7 @@ export class DiscoverBonjour extends Discover {
             let data = {
                 addresses: service.addresses,
                 data: service.txtRecord,
-                name: service.host.substring(0, service.host.length - 1).replace(".local", ""),
+                name: service.name,
                 network: service.networkInterface
             }
             self.emit('down', data)

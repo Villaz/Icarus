@@ -37,11 +37,12 @@ export class Leader{
 
       if(params !== undefined && params.test !== undefined)
         this.test = params.test
-      if(!params.test) winston.info("Leader %s started on port %s", params.name, params.network.ports.port)
-
-      process.on('preempted',(message:ParamsLeader)=>{
-        this.preempted(message)
-      })
+      if (!params.test) {
+          try {
+              winston.add(winston.transports.File, { filename: 'leader' + this.id + '.log' })
+          } catch (e) { }
+          winston.info("Leader %s started on port %s", params.name, params.network.ports.port);
+      }
 
       process.on('decision',(message:{slot:number,operation:any})=>{
         process.emit('decision', message)
@@ -59,6 +60,14 @@ export class Leader{
             setTimeout(() => { this.start() }, 5000)
         }
     });
+    this.network.on('leaderDown', (name) => {
+        if (!this.test) winston.info("Leader %s down!!", name[0]);
+        winston.info("The actual leader was %s", this.actualLeader);
+        if (this.actualLeader === name[0]) {
+            if (!this.test) winston.info("The actual leader %s is down, try to win!", name);
+            this.spawnScout();
+        }
+    });
   }
 
   public start(){
@@ -66,7 +75,11 @@ export class Leader{
       this.spawnCommander()
   }
 
-  private spawnScout(){
+  private spawnScout() {
+      if (this.scout !== undefined) {
+          console.log("Vamos pa alla");
+          delete this.scout;
+      }
     this.scout = new Scout({ballot:this.ballot, slot:this.lastSlotReceived, network:this.network})
 
     this.scout.on('preempted', ( body:any ) =>{
@@ -110,6 +123,7 @@ export class Leader{
             this.proposalsInSlot = params.pvaluesSlot
             this.sendToCommanderAllproposals(this.proposals.getAllKeys())
             this.active = true
+            console.log("Entra");
             if(!this.test)
                 winston.info("Leader %s is active!!!", this.id)
         })
@@ -127,13 +141,12 @@ export class Leader{
   private preempted(params:ParamsLeader){
       if(params.ballot.isMayorThanOtherBallot(this.ballot)){
           this.active = false
-          this.ballot.number = ballot.number + 1
-          this.actualLeader = ballot.id
-          this.spawnScout()
+          this.ballot.number = params.ballot.number + 1
+          this.actualLeader = params.ballot.id
           if(params.slot !== undefined)
               process.emit('preempted', { slot:params.slot, operation:params.operation, replica:params.ballot.id})
-          if(!this.test)
-            winston.info("Leader is preempted, the actual leader is %s", JSON.stringify(ballot))
+          if (!this.test)
+              winston.info("Leader %s is preempted, the actual leader is %s", this.id, this.actualLeader);
       }
   }
 
