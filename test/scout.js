@@ -6,13 +6,14 @@ var Scout = require('../lib/scout').Scout
 var network = {
     acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
     sendMessageToAllAcceptors : function () { },
-    on: function () { }
+    on: function () { },
+    removeAllListeners: function(name){}
 }
 
 describe('Tests Scout', function(){
  
   it('Constructor', function( ){
-    var ballot = new Ballot({number:1, id:'127.0.0.1'})
+    var ballot = new Ballot({number:1, id:'127.0.0.1'});
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network:network})
 
     should.exists(scout.ballot)
@@ -125,7 +126,8 @@ describe('Tests Scout', function(){
     var network = {
         acceptors : { 'lyr': {}, 'anu': {} },
         sendMessageToAllAcceptors : function () { },
-        on: function () { }
+        on: function () { },
+        removeAllListeners: function(name){}
     }
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
    
@@ -212,11 +214,7 @@ describe('Tests Scout', function(){
     scout.pvalues = [{slot:1},{slot:2}]
 
     scout.on('preempted', function( body ){
-      body = body[0]
-      body.ballot.number.should.be.exactly(1)
-      body.ballot.id.should.be.exactly('127.0.0.1')
-      body.pvalues.length.should.be.exactly(2)
-      done()
+      (false).should.be.true()
     });
 
     var message ={
@@ -227,6 +225,7 @@ describe('Tests Scout', function(){
     }
 
     scout.process(message)
+    setTimeout(done,1500)
   });
 
 
