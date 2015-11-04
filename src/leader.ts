@@ -14,7 +14,7 @@ var Scout = require('./scout').Scout
  * @class Leader
  */
 export class Leader{
- 
+
   id:string
   ballot:Ballot
   active:boolean
@@ -40,6 +40,18 @@ export class Leader{
       if (!params.test) {
           try {
               winston.add(winston.transports.File, { filename: 'leader' + this.id + '.log' })
+              winston.add(require('winston-graylog2'), {
+                name: 'Graylog',
+                level: 'debug',
+                silent: false,
+                handleExceptions: false,
+                graylog: {
+                  servers: [{host: '172.28.128.5', port: 12201}],
+                  hostname: this.id,
+                  facility: this.id,
+                  bufferSize: 1400
+                }
+              });
           } catch (e) { }
           winston.info("Leader %s started on port %s", params.name, params.network.ports.port);
       }
@@ -47,7 +59,7 @@ export class Leader{
       process.on('decision',(message:{slot:number,operation:any})=>{
         process.emit('decision', message)
       })
-      
+
       if(!params.test && params.network !== undefined) this.startNetwork(params.network)
   }
 

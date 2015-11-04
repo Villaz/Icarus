@@ -10,8 +10,10 @@
         "target": "es5"
     },
     "files": [
+        "./src/app.ts",
         "./src/ballot.ts",
         "./src/map.ts",
+        "./src/replica.ts",
         "./src/acceptor.ts",
         "./src/leader.ts",
         "./src/commander.ts",
@@ -20,6 +22,7 @@
         "./src/icarus_utils.ts",
         "./src/discover.ts",
         "./src/name_generator.ts",
-        "./src/message.ts"
+        "./src/message.ts",
+        "./src/typings/tsd.d.ts"
     ]
 }

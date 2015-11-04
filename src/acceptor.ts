@@ -25,10 +25,22 @@ export class Acceptor{
     this.id = params.name
     if(params !== undefined && params.test !== undefined) this.test = params.test
     else this.test = false
-    
+
     if (!this.test) {
         try {
             winston.add(winston.transports.File, { filename: 'acceptor' + this.id + '.log' })
+            winston.add(require('winston-graylog2'), {
+              name: 'Graylog',
+              level: 'debug',
+              silent: false,
+              handleExceptions: false,
+              graylog: {
+                servers: [{host: '172.28.128.5', port: 12201}],
+                hostname: this.id,
+                facility: this.id,
+                bufferSize: 1400
+              }
+            });
         } catch (e){ }
       if(params !== undefined && params.network !== undefined)
         winston.info("Acceptor %s started in port %s ",this.id, params.network.ports.port)
@@ -132,4 +144,3 @@ export class Acceptor{
   }
 
 }
-

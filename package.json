@@ -19,11 +19,13 @@
     "mdns": "^2.2.10",
     "measured": "^1.0.2",
     "moment": ">=2.10.6",
+    "nconf": "^0.8.2",
     "q": "^2.0.3",
+    "shuffle-array": "^0.1.0",
     "underscore": "^1.8.3",
     "winston": "*",
-    "zmq": "^2.13.0",
-    "shuffle-array": "^0.1.0"
+    "winston-graylog2": "^0.2.3",
+    "zmq": "^2.13.0"
   },
   "devDependencies": {
     "blanket": "^1.1.7",

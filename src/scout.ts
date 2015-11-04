@@ -65,7 +65,8 @@ export class Scout extends Emitter.Emitter{
 
   private updateAcceptedValuesAndAcceptorsResponse(message:any){
     this.addAcceptedToPValues(message.operation.accepted)
-    if(this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors[message.from] !== undefined)
+    console.log(this.acceptors);
+    if (this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors[message.from] !== undefined)
       this.acceptorsResponsed.push(message.from)
   }
 
@@ -73,8 +74,7 @@ export class Scout extends Emitter.Emitter{
     var numberAcceptors = Object.keys(this.acceptors).length
     if (numberAcceptors == 2)
       numberAcceptors = 3
-
-    if(this.acceptorsResponsed.length >= Math.round( numberAcceptors / 2 )){
+    if (this.acceptorsResponsed.length >= Math.round( numberAcceptors / 2 )){
       this.adopted = true
       this.acceptorsResponsed = []
 

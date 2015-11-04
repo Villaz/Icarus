@@ -14,7 +14,7 @@ export class Network extends Emitter.Emitter{
     leaders: Array<any>
     acceptors: any
     discover: any
-   
+
     constructor(discover:any, connection: { port: number }) {
         super();
         this.replicas = [];
@@ -24,12 +24,12 @@ export class Network extends Emitter.Emitter{
         this.discover.on('up', (service)=> this.upNode(service));
         this.discover.on('down', (service)=> this.downNode(service));
     }
-    
+
     public upNode(service) {
-       
+
     }
-    
-    public downNode(service) { }    
+
+    public downNode(service) { }
 }
 
 
@@ -57,7 +57,7 @@ export class AcceptorNetwork extends Network {
     public send(message: any) {
         this.leaderPublisher.send(message.type + " " + JSON.stringify(message))
     }
-    
+
     public startLeaderSubscription(url: string, port: number) {
         if(this.subscriber === undefined)
             this.subscriber = this.createSubscription("subscriberLeader", ['P1A', 'P2A'], url, port)
@@ -79,7 +79,7 @@ export class AcceptorNetwork extends Network {
         for (var sub of subscriptions) {
             subscriber.subscribe(sub)
         }
-        
+
         var self = this;
         subscriber.on('message', (data) => {
             var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
@@ -104,8 +104,8 @@ export class AcceptorNetwork extends Network {
         })
         return subscriber
    }
-        
-   
+
+
 
     public upNode(node) {
         node = node[0]
@@ -133,6 +133,63 @@ export class AcceptorNetwork extends Network {
     public downNode(node) { }
 }
 
+export class RelicaNetwork extends Network{
+
+  private replicaPublisher:any;
+  private leaderSubscriber:any;
+
+  constructor(discover: any, connection: { port: number }) {
+      super(discover, connection)
+      this.startPublisher(connection.port)
+  }
+
+  private startPublisher(port:number){
+      this.replicaPublisher = zmq.socket('pub')
+      this.replicaPublisher.identity = 'replicaPublisher' + process.pid
+      this.replicaPublisher.bindSync('tcp://*:'+port)
+  }
+
+  private connect(info:{ip:string, port:number}){
+      if(this.leaderSubscriber === undefined){
+        this.leaderSubscriber = zmq.socket('sub')
+        this.leaderSubscriber.setsockopt(31, 0) //only IPv4
+        this.leaderSubscriber.setsockopt(42, 1) //support IPv6
+        this.leaderSubscriber.identity = "leaderSubscriber" + process.pid
+        this.leaderSubscriber.subscribe('ADOPTED')
+        this.leaderSubscriber.on('message', (data) => {
+            var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
+            data = data.toString().substr(data.toString().indexOf("{"))
+            data = JSON.parse(data)
+
+            var message = {
+                type: messageType,
+                from: data.from,
+                operation: data.operation
+            }
+            message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
+            this.emit('message', message)
+        })
+    }
+    this.leaderSubscriber.connect("tcp://"+info.ip + ":" + info.port)
+  }
+
+  public upNode(node) {
+      node = node[0]
+      if (node.name == this.discover.name) return
+      if (node.data.L !== undefined) {
+          if (this.leaders[node.name] === undefined) {
+              this.leaders[node.name] = []
+          }
+          if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
+              this.leaders[node.name].push(node.addresses[0])
+              this.connect({ ip: node.addresses[0], port: node.data.A })
+              this.emit('acceptor', node.addresses[0])
+          }
+      }
+  }
+
+}
+
 export class LeaderNetwork extends Network {
 
     private membershipServer: any
@@ -143,14 +200,14 @@ export class LeaderNetwork extends Network {
         super(discover, connection)
         this.startPublisher(connection.port)
     }
-    
+
     private startPublisher(port:number){
         this.acceptorPublisher = zmq.socket('pub')
         this.acceptorPublisher.identity = 'acceptorPublisher' + process.pid
         this.acceptorPublisher.bindSync('tcp://*:'+port)
     }
-    
-          
+
+
     private connectAcceptor(info:{ip:string, port:number}){
         if(this.acceptorSubscriber === undefined){
             this.acceptorSubscriber = zmq.socket('sub')
@@ -163,7 +220,7 @@ export class LeaderNetwork extends Network {
                 var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
                 data = data.toString().substr(data.toString().indexOf("{"))
                 data = JSON.parse(data)
-                                
+
                 var message = {
                     type: messageType,
                     from: data.from,
@@ -174,9 +231,9 @@ export class LeaderNetwork extends Network {
             })
         }
         this.acceptorSubscriber.connect("tcp://"+info.ip + ":" + info.port)
-        
+
     }
-    
+
     public sendMessageToAllAcceptors(message){
         console.log("Sending message")
         this.acceptorPublisher.send(message.type+" "+JSON.stringify(message))
