@@ -1,6 +1,8 @@
 ﻿///<reference path='./typings/tsd.d.ts' />
 
 import {Ballot} from "./ballot";
+import * as Message from "./message";
+
 var map = require("./map").Map
 var winston = require('winston')
 var zmq = require('zmq')
@@ -15,6 +17,11 @@ export class Network extends Emitter.Emitter{
     acceptors: any
     discover: any
 
+    private publishers = {};
+    private subscriptions = {};
+
+    private messagesReceived = {};
+
     constructor(discover:any, connection: { port: number }) {
         super();
         this.replicas = [];
@@ -24,6 +31,51 @@ export class Network extends Emitter.Emitter{
         this.discover.on('up', (service)=> this.upNode(service));
         this.discover.on('down', (service)=> this.downNode(service));
     }
+
+    protected startPublisher(port: number, name:string) {
+        var publisher = zmq.socket('pub');
+        publisher.identity = `${name}${process.pid}`;
+        publisher.bindSync('tcp://*:' + port);
+        this.publishers[name] = publisher;
+    }
+
+    protected subscription(params: { url: string, port: number, name: string, subscriptions: Array<string>}) {
+        if (this.subscriptions[params.name] === undefined) {
+            this.subscriptions[params.name] = this.createSubscription(params.name, params.subscriptions, params.url, params.port)
+        } 
+        this.subscriptions[params.name].connect(`tcp://${params.url}:${params.port}`);
+    }
+
+    private createSubscription(name: string, subscriptions: Array<string>, url: string, port: number) {
+        let subscriber = zmq.socket('sub')
+        subscriber.setsockopt(31, 0) //only IPv4
+        subscriber.setsockopt(42, 1) //support IPv6
+        subscriber.identity = name + process.pid
+        for (var sub of subscriptions) {
+            subscriber.subscribe(sub)
+        }
+
+        var self = this;
+        subscriber.on('message', (data) => {
+            var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
+            data = data.toString().substr(data.toString().indexOf("{"))
+            data = JSON.parse(data)
+            if (!self.messagesReceived[data.from])
+                self.messagesReceived[data.from] = []
+            for (var obj of self.messagesReceived[data.from])
+                if (obj.crc === data.crc && obj.timestamp == data.timestamp)
+                    return
+            self.messagesReceived[data.from].push({ crc: data.crc, timestamp: data.timestamp })
+            self.processMessage(data, messageType);
+        });
+        return subscriber;
+    }
+
+    public send(name: string, message:Message.Message) {
+        this.publishers[name].send(message.type + " " + JSON.stringify(message));
+    }
+
+    protected processMessage(data: any, type: string) { }
 
     public upNode(service) {
 
@@ -38,71 +90,31 @@ export class AcceptorNetwork extends Network {
     subscriber: any
     private acceptorSubscriber: any
     receivedMessages: Array<any>
-    private leaderPublisher: any
     private counter:number=0
 
     constructor(discover: any, connection: { port: number }) {
         super(discover, connection)
-        this.startPublisher(connection.port)
+        this.startPublisher(connection.port, 'ATLP')
         this.subscriber = undefined
         this.receivedMessages = []
     }
 
-    private startPublisher(port: number) {
-        this.leaderPublisher = zmq.socket('pub')
-        this.leaderPublisher.identity = 'leaderPublisher' + process.pid
-        this.leaderPublisher.bindSync('tcp://*:' + port)
+    public sendToLeaders(message: any) {
+        this.send('ATLP', message);
     }
 
-    public send(message: any) {
-        this.leaderPublisher.send(message.type + " " + JSON.stringify(message))
+    public sendToAcceptors(message: any) {
     }
 
-    public startLeaderSubscription(url: string, port: number) {
-        if(this.subscriber === undefined)
-            this.subscriber = this.createSubscription("subscriberLeader", ['P1A', 'P2A'], url, port)
-        this.subscriber.connect("tcp://" + url + ":" + port)
-    }
-
-    private startAcceptorSubscription(url: string, port: number) {
-        if (this.acceptorSubscriber === undefined) {
-            this.acceptorSubscriber = this.createSubscription("subscriberAceptor", ['REC'], url, port)
-        }
-        this.acceptorSubscriber.connect("tcp://" + url + ":" + port)
-    }
-
-    private createSubscription(name:string, subscriptions:Array<string>, url:string, port:number) {
-        let subscriber = zmq.socket('sub')
-        subscriber.setsockopt(31, 0) //only IPv4
-        subscriber.setsockopt(42, 1) //support IPv6
-        subscriber.identity = name + process.pid
-        for (var sub of subscriptions) {
-            subscriber.subscribe(sub)
-        }
-
-        var self = this;
-        subscriber.on('message', (data) => {
-            var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
-            data = data.toString().substr(data.toString().indexOf("{"))
-            data = JSON.parse(data)
-            if (!self.receivedMessages[data.from])
-                self.receivedMessages[data.from] = []
-            for (var obj of self.receivedMessages[data.from])
-                if (obj.crc === data.crc && obj.timestamp == data.timestamp)
-                    return
-            self.receivedMessages[data.from].push({ crc: data.crc, timestamp: data.timestamp })
-
-            var message = {
-                "type": messageType,
-                "operation": data.operation,
-                "from": data.from
-            }
-            if(messageType !== 'REC')
-                message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
-            console.log(JSON.stringify(message))
-            this.emit('message', message)
-        })
-        return subscriber
+    protected processMessage(data:any, type:string) {
+       var message = {
+            "type": type,
+            "operation": data.operation,
+            "from": data.from
+       }
+       if(type !== 'REC')
+            message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
+       this.emit('message', message)
    }
 
 
@@ -116,7 +128,7 @@ export class AcceptorNetwork extends Network {
             }
             if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
                 this.leaders[node.name].push(node.addresses[0])
-                this.startLeaderSubscription(node.addresses[0], node.data.L)
+                this.subscription({ name: "subscriberLeader", subscriptions: ['P1A', 'P2A'], url: node.addresses[0], port: node.data.L });
             }
         }
         if (node.data.A !== undefined) {
@@ -125,7 +137,7 @@ export class AcceptorNetwork extends Network {
             }
             if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
                 this.acceptors[node.name].push(node.addresses[0])
-                this.startAcceptorSubscription(node.addresses[0], node.data.A)
+                this.subscription({ name: "subscriberAceptor", subscriptions: ['REC'], url: node.addresses[0], port: node.data.A });
             }
         }
     }
@@ -135,43 +147,23 @@ export class AcceptorNetwork extends Network {
 
 export class RelicaNetwork extends Network{
 
-  private replicaPublisher:any;
-  private leaderSubscriber:any;
+        private leaderSubscriber:any;
 
-  constructor(discover: any, connection: { port: number }) {
-      super(discover, connection)
-      this.startPublisher(connection.port)
-  }
+        constructor(discover: any, connection: { port: number }) {
+            super(discover, connection)
+            this.startPublisher(connection.port, 'RTLP');
+        }
 
-  private startPublisher(port:number){
-      this.replicaPublisher = zmq.socket('pub')
-      this.replicaPublisher.identity = 'replicaPublisher' + process.pid
-      this.replicaPublisher.bindSync('tcp://*:'+port)
-  }
-
-  private connect(info:{ip:string, port:number}){
-      if(this.leaderSubscriber === undefined){
-        this.leaderSubscriber = zmq.socket('sub')
-        this.leaderSubscriber.setsockopt(31, 0) //only IPv4
-        this.leaderSubscriber.setsockopt(42, 1) //support IPv6
-        this.leaderSubscriber.identity = "leaderSubscriber" + process.pid
-        this.leaderSubscriber.subscribe('ADOPTED')
-        this.leaderSubscriber.on('message', (data) => {
-            var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
-            data = data.toString().substr(data.toString().indexOf("{"))
-            data = JSON.parse(data)
-
+        protected processMessage(data: any, type: string) {
             var message = {
-                type: messageType,
+                type: type,
                 from: data.from,
                 operation: data.operation
             }
             message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
             this.emit('message', message)
-        })
-    }
-    this.leaderSubscriber.connect("tcp://"+info.ip + ":" + info.port)
-  }
+        }
+  
 
   public upNode(node) {
       node = node[0]
@@ -182,7 +174,7 @@ export class RelicaNetwork extends Network{
           }
           if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
               this.leaders[node.name].push(node.addresses[0])
-              this.connect({ ip: node.addresses[0], port: node.data.A })
+              this.subscription({ name: "leaderSubscriber", subscriptions: ['ADOPTED'], url: node.addresses[0], port: node.data.A });
               this.emit('acceptor', node.addresses[0])
           }
       }
@@ -194,51 +186,28 @@ export class LeaderNetwork extends Network {
 
     private membershipServer: any
     private acceptorSubscriber: any
-    private acceptorPublisher: any
-
+    
     constructor(discover: any, connection: { port: number }) {
         super(discover, connection)
-        this.startPublisher(connection.port)
+        this.startPublisher(connection.port, "LTAP");
     }
 
-    private startPublisher(port:number){
-        this.acceptorPublisher = zmq.socket('pub')
-        this.acceptorPublisher.identity = 'acceptorPublisher' + process.pid
-        this.acceptorPublisher.bindSync('tcp://*:'+port)
+    public sendToAcceptors(message:Message.Message) {
+        this.send("LTAP", message);
     }
 
+    public sendToReplicas(message: any) { }
 
-    private connectAcceptor(info:{ip:string, port:number}){
-        if(this.acceptorSubscriber === undefined){
-            this.acceptorSubscriber = zmq.socket('sub')
-            this.acceptorSubscriber.setsockopt(31, 0) //only IPv4
-            this.acceptorSubscriber.setsockopt(42, 1) //support IPv6
-            this.acceptorSubscriber.identity = "acceptorSubscriber" + process.pid
-            this.acceptorSubscriber.subscribe('P1B')
-            this.acceptorSubscriber.subscribe('P2B')
-            this.acceptorSubscriber.on('message', (data) => {
-                var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
-                data = data.toString().substr(data.toString().indexOf("{"))
-                data = JSON.parse(data)
-
-                var message = {
-                    type: messageType,
-                    from: data.from,
-                    operation: data.operation
-                }
-                message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
-                this.emit('message', message)
-            })
+    protected processMessage(data: any, type: string) {
+        var message = {
+            type: type,
+            from: data.from,
+            operation: data.operation
         }
-        this.acceptorSubscriber.connect("tcp://"+info.ip + ":" + info.port)
-
+        message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
+        this.emit('message', message)
     }
-
-    public sendMessageToAllAcceptors(message){
-        console.log("Sending message")
-        this.acceptorPublisher.send(message.type+" "+JSON.stringify(message))
-    }
-
+    
     public upNode(node) {
         node = node[0]
         if(node.name == this.discover.name) return
@@ -248,7 +217,7 @@ export class LeaderNetwork extends Network {
             }
             if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
                 this.acceptors[node.name].push(node.addresses[0])
-                this.connectAcceptor({ ip: node.addresses[0], port: node.data.A })
+                this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B','P2B'], url: node.addresses[0], port: node.data.A });
                 this.emit('acceptor', node.addresses[0])
             }
         } else if (node.data.L !== undefined) {

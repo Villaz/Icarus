@@ -25,13 +25,13 @@ if(cluster.isMaster){
 }else{
   var name = names.generateName().substr(0, 15)
   if(process.env.rol === 'acceptor'){
-    var d = Discover.Discover.createDiscover('bonjour', { name: name, port: 8888, roles: {'A':nconf.get("acceptor")['port']}});
+      var d = Discover.Discover.createDiscover('bonjour', { name: name, port: nconf.get("acceptor")['discover'], roles: {'A':nconf.get("acceptor")['port']}});
     var rol:any = new Acceptor({ name: name,
                              network: { discover: d,
                                         ports: { port: nconf.get("acceptor")['port'] } } });
   }
   else if(process.env.rol === 'leader'){
-    var d = Discover.Discover.createDiscover('bonjour', { name: name, port: 8889, roles: {'L':nconf.get("leader")['port']}});
+      var d = Discover.Discover.createDiscover('bonjour', { name: name, port: nconf.get("leader")['discover'], roles: {'L':nconf.get("leader")['port']}});
     var rol:any = new Leader({ name: name,
                              network: { discover: d,
                                         ports: { port: nconf.get("leader")['port'] } } });

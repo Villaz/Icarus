@@ -46,9 +46,9 @@ export class Leader{
                 silent: false,
                 handleExceptions: false,
                 graylog: {
-                  servers: [{host: '172.28.128.5', port: 12201}],
+                  servers: [{host: '127.0.0.1', port: 12201}],
                   hostname: this.id,
-                  facility: this.id,
+                  facility: "leader",
                   bufferSize: 1400
                 }
               });

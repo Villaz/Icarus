@@ -35,9 +35,9 @@ export class Acceptor{
               silent: false,
               handleExceptions: false,
               graylog: {
-                servers: [{host: '172.28.128.5', port: 12201}],
+                servers: [{host: '127.0.0.1', port: 12201}],
                 hostname: this.id,
-                facility: this.id,
+                facility:"acceptor",
                 bufferSize: 1400
               }
             });
@@ -88,7 +88,7 @@ export class Acceptor{
         accepted: values
     };
     var message = new Message.Message({type:'P1B', from:this.id,command_id:0, operation:operation});
-    this.network.send(message);
+    this.network.sendToLeaders(message);
   }
 
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
@@ -109,14 +109,17 @@ export class Acceptor{
   }
 
   public sendP2B(slot:number , operation:any ){
-      var message = {
+      var message = new Message.Message({
           type: 'P2B',
-          acceptor: this.id,
-          ballot: this.actualBallot,
-          slot: slot,
-          operation: operation
-        }
-      //@network?.send message
+          from: this.id,
+          command_id: 0,
+          operation: {
+              ballot: this.actualBallot,
+              slot: slot,
+              operation: operation
+          }
+      });
+      this.network.sendToLeaders(message);
   }
 
   private sendRecuperation(from:number=0,to?:number) {
@@ -137,7 +140,7 @@ export class Acceptor{
           intervals: acceptorsMap
       }
       var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
-      this.network.send(message)
+      this.network.sendToAcceptors(message)
   }
 
   private recuperation() {

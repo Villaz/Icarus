@@ -47,7 +47,7 @@ export class Scout extends Emitter.Emitter{
           lastSlotReceived: this.lastSlotReceived
       };
     var message = new Message.Message({ type: 'P1A', from: this.ballot.id, command_id: 0, operation: operation });
-    this.network.sendMessageToAllAcceptors(message);
+    this.network.sendToAcceptors(message);
     return message;
   }
 
