@@ -145,7 +145,7 @@ export class AcceptorNetwork extends Network {
     public downNode(node) { }
 }
 
-export class RelicaNetwork extends Network{
+export class ReplicaNetwork extends Network{
 
         private leaderSubscriber:any;
 

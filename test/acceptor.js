@@ -6,7 +6,8 @@ describe('Acceptor tests', function(){
     
     var network = {
         acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
-        send : function () { }
+        sendToLeaders : function () { },
+        sendToAcceptors : function () { }
     }
     var acceptor = undefined
 

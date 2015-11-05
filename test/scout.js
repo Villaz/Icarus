@@ -5,35 +5,35 @@ var Scout = require('../lib/scout').Scout
 
 var network = {
     acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
-    sendMessageToAllAcceptors : function () { },
+    sendToAcceptors : function () { },
     on: function () { },
-    removeAllListeners: function(name){}
-}
+    removeAllListeners: function (name) { }
+};
 
 describe('Tests Scout', function(){
  
   it('Constructor', function( ){
-    var ballot = new Ballot({number:1, id:'127.0.0.1'});
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network:network})
+        var ballot = new Ballot({ number: 1, id: '127.0.0.1' });
+        var scout = new Scout({ ballot: ballot, lastSlotReceived: 1, network: network });
 
-    should.exists(scout.ballot)
-    scout.lastSlotReceived.should.be.exactly(1)
-    scout.ballot.number.should.be.exactly(1)
-    scout.ballot.id.should.be.exactly('127.0.0.1')
-    scout.adopted.should.be.exactly(false)
+        should.exists(scout.ballot);
+        scout.lastSlotReceived.should.be.exactly(1);
+        scout.ballot.number.should.be.exactly(1);
+        scout.ballot.id.should.be.exactly('127.0.0.1');
+        scout.adopted.should.be.exactly(false);
   });
 
 
   it('start', function( ){
-    var ballot = new Ballot({number:1 , id:'127.0.0.1'})
-    var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
+        var ballot = new Ballot({ number: 1 , id: '127.0.0.1' });
+        var scout = new Scout({ ballot: ballot, lastSlotReceived: 1, network: network });
 
-    var message = scout.start()
-    message.type.should.be.exactly('P1A')
-    message.operation.leader.should.be.exactly('127.0.0.1')
-    message.operation.ballot.number.should.be.exactly(ballot.number)
-    message.operation.ballot.id.should.be.exactly(ballot.id)
-    message.operation.lastSlotReceived.should.be.exactly(1)
+        var message = scout.start();
+        message.type.should.be.exactly('P1A');
+        message.operation.leader.should.be.exactly('127.0.0.1');
+        message.operation.ballot.number.should.be.exactly(ballot.number);
+        message.operation.ballot.id.should.be.exactly(ballot.id);
+        message.operation.lastSlotReceived.should.be.exactly(1);
   });
 
 
