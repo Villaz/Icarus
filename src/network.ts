@@ -77,11 +77,49 @@ export class Network extends Emitter.Emitter{
 
     protected processMessage(data: any, type: string) { }
 
-    public upNode(service) {
+    public upNode(node) {
+        node = node[0]
+        if (node.name == this.discover.name) return
+        if (node.data.L !== undefined) {
+            
+            if (this.leaders[node.name] === undefined) {
+                this.leaders[node.name] = []
+            }
+            if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
+                this.leaders[node.name].push(node.addresses[0])
+                this._upNode('L', node);
+            }
+        }
+        if (node.data.A !== undefined) {
+            if (this.acceptors[node.name] === undefined) {
+                this.acceptors[node.name] = []
+            }
+            if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
+                this.acceptors[node.name].push(node.addresses[0])
+                this._upNode('A', node);
+            }
+        }
+        
+    }
+
+    public downNode(node) {
+        node = node[0];
+        if (node.name === this.discover.name) return
+        if (this.leaders[node.name] !== undefined) {
+            delete this.leaders[node.name];
+            this.emit('leaderDown', node.name);
+        } else if (this.acceptors[node.name] !== undefined) {
+            delete this.acceptors[node.name];
+            this.emit('acceptorDown', node.name);
+        } else if (this.replicas[node.name] !== undefined) {
+            delete this.replicas[node.name];
+            this.emit('replicaDown', node.name);
+        }
+
 
     }
 
-    public downNode(service) { }
+    protected _upNode(type, node) { }
 }
 
 
@@ -117,70 +155,65 @@ export class AcceptorNetwork extends Network {
        this.emit('message', message)
    }
 
-
-
-    public upNode(node) {
-        node = node[0]
-        if (node.name == this.discover.name) return
-        if (node.data.L !== undefined) {
-            if (this.leaders[node.name] === undefined) {
-                this.leaders[node.name] = []
-            }
-            if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
-                this.leaders[node.name].push(node.addresses[0])
+    protected _upNode(type: string, node: any) {
+        switch (type) {
+            case 'L':
                 this.subscription({ name: "subscriberLeader", subscriptions: ['P1A', 'P2A'], url: node.addresses[0], port: node.data.L });
-            }
-        }
-        if (node.data.A !== undefined) {
-            if (this.acceptors[node.name] === undefined) {
-                this.acceptors[node.name] = []
-            }
-            if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
-                this.acceptors[node.name].push(node.addresses[0])
+                break;
+            case 'A':
                 this.subscription({ name: "subscriberAceptor", subscriptions: ['REC'], url: node.addresses[0], port: node.data.A });
-            }
+                break;
         }
     }
 
     public downNode(node) { }
 }
 
-export class ReplicaNetwork extends Network{
+export class ReplicaNetwork extends Network {
 
-        private leaderSubscriber:any;
+    private clientRouter:any;
+    private clients = {};
 
-        constructor(discover: any, connection: { port: number }) {
-            super(discover, connection)
-            this.startPublisher(connection.port, 'RTLP');
+    constructor(discover: any, connection: { port: number, client:number }) {
+        super(discover, connection)
+        this.startPublisher(connection.port, 'RTLP');
+    }
+
+    private startRouter(port:number) {
+        this.clientRouter = zmq.socket('router');
+        this.clientRouter.bind(`tcp://*:${port}`);
+        this.clientRouter.on('message', function (envelope, b, message) {
+            message = JSON.parse(message);
+            this.clients[`${message.client}-${message.operation_id}`] = envelope
+            this.emit('propose', message);
+        });
+    }
+
+    public responde(message) {
+        let envelope = this.clients[`${message.client}-${message.operation_id}`];
+        this.clientRouter.send([envelope, "", JSON.stringify(message)]);
+    }
+
+    protected processMessage(data: any, type: string) {
+        var message = {
+            type: type,
+            from: data.from,
+            operation: data.operation
         }
+        message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
+        this.emit('message', message)
+    }
 
-        protected processMessage(data: any, type: string) {
-            var message = {
-                type: type,
-                from: data.from,
-                operation: data.operation
-            }
-            message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
-            this.emit('message', message)
+
+    protected _upNode(type:string, node:any) {
+        switch (type) {
+            case 'L':
+                this.subscription({ name: "subscriberLeader", subscriptions: ['ADOPTED'], url: node.addresses[0], port: node.data.L });
+                break;
         }
-  
-
-  public upNode(node) {
-      node = node[0]
-      if (node.name == this.discover.name) return
-      if (node.data.L !== undefined) {
-          if (this.leaders[node.name] === undefined) {
-              this.leaders[node.name] = []
-          }
-          if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
-              this.leaders[node.name].push(node.addresses[0])
-              this.subscription({ name: "leaderSubscriber", subscriptions: ['ADOPTED'], url: node.addresses[0], port: node.data.A });
-              this.emit('acceptor', node.addresses[0])
-          }
-      }
-  }
-
+    }
 }
+
 
 export class LeaderNetwork extends Network {
 
@@ -208,34 +241,12 @@ export class LeaderNetwork extends Network {
         this.emit('message', message)
     }
     
-    public upNode(node) {
-        node = node[0]
-        if(node.name == this.discover.name) return
-        if (node.data.A !== undefined) {
-            if (this.acceptors[node.name] === undefined) {
-                this.acceptors[node.name] = []
-            }
-            if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
-                this.acceptors[node.name].push(node.addresses[0])
-                this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B','P2B'], url: node.addresses[0], port: node.data.A });
-                this.emit('acceptor', node.addresses[0])
-            }
-        } else if (node.data.L !== undefined) {
-            if (this.leaders[node.name] === undefined) {
-                this.leaders[node.name] = []
-            }
-            if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
-                this.leaders[node.name].push(node.addresses[0])
-            }
-        }
-    }
-
-    public downNode(node) {
-        node = node[0];
-        if (node.name === this.discover.name) return
-        if (this.leaders[node.name] !== undefined) {
-            delete this.leaders[node.name];
-            this.emit('leaderDown', node.name);
+    protected _upNode(type: string, node: any) {
+        switch (type) {
+            case 'A':
+                this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B', 'P2B'], url: node.addresses[0], port: node.data.A });
+                this.emit('acceptor', node.addresses[0]);
+                break;
         }
     }
 }
