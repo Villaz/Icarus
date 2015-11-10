@@ -4,6 +4,7 @@
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-shell');
     grunt.loadNpmTasks('grunt-plato');
+    grunt.loadNpmTasks('grunt-coveralls');
 
     grunt.initConfig({
         clean: {
@@ -82,16 +83,27 @@
           documentation_yuidoc:{
             command:'yuidoc -e .ts src',
           },
+        },
+          coveralls: {
+              // Options relevant to all targets
+              options: {
+                force: false
+              },
+              icarus: {
+                // LCOV coverage file (can be string, glob or array)
+                src: './coverage/lcov.info',
+              },
+            },
         /*  documentation_docco:{
             command:'docco src/*.ts',
           },
           documentation_doxx:{
             command:'doxx --source src --target docs',
           }*/
-        }
+
 
     });
 
-    grunt.registerTask('default', ['mochaTest','shell']);
-    grunt.registerTask('jenkins', ['shell:compile_ts','mochaTest','plato'])
+    grunt.registerTask('default', ['mochaTest','shell','plato']);
+    grunt.registerTask('jenkins', ['shell:compile_ts','mochaTest','shell:install_istanbul','shell:coverage','coveralls'])
 };
