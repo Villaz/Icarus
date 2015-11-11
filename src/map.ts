@@ -1,4 +1,4 @@
-///<reference path='./typings/node/node.d.ts' />
+///<reference path='./typings/tsd.d.ts' />
 
 var HashMap = require('hashmap').HashMap
 var underscore = require('underscore')
@@ -7,50 +7,43 @@ var underscore = require('underscore')
  * Auxiliar class to store all the operations with an assigned slot.
  * @class Map
  */
-export class Map{
+export class InternalMap<K,T>{
 
-  private hashMap:any
-  private keys:Array<number>
+  private hashMap:Map<any,any>;
+  //private keys:Array<number>
 
   /**
   * @class Map
   * @constructor
   */
   constructor(){
-      this.hashMap = new HashMap( )
-      this.keys = new Array()
+      this.hashMap = new Map( )
+      //this.keys = new Array()
   }
 
   /**
   * Returns the number of keys stored in the Map
   *@method count
   */
-  public count():number{
-    return this.hashMap.count()
+  get size():number{
+    return this.hashMap.size;
   }
-
 
   /**
   * Returns a list with all keys
   *@method getAllKeys
   */
-  public getAllKeys( ):Array<number>{
-    return this.keys
+  get keys():Iterator<K>{
+    return this.hashMap.keys();
   }
-
 
   /**
   * Returns all values stored in the Map
   *@method getAllValues
   */
-  public getAllValues<K>( ):Array<K>{
-    var values:Array<K> = []
-    for(var key of this.keys){
-      values.push(this.hashMap.get(key))
-    }
-    return values
+  get values( ):Iterator<T[]>{
+    return this.hashMap.values();
   }
-
 
   /**
   * Stores a new object with the given slot, if the slot exists it is overrided
@@ -58,46 +51,38 @@ export class Map{
   *@param {number} slot
   *@param {T} value
   */
-  public addValue<T>( slot:number , value:T ){
-    this.hashMap.set(slot,value)
-    if(this.keys.indexOf(slot)< 0) this.keys.push(slot)
-  }
-
-
-  /**
-  * Stores a new object with the given slot,
-  * if the slot exists the object is added
-  * to the slot as part of a list of objects
-  *@method addValues
-  *@param {number} slot
-  *@param {T} value
-  */
-  public addValues<T>(slot:number , value:T ){
-    if(this.hashMap.get(slot) === undefined) this.hashMap.set(slot,[value])
+  public set( slot:K , value:T , override:boolean=false ){
+    if(!this.has(slot) || override)
+      this.hashMap.set(slot, value);
     else{
-      var val:Array<T> =  this.hashMap.get(slot)
-      val.push(value)
-      this.hashMap.set(slot, val)
+      if (Array.isArray(this.get(slot)))
+        this.hashMap.get(slot).push(value);
+      else
+        this.hashMap.set(slot, [this.hashMap.get(slot),value]);
     }
   }
-
 
   /**
   * Returns the object or objects stored in a given slot
   *@method getValue
   *@param {number} slot
   */
-  public getValue<T>(slot:number):T{
-    return this.hashMap.get(slot)
+  public get(slot:K):any{
+    return this.hashMap.get(slot);
   }
+
+  public has( slot:K ):boolean{
+    return this.hashMap.has(slot);
+  }
+
 
   /**
   * Removes the slot from the map
   *@method remove
   *@param {number} slot
   */
-  public remove( slot:number ){
-    this.hashMap.remove(slot)
+  public delete( slot:K ){
+    this.hashMap.delete(slot)
   }
 
   /**
@@ -109,10 +94,10 @@ export class Map{
   *@param {number} [range.start] Slot to start
   *@param {number} [range.end] Slot to end
   */
-  public getValues(range:{start?:number , end?:number}){
+  public getValues(range:{start?:K , end?:K}){
     var values:Array<any> = []
-    var filteredList = this.filterValues(this.keys, range)
-    for(var slot of filteredList)
+    var filteredList = this.filterValues(range)
+    for (var slot of filteredList)
       values.push({slot:slot, operation: this.hashMap.get(slot)})
     return values
   }
@@ -131,16 +116,18 @@ export class Map{
   *@method update
   *@param {Map} x
   */
-  public update(x:Map){
-      var values = this.getAllValues()
-    let keys:any
-    if (x.keys === undefined) 
-        keys = Object.keys(x)
-    else
-        keys = x.keys
-    for(var key of keys){
-      if((this.keys.indexOf(key) < 0) && ! this.inArray(x.getValue(key), values))
-        this.addValue(key, x.getValue(key))
+  public update(x:InternalMap<K,T[]>){
+    var values = this.values;
+    let keys:any;
+    if (x.keys === undefined) return;
+
+    let iterator = x.keys;
+    let entry = iterator.next();
+    while(!entry.done){
+      let key = entry.value;
+      if(!this.hashMap.has(key))
+          this.hashMap.set(key, x.get(key));
+      entry = iterator.next();
     }
   }
 
@@ -152,16 +139,20 @@ export class Map{
   *@param {number} [range.start]
   *@param {number} [range.end]
   */
-  private filterValues(array:Array<number>, range?:{start?:number, end?:number}):Array<number>{
-      var returnArray = new Array()
-      for(var value of array){
+  private filterValues(range?:{start?:K, end?:K}):Array<K>{
+      var returnArray = new Array<K>()
+      let iterator = this.hashMap.keys();
+      let value = iterator.next();
+      while(!value.done){
+        let key = value.value;
         if ((range === undefined) ||
-        (range.start !== undefined && range.end === undefined && value >= range.start) ||
-        (range.start === undefined && range.end !== undefined && value <= range.end) ||
-        (range.start !== undefined && range.end !== undefined && value >= range.start && value <= range.end))
-          returnArray.push(value)
+        (range.start !== undefined && range.end === undefined && key >= range.start) ||
+        (range.start === undefined && range.end !== undefined && key <= range.end) ||
+        (range.start !== undefined && range.end !== undefined && key >= range.start && key <= range.end))
+          returnArray.push(key)
+        value = iterator.next();
       }
-      return returnArray
+      return returnArray;
     }
 
   /**

@@ -1,33 +1,21 @@
-declare class Discover {
-    private name: string
-    private port: number
-    private roles: any
-    static createDiscover(discoverType: string, params: { name: string, port: number, roles: any }):Discover;
-}
-
-declare class DiscoverBonjour extends Discover {
-    constructor(params: { name: string, port: number, roles: any });
-    start(advert: boolean): void;
-    stop(): void;
-    updateRoles(roles: any): void;
-    private startAdvertisement(): void;
-    private startBrowser(): void;
-}
-
-declare class Map {
+/// <reference path="../typings/node/node.d.ts" />
+/// <reference path="../typings/node/es6.d.ts" />
+declare class InternalMap<K, T> {
     private hashMap;
-    private keys;
     constructor();
-    count(): number;
-    getAllKeys(): Array<number>;
-    getAllValues<K>(): Array<K>;
-    addValue<T>(slot: number, value: T): void;
-    addValues<T>(slot: number, value: T): void;
-    getValue<T>(slot: number): T;
-    remove(slot: number): void;
-    getValues(range:{start?: number; end?: number}): any[];
+    size: number;
+    keys: Iterator<K>;
+    values: Iterator<T[]>;
+    set(slot: K, value: T): void;
+    get(slot: K): any;
+    has(slot: K): boolean;
+    delete(slot: K): void;
+    getValues(range: {
+        start?: K;
+        end?: K;
+    }): any[];
     clear(): void;
-    update(x: Map): void;
-    private filterValues(array, start?, end?);
+    update(x: InternalMap<K, T[]>): void;
+    private filterValues(range?);
     private inArray<T>(obj, values);
 }

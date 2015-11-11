@@ -1,18 +1,19 @@
 ///<reference path='./typings/tsd.d.ts' />
 
 var ballot = require("./ballot")
-var map = require("./map").Map
 var winston = require('winston')
 var Network = require('./network').AcceptorNetwork
 var shuffle = require('shuffle-array')
+
 import * as Message from "./message";
+import {InternalMap as Map} from "./map";
 
 export class Acceptor{
 
-  private id:string
-  private actualBallot:Ballot
-  private mapOfValues:Map
-  private network:any
+  private id:string;
+  private actualBallot:Ballot;
+  private mapOfValues:Map<number, any>;
+  private network:any;
 
   private messages_sended: number = 0
   private test:boolean
@@ -20,7 +21,7 @@ export class Acceptor{
 
   constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any }}){
     this.actualBallot = new ballot.Ballot()
-    this.mapOfValues = new map()
+    this.mapOfValues = new Map<number, any>();
 
     this.id = params.name
     if(params !== undefined && params.test !== undefined) this.test = params.test
@@ -49,7 +50,7 @@ export class Acceptor{
     setTimeout(() => { this.sendRecuperation() },3000)
   }
 
-  private startNetwork(params: { discover: Discover, ports:any }) {
+  private startNetwork(params: { discover:Discover, ports:any }) {
       this.network = new Network(params.discover, params.ports)
       var self = this
       this.network.on('message', (message) => {
@@ -67,7 +68,7 @@ export class Acceptor{
 
   public clear(){
     this.actualBallot = new ballot.Ballot()
-    this.mapOfValues = new map()
+    this.mapOfValues.clear();
   }
 
 
@@ -94,14 +95,15 @@ export class Acceptor{
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
 
       var operation = this.mapOfValues.getValues({start:value.slot})[0]
+
       if(operation !== undefined && operation.client === value.operation && operation.id === value.operation.client.id) return
 
       if(!this.test) winston.info("Received P2A: %s", JSON.stringify(value))
 
       if(value.ballot.isMayorOrEqualThanOtherBallot(this.actualBallot)){
           if(!this.test) winston.info("P2A Updated ballot to %s" ,JSON.stringify(value.ballot))
-          this.actualBallot = value.ballot
-          this.mapOfValues.addValue(value.slot, value.operation)
+          this.actualBallot = value.ballot;
+          this.mapOfValues.set(value.slot, value.operation, true);
           if(!this.test) winston.info("P2A Added operation  %s  to slot %s", JSON.stringify(value.operation), value.slot)
       }
       this.sendP2B(value.slot, value.operation)
@@ -120,6 +122,10 @@ export class Acceptor{
           }
       });
       this.network.sendToLeaders(message);
+  }
+
+  private getIntervalsFromMap(from:number, to?:number){
+
   }
 
   private sendRecuperation(from:number=0,to?:number) {

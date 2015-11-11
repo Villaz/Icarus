@@ -1,14 +1,15 @@
-/// <reference path="./typings/node/node.d.ts"/>
+/// <reference path="./typings/tsd.d.ts"/>
 
 
 var Promise = require("bluebird")
 var ballot = require("./ballot")
-var map = require("./map").Map
 var winston = require('winston')
 var underscore = require("underscore")
 
-import Emitter = require('./icarus_utils')
+//import Emitter = require('./icarus_utils')
 import * as Message from "./message";
+import * as Emitter from "./icarus_utils";
+import {InternalMap as Map} from "./map";
 
 //import * as Emitter from "./icarus_utils";
 /**
@@ -65,7 +66,6 @@ export class Scout extends Emitter.Emitter{
 
   private updateAcceptedValuesAndAcceptorsResponse(message:any){
     this.addAcceptedToPValues(message.operation.accepted)
-    console.log(this.acceptors);
     if (this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors[message.from] !== undefined)
       this.acceptorsResponsed.push(message.from)
   }
@@ -78,12 +78,12 @@ export class Scout extends Emitter.Emitter{
       this.adopted = true
       this.acceptorsResponsed = []
 
-      var pvaluesMap = new map()
-      var pvaluesInSlotMap = new map()
+      var pvaluesMap = new Map()
+      var pvaluesInSlotMap = new Map()
 
       for(var pvalue of this.pvalues){
-        pvaluesMap.addValue(pvalue.slot , pvalue)
-        pvaluesInSlotMap.addValue(pvalue , pvalue.slot)
+        pvaluesMap.set(pvalue.slot , pvalue)
+        pvaluesInSlotMap.set(pvalue , pvalue.slot)
       }
       var body = {
         ballot: this.ballot,

@@ -1,4 +1,4 @@
-/// <reference path="./typings/node/node.d.ts"/>
+/// <reference path="./typings/tsd.d.ts"/>
 
 
 var Promise = require("bluebird")
@@ -6,7 +6,8 @@ var ballot = require("./ballot")
 var winston = require('winston')
 var underscore = require("underscore")
 
-import Emitter = require('./icarus_utils')
+//import Emitter = require('./icarus_utils')
+import * as Emitter from "./icarus_utils";
 
 /**
  * Class Commander

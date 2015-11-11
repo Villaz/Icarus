@@ -1,11 +1,13 @@
 ///<reference path='./typings/tsd.d.ts' />
 
-var ballot = require("./ballot");
-var map = require("./map").Map;
+
 var winston = require('winston');
 var Network = require('./network').ReplicaNetwork;
 var shuffle = require('shuffle-array');
+
+import * as Ballot from "./ballot";
 import * as Message from "./message";
+import {InternalMap as Map} from "./map";
 
 
 export class Replica{
@@ -30,12 +32,12 @@ export class Replica{
   constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any }}){
     this.id = params.name
     this.slot_num = 0;
-    this.proposals = new map();
-    this.decisions = new map();
-    this.performed = new map();
+    this.proposals = new Map();
+    this.decisions = new Map();
+    this.performed = new Map();
 
-    this.operationsProposed = new map();
-    this.operationsDecided  = new map();
+    this.operationsProposed = new Map();
+    this.operationsDecided  = new Map();
 
     this.promisesPerSlot  = {};
 
@@ -71,14 +73,14 @@ export class Replica{
 
   private propose(operation:any){
     var key = {id:operation.id, client:operation.client}
-    var decided  = this.operationsDecided.getValue(key)
-    var proposed = this.operationsProposed.getValue(key)
+    var decided  = this.operationsDecided.get(key)
+    var proposed = this.operationsProposed.get(key)
 
     if ( decided === undefined ){
       let slot = this.nextEmpltySlot()
       if (proposed === undefined || proposed.indexOf(proposed) < 0){
-        this.proposals.addValues( slot, operation );
-        this.operationsProposed.addValues( key, slot );
+        this.proposals.set( slot, operation );
+        this.operationsProposed.set( key, slot );
         this.lastEmpltySlotInProposals++;
         //TODO: send propose to leader
       }
@@ -88,13 +90,13 @@ export class Replica{
   private decision( slot, operation ){
     if (this.lastEmpltySlotInDecisions > slot)
       return;
-    this.decisions.addValue( slot, operation )
+    this.decisions.set( slot, operation )
     var key = {id:operation.id,client:operation.client};
-    this.operationsDecided.addValues( key , operation );
+    this.operationsDecided.set( key , operation );
     this.lastEmpltySlotInDecisions++;
 
     let whileDecisionsInSlot = ( ) => {
-      let value = this.decisions.getValue( this.slot_num );
+      let value = this.decisions.get( this.slot_num );
       if ( value !== undefined ){
         this.reproposeOperation( operation );
         this.perform( operation );
@@ -114,16 +116,22 @@ export class Replica{
   }
 
   private reproposeOperation( operation:any ){
-    let proposals = this.proposals.getValue(this.slot_num);
+    let proposals = this.proposals.get(this.slot_num);
     let operationsToRepropose = [];
     if (proposals === undefined) return;
-    for (var proposal of proposals ){
-      if (proposal.id !== operation.id || proposal.client !== operation.client){
-        operationsToRepropose.push( proposal );
+    if (Array.isArray(proposals)){
+      for (var proposal of proposals ){
+        if (proposal.id !== operation.id || proposal.client !== operation.client){
+          operationsToRepropose.push( proposal );
+        }
+      }
+    }else{
+      if (proposals.id !== operation.id || proposals.client !== operation.client){
+        operationsToRepropose.push( proposals );
       }
     }
     for (var proposal of operationsToRepropose) this.propose( proposal );
-    if (operationsToRepropose.length > 0) this.proposals.remove( this.slot_num );
+    if (operationsToRepropose.length > 0) this.proposals.delete( this.slot_num );
   }
 
 
@@ -139,13 +147,13 @@ export class Replica{
 
   private isOperationInProposed( operation ) {
     var search = {id:operation.id,client:operation.client};
-    return this.operationsProposed.getValue(search);
+    return this.operationsProposed.get(search);
   }
 
 
   private operationSlotInDecided( operation:any ){
     var search = {id:operation.id,client:operation.client};
-    return this.operationsDecided.getValue(search);
+    return this.operationsDecided.get(search);
   }
 
 

@@ -7,8 +7,8 @@ var underscore = require("underscore")
 var dgram = require('dgram')
 var mdns = require('mdns')
 
-import Emitter = require('./icarus_utils')
-
+//import Emitter = require('./icarus_utils')
+import * as Emitter from "./icarus_utils";
 
 export class Discover extends Emitter.Emitter {
     name: string
@@ -26,7 +26,7 @@ export class Discover extends Emitter.Emitter {
 export class DiscoverBonjour extends Discover {
     advertisement: any
     browser: any
-    
+
     constructor(params: { name: string, port: number, roles: any }) {
         super()
         this.name = params.name
@@ -143,5 +143,3 @@ export class DiscoverUDP extends Discover
 }
 }
 */
-
-

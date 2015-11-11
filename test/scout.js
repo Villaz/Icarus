@@ -11,7 +11,7 @@ var network = {
 };
 
 describe('Tests Scout', function(){
- 
+
   it('Constructor', function( ){
         var ballot = new Ballot({ number: 1, id: '127.0.0.1' });
         var scout = new Scout({ ballot: ballot, lastSlotReceived: 1, network: network });
@@ -85,12 +85,12 @@ describe('Tests Scout', function(){
   it('Process accepted message and adopted', function(done){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
-   
+
     scout.on('adopted', function( body ){
       body = body[0]
       body.ballot.id.should.be.exactly(ballot.id)
       body.ballot.number.should.be.exactly(ballot.number)
-      body.pvalues.count().should.be.exactly(2)
+      body.pvalues.size.should.be.exactly(2)
       scout.adopted.should.be.exactly(true)
       done()
     });
@@ -130,12 +130,12 @@ describe('Tests Scout', function(){
         removeAllListeners: function(name){}
     }
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
-   
+
     scout.on('adopted', function( body ){
       body = body[0]
       body.ballot.id.should.be.exactly(ballot.id)
       body.ballot.number.should.be.exactly(ballot.number)
-      body.pvalues.count().should.be.exactly(2)
+      body.pvalues.size.should.be.exactly(2)
       scout.adopted.should.be.exactly(true)
       done()
     });
@@ -232,7 +232,7 @@ describe('Tests Scout', function(){
   it('updateAcceptedValuesAndAcceptorsResponse',function(){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
-    
+
     var message = {
       type:'P1B',
       from:'anu',

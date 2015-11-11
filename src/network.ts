@@ -9,7 +9,8 @@ var zmq = require('zmq')
 var Promise = require("bluebird")
 var Discover = require('./discover')
 
-import Emitter = require('./icarus_utils')
+//import Emitter = require('./icarus_utils')
+import * as Emitter from "./icarus_utils";
 
 export class Network extends Emitter.Emitter{
     replicas: Array<any>
@@ -42,7 +43,7 @@ export class Network extends Emitter.Emitter{
     protected subscription(params: { url: string, port: number, name: string, subscriptions: Array<string>}) {
         if (this.subscriptions[params.name] === undefined) {
             this.subscriptions[params.name] = this.createSubscription(params.name, params.subscriptions, params.url, params.port)
-        } 
+        }
         this.subscriptions[params.name].connect(`tcp://${params.url}:${params.port}`);
     }
 
@@ -81,25 +82,30 @@ export class Network extends Emitter.Emitter{
         node = node[0]
         if (node.name == this.discover.name) return
         if (node.data.L !== undefined) {
-            
+
             if (this.leaders[node.name] === undefined) {
-                this.leaders[node.name] = []
+                this.leaders[node.name] = new Set();
             }
-            if (this.leaders[node.name].indexOf(node.addresses[0]) < 0) {
-                this.leaders[node.name].push(node.addresses[0])
-                this._upNode('L', node);
+            for (let url of node.addresses){
+              if (!this.leaders[node.name].has(url)){
+                this.leaders[node.name].add(url)
+                this._upNode('L', url, node.data.L);
+              }
             }
+
         }
         if (node.data.A !== undefined) {
             if (this.acceptors[node.name] === undefined) {
-                this.acceptors[node.name] = []
+                this.acceptors[node.name] = new Set();
             }
-            if (this.acceptors[node.name].indexOf(node.addresses[0]) < 0) {
-                this.acceptors[node.name].push(node.addresses[0])
-                this._upNode('A', node);
+            for (let url of node.addresses){
+              if (!this.acceptors[node.name].has(url)){
+                this.acceptors[node.name].add(url)
+                this._upNode('A', url, node.data.A);
+              }
             }
         }
-        
+
     }
 
     public downNode(node) {
@@ -119,7 +125,8 @@ export class Network extends Emitter.Emitter{
 
     }
 
-    protected _upNode(type, node) { }
+    protected _upNode(type: string, url:string, port:number){}
+
 }
 
 
@@ -155,13 +162,13 @@ export class AcceptorNetwork extends Network {
        this.emit('message', message)
    }
 
-    protected _upNode(type: string, node: any) {
+    protected _upNode(type: string, url:string, port:number) {
         switch (type) {
             case 'L':
-                this.subscription({ name: "subscriberLeader", subscriptions: ['P1A', 'P2A'], url: node.addresses[0], port: node.data.L });
+                this.subscription({ name: "subscriberLeader", subscriptions: ['P1A', 'P2A'], url: url, port: port});
                 break;
             case 'A':
-                this.subscription({ name: "subscriberAceptor", subscriptions: ['REC'], url: node.addresses[0], port: node.data.A });
+                this.subscription({ name: "subscriberAceptor", subscriptions: ['REC'], url: url, port: port });
                 break;
         }
     }
@@ -219,7 +226,7 @@ export class LeaderNetwork extends Network {
 
     private membershipServer: any
     private acceptorSubscriber: any
-    
+
     constructor(discover: any, connection: { port: number }) {
         super(discover, connection)
         this.startPublisher(connection.port, "LTAP");
@@ -240,12 +247,12 @@ export class LeaderNetwork extends Network {
         message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
         this.emit('message', message)
     }
-    
-    protected _upNode(type: string, node: any) {
+
+    protected _upNode(type: string, url:string, port:number) {
         switch (type) {
             case 'A':
-                this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B', 'P2B'], url: node.addresses[0], port: node.data.A });
-                this.emit('acceptor', node.addresses[0]);
+                this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B', 'P2B'], url: url, port: port});
+                this.emit('acceptor', url);
                 break;
         }
     }
