@@ -38,6 +38,5 @@
     "mocha-bamboo-reporter": "*",
     "nodeunit": ">=0.8",
     "should": ">=7.0",
-    "sleep": ">=3.0.0"
   }
 }
