@@ -30,11 +30,26 @@ export class InternalMap<K,T>{
   }
 
   /**
-  * Returns a list with all keys
-  *@method getAllKeys
+  * Returns a keys iterator
+  *@method Keys
   */
   get keys():Iterator<K>{
     return this.hashMap.keys();
+  }
+
+  /**
+  * Returns a list with all keys
+  *@method arrayKeys
+  */
+  get arrayKeys():Array<K>{
+    let iterator = this.keys;
+    let entry = iterator.next();
+    let keys = new Array<K>();
+    while(!entry.done){
+      keys.push(entry.value);
+      entry = iterator.next();
+    }
+    return keys;
   }
 
   /**
@@ -43,6 +58,17 @@ export class InternalMap<K,T>{
   */
   get values( ):Iterator<T[]>{
     return this.hashMap.values();
+  }
+
+  get arrayValues():Array<T[]>{
+    let iterator = this.values;
+    let entry = iterator.next();
+    let values = new Array<T[]>();
+    while(!entry.done){
+      values.push(entry.value);
+      entry = iterator.next();
+    }
+    return values;
   }
 
   /**

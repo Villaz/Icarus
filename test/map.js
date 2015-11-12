@@ -45,7 +45,7 @@ describe('Map tests with Map', function(){
     map.set(1,{"text":"text"})
 		map.set(2,{"text":"text2"})
 
-		var keys = Array.from(map.keys);
+		var keys = map.arrayKeys;
     map.size.should.be.exactly(2)
 		keys[0].should.be.exactly(1)
     keys[1].should.be.exactly(2)
@@ -57,7 +57,7 @@ describe('Map tests with Map', function(){
 
     map.set(1,{"op":"text"})
     map.set(2,{"op":"text2"})
-    var list = Array.from(map.values)
+    var list = map.arrayValues;
 		list[0].op.should.be.exactly("text")
     list[1].op.should.be.exactly("text2")
   })
