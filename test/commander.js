@@ -7,7 +7,7 @@ describe('Tests Commander' , function() {
 
   var network ={
     acceptors :['lyr','anu','balar'],
-    sendMessageToAllAcceptors : function( ){}
+    sendToAcceptors : function( ){}
     }
 
   it('Constructor' , function( ){

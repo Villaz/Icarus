@@ -7,9 +7,9 @@ var underscore = require('underscore')
  * Auxiliar class to store all the operations with an assigned slot.
  * @class Map
  */
-export class InternalMap<K,T>{
+export class InternalMap<K extends number,T>{
 
-  private hashMap:Map<any,any>;
+  private hashMap:Map<string,any>;
   //private keys:Array<number>
 
   /**
@@ -33,7 +33,7 @@ export class InternalMap<K,T>{
   * Returns a keys iterator
   *@method Keys
   */
-  get keys():Iterator<K>{
+  get keys():IterableIterator<any>{
     return this.hashMap.keys();
   }
 
@@ -41,12 +41,12 @@ export class InternalMap<K,T>{
   * Returns a list with all keys
   *@method arrayKeys
   */
-  get arrayKeys():Array<K>{
+  get arrayKeys():Array<any>{
     let iterator = this.keys;
     let entry = iterator.next();
-    let keys = new Array<K>();
+    let keys = new Array();
     while(!entry.done){
-      keys.push(entry.value);
+      keys.push(JSON.parse(entry.value));
       entry = iterator.next();
     }
     return keys;
@@ -56,7 +56,7 @@ export class InternalMap<K,T>{
   * Returns all values stored in the Map
   *@method getAllValues
   */
-  get values( ):Iterator<T[]>{
+  get values( ):IterableIterator<T[]>{
     return this.hashMap.values();
   }
 
@@ -78,13 +78,14 @@ export class InternalMap<K,T>{
   *@param {T} value
   */
   public set( slot:K , value:T , override:boolean=false ){
+    let newSlot = JSON.stringify(slot);
     if(!this.has(slot) || override)
-      this.hashMap.set(slot, value);
+      this.hashMap.set(newSlot, value);
     else{
       if (Array.isArray(this.get(slot)))
-        this.hashMap.get(slot).push(value);
+        this.hashMap.get(newSlot).push(value);
       else
-        this.hashMap.set(slot, [this.hashMap.get(slot),value]);
+        this.hashMap.set(newSlot, [this.hashMap.get(newSlot),value]);
     }
   }
 
@@ -94,11 +95,11 @@ export class InternalMap<K,T>{
   *@param {number} slot
   */
   public get(slot:K):any{
-    return this.hashMap.get(slot);
+    return this.hashMap.get(JSON.stringify(slot));
   }
 
   public has( slot:K ):boolean{
-    return this.hashMap.has(slot);
+    return this.hashMap.has(JSON.stringify(slot));
   }
 
 
@@ -108,7 +109,7 @@ export class InternalMap<K,T>{
   *@param {number} slot
   */
   public delete( slot:K ){
-    this.hashMap.delete(slot)
+    this.hashMap.delete(JSON.stringify(slot));
   }
 
   /**
@@ -120,11 +121,11 @@ export class InternalMap<K,T>{
   *@param {number} [range.start] Slot to start
   *@param {number} [range.end] Slot to end
   */
-  public getValues(range:{start?:K , end?:K}){
+  public getValues(range:{start? , end?}){
     var values:Array<any> = []
     var filteredList = this.filterValues(range)
     for (var slot of filteredList)
-      values.push({slot:slot, operation: this.hashMap.get(slot)})
+      values.push({slot: JSON.parse(slot), operation: this.hashMap.get(slot)})
     return values
   }
 
@@ -142,17 +143,19 @@ export class InternalMap<K,T>{
   *@method update
   *@param {Map} x
   */
-  public update(x:InternalMap<K,T[]>){
-    var values = this.values;
+  public update(x:InternalMap<K,T>, override:boolean=false){
     let keys:any;
     if (x.keys === undefined) return;
+
+    var thisValues = new Set(this.arrayValues);
 
     let iterator = x.keys;
     let entry = iterator.next();
     while(!entry.done){
-      let key = entry.value;
-      if(!this.hashMap.has(key))
-          this.hashMap.set(key, x.get(key));
+      let key = JSON.parse(entry.value);
+      if(!this.has(key)){
+          this.set(key, x.get(key), true);
+      }
       entry = iterator.next();
     }
   }
@@ -165,10 +168,16 @@ export class InternalMap<K,T>{
   *@param {number} [range.start]
   *@param {number} [range.end]
   */
-  private filterValues(range?:{start?:K, end?:K}):Array<K>{
-      var returnArray = new Array<K>()
+  private filterValues(range?:{start?, end?}):Array<string>{
+      var returnArray = new Array<string>()
       let iterator = this.hashMap.keys();
       let value = iterator.next();
+
+      let start = undefined;
+      if(range.start !== undefined) start = JSON.parse(range.start);
+      let e = undefined;
+      if(range.end !== undefined) JSON.parse(range.end);
+
       while(!value.done){
         let key = value.value;
         if ((range === undefined) ||

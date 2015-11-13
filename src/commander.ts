@@ -48,7 +48,7 @@ export class Commander extends Emitter.Emitter{
             ballot: params.ballot
           }
         }
-        this.network.sendMessageToAllAcceptors(message)
+        this.network.sendToAcceptors(message)
       }
     }
 

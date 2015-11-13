@@ -7,6 +7,7 @@ var winston = require('winston')
 var commander = require('./commander')
 var Network = require('./network').LeaderNetwork
 var Scout = require('./scout').Scout
+var crc = require('crc');
 
 import {InternalMap as Map} from "./map";
 
@@ -19,8 +20,7 @@ export class Leader{
   id:string
   ballot:Ballot
   active:boolean
-  proposals : Map<any,any>;
-  proposalsInSlot : any
+  proposals : Map<number,any>;
   scout :any
   commander :any
   lastSlotReceived:any
@@ -33,8 +33,7 @@ export class Leader{
       this.id = params.name
       this.ballot = new ballot.Ballot({ number: 1, id: params.name })
       this.active = false
-      this.proposals = new Map<any,any>()
-      this.proposalsInSlot = {}
+      this.proposals = new Map<number,any>()
 
       if(params !== undefined && params.test !== undefined)
         this.test = params.test
@@ -116,9 +115,7 @@ export class Leader{
       if(!this.test)
         winston.info("Proposing for slot %s operation %s", params.slot, JSON.stringify(params.operation))
 
-      var value:any = this.proposals.get(params.slot)
-      if(value === undefined){
-        this.proposalsInSlot[params.operation] = params.slot
+      if(this.proposals.get(params.slot) === undefined){
         this.proposals.set(params.slot, params.operation)
         if(this.active)
           this.commander.sendP2A(params.slot, params.operation, this.ballot)
@@ -126,19 +123,14 @@ export class Leader{
   }
 
 
-  public adopted(params:{ballot:Ballot; pvalues:any , pvaluesSlot:any}){
-        var promise1 = params.pvalues.update(this.proposals)
-        var promise2 = params.pvaluesSlot.update(this.proposalsInSlot)
-
-        Promise.all([promise1,promise2]).then(()=>{
-            this.proposals = params.pvalues
-            this.proposalsInSlot = params.pvaluesSlot
-            this.sendToCommanderAllproposals(this.proposals.keys);
-            this.active = true
-            if(!this.test)
-                winston.info("Leader %s is active!!!", this.id)
-        })
-  }
+  public adopted(params:{ballot:Ballot; pvalues:Map<any,number> , pvaluesSlot:Map<number,number>}){
+        params.pvalues.update(this.proposals)
+        this.proposals = params.pvalues
+        this.sendToCommanderAllproposals(this.proposals.keys);
+        this.active = true
+        if(!this.test)
+          winston.info("Leader %s is active!!!", this.id)
+  };
 
   private sendToCommanderAllproposals(keys:Iterator<any>){
       let entry = keys.next();
@@ -147,6 +139,7 @@ export class Leader{
         var operation:any = this.proposals.get(key)
         this.commander.sendP2A({key:key,operation:operation,ballot:this.ballot})
         this.spawnCommander({key:key, operation:operation})
+        entry = keys.next();
       }
   }
 

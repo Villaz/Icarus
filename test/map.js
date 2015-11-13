@@ -133,9 +133,9 @@ describe('Map tests with Map', function(){
 		map2.set(1,{"op":"test3"})
 
 		map2.update(map)
-		map2.hashMap.has(1).should.be.true
-    map2.hashMap.has(2).should.be.true
-    map2.hashMap.get(1).op.should.be.exactly("test3")
+		map2.has(1).should.be.true
+    map2.has(2).should.be.true
+    map2.get(1).op.should.be.exactly("test3")
   })
 
 	it('Update map with empty', function( ){
@@ -146,8 +146,8 @@ describe('Map tests with Map', function(){
     map2.set(1,{"op":"test3"})
 
     map2.update(map)
-    map2.hashMap.has(1).should.be.true
-    map2.hashMap.has(2).should.be.true
+    map2.has(1).should.be.true
+    map2.has(2).should.be.true
   })
 
 
@@ -157,7 +157,7 @@ describe('Map tests with Map', function(){
 
     map.set(1,{"op":"test"})
 		map2.update(map)
-    map2.hashMap.has(1).should.be.true
+    map2.has(1).should.be.true
   })
 
 
