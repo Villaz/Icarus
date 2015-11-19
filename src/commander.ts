@@ -98,7 +98,7 @@ export class Commander extends Emitter.Emitter{
       }
 
     private existsInArray<T>(array:Array<T>, value:T){
-      for (var val in array){
+      for (var val of array){
         if (val === value) return true
       }
       return false

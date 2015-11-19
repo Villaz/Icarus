@@ -147,8 +147,8 @@ export class Acceptor{
       }
       var interval = (to - from) / acceptors.length
       var begin = from
-
-      for (var acceptor in shuffle(acceptors)) {
+      
+      for (var acceptor of shuffle(acceptors)) {
           acceptorsMap[acceptor] = { begin: begin, to: begin + interval }
           begin += interval
       }
@@ -156,8 +156,10 @@ export class Acceptor{
           port: 7777,
           intervals: acceptorsMap
       }
+      
       var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
       this.network.sendToAcceptors(message)
+      return message;
   }
 
   private recuperation() {

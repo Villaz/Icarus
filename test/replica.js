@@ -6,7 +6,7 @@ describe('Replica tests', function(){
 
     var network = {
         acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
-        send : function () { }
+        sendToLeaders : function () { }
     }
     var replica = undefined
 

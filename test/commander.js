@@ -7,7 +7,8 @@ describe('Tests Commander' , function() {
 
   var network ={
     acceptors :['lyr','anu','balar'],
-    sendToAcceptors : function( ){}
+    sendToAcceptors : function () { },
+    on : function(){}
     }
 
   it('Constructor' , function( ){
@@ -60,7 +61,6 @@ describe('Tests Commander' , function() {
     var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
     var commander = new Commander ({network:network})
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
-
     commander.slots[params.slot].ballot.id.should.be.exactly('127.0.0.1')
     commander.slots[params.slot].ballot.number.should.be.exactly(1)
     commander.slots[params.slot].decided.should.be.not.ok
