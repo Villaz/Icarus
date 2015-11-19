@@ -59,6 +59,13 @@ export class Acceptor{
               case 'P1A':
                   self.processP1A(message.operation.ballot, message.operation.from)
                   break
+              case 'P2A':
+                  self.processP2A(
+                    {slot:message.operation.slot,
+                     operation:message.operation.operation,
+                     ballot:message.operation.ballot
+                   });
+                  break;
               case 'REC':
                   self.recuperation()
                   break
@@ -88,7 +95,11 @@ export class Acceptor{
         ballot: this.actualBallot,
         accepted: values
     };
-    var message = new Message.Message({type:'P1B', from:this.id,command_id:0, operation:operation});
+    var message = new Message.Message(
+      {type:'P1B',
+       from:this.id,
+       command_id:0,
+       operation:operation});
     this.network.sendToLeaders(message);
   }
 

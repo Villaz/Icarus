@@ -82,7 +82,6 @@ export class Network extends Emitter.Emitter{
         node = node[0]
         if (node.name == this.discover.name) return
         if (node.data.L !== undefined) {
-
             if (this.leaders[node.name] === undefined) {
                 this.leaders[node.name] = new Set();
             }
@@ -106,6 +105,18 @@ export class Network extends Emitter.Emitter{
             }
         }
 
+        if (node.data.R !== undefined) {
+            if (this.replicas[node.name] === undefined) {
+                this.replicas[node.name] = new Set();
+            }
+            for (let url of node.addresses){
+              if (!this.replicas[node.name].has(url)){
+                this.replicas[node.name].add(url)
+                this._upNode('R', url, node.data.R);
+              }
+            }
+        }
+
     }
 
     public downNode(node) {
@@ -125,7 +136,7 @@ export class Network extends Emitter.Emitter{
 
     }
 
-    protected _upNode(type: string, url:string, port:number){}
+    protected _upNode(type: string, url:string, port:any){}
 
 }
 
@@ -162,10 +173,10 @@ export class AcceptorNetwork extends Network {
        this.emit('message', message)
    }
 
-    protected _upNode(type: string, url:string, port:number) {
+    protected _upNode(type: string, url:string, port:any) {
         switch (type) {
             case 'L':
-                this.subscription({ name: "subscriberLeader", subscriptions: ['P1A', 'P2A'], url: url, port: port});
+                this.subscription({ name: "subscriberLeader", subscriptions: ['P1A', 'P2A'], url: url, port: port.split(',')[0]});
                 break;
             case 'A':
                 this.subscription({ name: "subscriberAceptor", subscriptions: ['REC'], url: url, port: port });
@@ -184,12 +195,13 @@ export class ReplicaNetwork extends Network {
     constructor(discover: any, connection: { port: number, client:number }) {
         super(discover, connection)
         this.startPublisher(connection.port, 'RTLP');
+        this.startRouter(connection.client);
     }
 
     private startRouter(port:number) {
         this.clientRouter = zmq.socket('router');
         this.clientRouter.bind(`tcp://*:${port}`);
-        this.clientRouter.on('message', function (envelope, b, message) {
+        this.clientRouter.on('message', (envelope, b, message) => {
             message = JSON.parse(message);
             this.clients[`${message.client}-${message.operation_id}`] = envelope
             this.emit('propose', message);
@@ -207,15 +219,22 @@ export class ReplicaNetwork extends Network {
             from: data.from,
             operation: data.operation
         }
-        message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
         this.emit('message', message)
     }
 
+    public sendToLeaders(operation:any) {
+        var message = new Message.Message({from:'1',
+                                           type:'PROPOSE',
+                                           command_id:0,
+                                           operation:operation});
+        this.send("RTLP", message);
+    }
 
-    protected _upNode(type:string, node:any) {
+
+    protected _upNode(type: string, url:string, port:any) {
         switch (type) {
             case 'L':
-                this.subscription({ name: "subscriberLeader", subscriptions: ['ADOPTED'], url: node.addresses[0], port: node.data.L });
+                this.subscription({ name: "subscriberLeader", subscriptions: ['DECISION'], url: url, port: port.split(',')[1]});
                 break;
         }
     }
@@ -224,19 +243,19 @@ export class ReplicaNetwork extends Network {
 
 export class LeaderNetwork extends Network {
 
-    private membershipServer: any
-    private acceptorSubscriber: any
-
-    constructor(discover: any, connection: { port: number }) {
+    constructor(discover: any, connection: { port: number , replica:number }) {
         super(discover, connection)
         this.startPublisher(connection.port, "LTAP");
+        this.startPublisher(connection.replica, "LTRP");
     }
 
     public sendToAcceptors(message:Message.Message) {
         this.send("LTAP", message);
     }
 
-    public sendToReplicas(message: any) { }
+    public sendToReplicas(message: Message.Message) {
+        this.send("LTRP", message);
+    }
 
     protected processMessage(data: any, type: string) {
         var message = {
@@ -244,8 +263,12 @@ export class LeaderNetwork extends Network {
             from: data.from,
             operation: data.operation
         }
-        message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
-        this.emit('message', message)
+        if (type !== 'PROPOSE'){
+            message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
+            this.emit(type, message);
+        }else{
+          this.emit('propose', message);
+        }
     }
 
     protected _upNode(type: string, url:string, port:number) {
@@ -254,6 +277,10 @@ export class LeaderNetwork extends Network {
                 this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B', 'P2B'], url: url, port: port});
                 this.emit('acceptor', url);
                 break;
+            case 'R':
+                this.subscription({ name: "replicaSubscriber", subscriptions: ['PROPOSE'], url: url, port: port});
+                break;
+
         }
     }
 }

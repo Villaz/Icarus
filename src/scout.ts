@@ -37,7 +37,7 @@ export class Scout extends Emitter.Emitter{
     this.ballot = params.ballot
     this.lastSlotReceived = params.lastSlotReceived
     this.network = params.network
-    this.network.on('message', (message) => { this.process(message[0]) })
+    this.network.on('P1B', (message) => { this.process(message[0]) })
 
   }
 

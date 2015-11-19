@@ -8,6 +8,7 @@ var commander = require('./commander')
 var Network = require('./network').LeaderNetwork
 var Scout = require('./scout').Scout
 var crc = require('crc');
+import * as Message from "./message";
 
 import {InternalMap as Map} from "./map";
 
@@ -72,6 +73,10 @@ export class Leader{
             setTimeout(() => { this.start() }, 5000)
         }
     });
+    this.network.on('propose', (message) => {
+        message = message[0];
+        this.propose({operation:message.operation, slot:message.operation.slot});
+    });
     this.network.on('leaderDown', (name) => {
         if (!this.test) winston.info("Leader %s down!!", name[0]);
         winston.info("The actual leader was %s", this.actualLeader);
@@ -108,6 +113,20 @@ export class Leader{
 
   private spawnCommander(params?:{key:any, operation:any}){
     this.commander = new commander.Commander({network:this.network})
+    this.commander.on('decision', (result) =>{
+      result = result[0];
+
+      if(!this.test)
+        winston.info("Decided for slot %s operation %s", result.slot, JSON.stringify(result.operation))
+
+      var message:Message.Message = new Message.Message({
+          type: 'DECISION',
+          from: this.ballot.id,
+          command_id: 0,
+          operation:result
+      })
+      this.network.sendToReplicas(message);
+    })
   }
 
 
@@ -118,7 +137,7 @@ export class Leader{
       if(this.proposals.get(params.slot) === undefined){
         this.proposals.set(params.slot, params.operation)
         if(this.active)
-          this.commander.sendP2A(params.slot, params.operation, this.ballot)
+          this.commander.sendP2A({slot:params.slot, operation:params.operation, ballot:this.ballot})
       }
   }
 
@@ -154,15 +173,6 @@ export class Leader{
           if (!this.test)
               winston.info("Leader %s is preempted, the actual leader is %s", this.id, this.actualLeader);
       }
-  }
-
-
-  public p1b( message:any ){
-      this.scout.process(message)
-  }
-
-  public p2b( message:any ){
-      this.commander.receiveP2B(message)
   }
 
 }

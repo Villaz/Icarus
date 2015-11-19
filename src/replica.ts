@@ -65,9 +65,12 @@ export class Replica{
           message = message[0]
           switch (message.type) {
               case 'DECISION':
-                  self.decision( "" , "" )
+                  self.decision( message.operation.slot , message.operation.operation )
                   break
           }
+      });
+      this.network.on('propose', (message) =>{
+        this.propose(message[0]);
       });
   }
 
@@ -75,19 +78,22 @@ export class Replica{
     var key = {id:operation.id, client:operation.client}
     var decided  = this.operationsDecided.get(key)
     var proposed = this.operationsProposed.get(key)
-
     if ( decided === undefined ){
       let slot = this.nextEmpltySlot()
-      if (proposed === undefined || proposed.indexOf(proposed) < 0){
+      if (proposed === undefined){
         this.proposals.set( slot, operation );
         this.operationsProposed.set( key, slot );
         this.lastEmpltySlotInProposals++;
-        //TODO: send propose to leader
+        operation.slot = slot;
+        this.network.sendToLeaders(operation);
       }
     }
   }
 
   private decision( slot, operation ){
+    if(!this.test)
+      winston.info("Decided for slot %s operation %s", slot, JSON.stringify(operation))
+
     if (this.lastEmpltySlotInDecisions > slot)
       return;
     this.decisions.set( slot, operation )
@@ -110,7 +116,8 @@ export class Replica{
     var slots = this.operationSlotInDecided(operation);
     this.slot_num++;
     if (!this.slotsHaveMenorThanSlotNum( slots , this.slot_num )){
-      //TODO Execute the operation
+      if(!this.test)
+        winston.info("performed slot %s", this.slot_num - 1)
     }
 
   }
