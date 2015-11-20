@@ -53,7 +53,6 @@ if(cluster.isMaster){
       var d = Discover.Discover.createDiscover('bonjour', { name: name, port: nconf.get("replica")['discover'], roles: {'R':nconf.get("replica")['port']}});
       var rol:any = new Replica({ name: name,
                                   network: { discover: d,
-                                  ports: { port: nconf.get("replica")['port'] ,
-                                           client: nconf.get("replica")['client']} } });
+                                  ports: nconf.get("replica")}});
   }
 }

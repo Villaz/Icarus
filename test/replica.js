@@ -1,12 +1,15 @@
 var should = require('should');
 var Replica = require('../lib/replica.js').Replica;
 var Ballot = require('../lib/ballot.js').Ballot;
+var Promise = require('bluebird');
 
 describe('Replica tests', function(){
 
     var network = {
         acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
-        sendToLeaders : function () { }
+        sendToLeaders : function () { },
+        sendToOperation : function() {return Promise.resolve()},
+        responde : function() {return Promise.resolve();}
     }
     var replica = undefined
 
@@ -15,15 +18,55 @@ describe('Replica tests', function(){
         replica.network = network
     });
 
+    it('Propose operation', function(){
+      var op1 = {id:1,client:1,op:{name:'hello'}}
+      replica.propose(op1);
+      var ops = replica.proposals.get(0);
+      ops.size.should.be.exactly(1)
 
-    it('Decision operation', function( ){
+      var op = ops.values().next().value
+      op.id.should.be.exactly(1)
+      op.client.should.be.exactly(1)
+    });
+
+    it('Propose operation same slot', function(){
+      var op1 = {id:1,client:1,op:{name:'hello'}}
+      var op2 = {id:2,client:1,op:{name:'hello2'}}
+
+      replica.propose(op1);
+      replica.propose(op2);
+
+      var ops = replica.proposals.get(0);
+      ops.size.should.be.exactly(2)
+      var values = ops.values()
+      var op = values.next().value;
+      op.id.should.be.exactly(1)
+      op = values.next().value
+      op.id.should.be.exactly(2)
+    });
+
+    it('Decision operation', function( done ){
         var op1 = {id:1,client:1,op:{name:'hello'}}
+        replica.decision(0 , op1).then(function(){
+          replica.lastEmpltySlotInDecisions.should.be.exactly(1);
+          var value = replica.decisions.get(0);
+          value.id.should.be.exactly(1)
+          value.client.should.be.exactly(1)
+          done();
+        });
+    });
 
-        replica.decision(0 , op1);
-        replica.lastEmpltySlotInDecisions.should.be.exactly(1);
-        var value = replica.decisions.get(0);
-        value.id.should.be.exactly(1)
-        value.client.should.be.exactly(1)
+    it('Decide and repropose operations', function( done ){
+      var op1 = {id:1,client:1,op:{name:'hello'}}
+      var op2 = {id:2,client:1,op:{name:'hello2'}}
+
+      replica.propose(op1);
+      replica.propose(op2);
+
+      replica.decision(0 , op1).then(function(){
+
+        done();
+      });
     });
 
 
@@ -31,28 +74,28 @@ describe('Replica tests', function(){
         var op1 = {id:1,client:1,op:'hello'}
         var op2 = {id:2,client:1,op:'hello2'}
 
-        replica.proposals.set( 0 , op1 )
+        replica.proposals.set( 0 , new Set([op1]) )
         replica.lastEmpltySlotInProposals = 1
         replica.lastEmpltySlotInDecisions = 1
         replica.slot_num = 0
 
-        replica.reproposeOperation(op2)
+        replica.checkOperationsToRepropose(op2)
         replica.lastEmpltySlotInProposals.should.be.exactly(2)
         should.not.exists(replica.proposals.get(0))
-        replica.proposals.get(1).id.should.be.exactly(1)
+        replica.proposals.get(1).values().next().value.id.should.be.exactly(1)
     });
 
     it('repropose same operation' , function( ){
         var op1 = {id:1,client:1,op:'hello'}
 
-        replica.proposals.set(0 , op1)
+        replica.proposals.set(0 , new Set([op1]))
         replica.lastEmpltySlotInProposals = 1
         replica.lastEmpltySlotInDecisions = 1
         replica.slot_num = 0
 
-        replica.reproposeOperation(op1)
+        replica.checkOperationsToRepropose(op1)
         replica.lastEmpltySlotInProposals.should.be.exactly(1)
-        replica.proposals.get(0).id.should.be.exactly(1)
+        replica.proposals.get(0).values().next().value.id.should.be.exactly(1)
     });
 
     it('nextEmpltySlot' , function(){

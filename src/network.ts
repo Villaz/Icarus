@@ -15,7 +15,7 @@ import * as Emitter from "./icarus_utils";
 export class Network extends Emitter.Emitter{
     replicas: Array<any>
     leaders: Array<any>
-    acceptors: any
+    acceptors: Map<string,Set<string>>;
     discover: any
 
     private publishers = {};
@@ -27,7 +27,7 @@ export class Network extends Emitter.Emitter{
         super();
         this.replicas = [];
         this.leaders = [];
-        this.acceptors = [];
+        this.acceptors = new Map();
         this.discover = discover;
         this.discover.on('up', (service)=> this.upNode(service));
         this.discover.on('down', (service)=> this.downNode(service));
@@ -94,12 +94,11 @@ export class Network extends Emitter.Emitter{
 
         }
         if (node.data.A !== undefined) {
-            if (this.acceptors[node.name] === undefined) {
-                this.acceptors[node.name] = new Set();
-            }
+            if (!this.acceptors.has(node.name))
+                this.acceptors.set(node.name, new Set());
             for (let url of node.addresses){
-              if (!this.acceptors[node.name].has(url)){
-                this.acceptors[node.name].add(url)
+              if (!this.acceptors.get(node.name).has(url)){
+                this.acceptors.get(node.name).add(url)
                 this._upNode('A', url, node.data.A);
               }
             }
@@ -190,12 +189,15 @@ export class AcceptorNetwork extends Network {
 export class ReplicaNetwork extends Network {
 
     private clientRouter:any;
+    private operationSocket:any;
+    private operationPort: number;
     private clients = {};
 
-    constructor(discover: any, connection: { port: number, client:number }) {
+    constructor(discover: any, connection: { port: number, client:number, operation:number }) {
         super(discover, connection)
         this.startPublisher(connection.port, 'RTLP');
         this.startRouter(connection.client);
+        this.operationPort = connection.operation;
     }
 
     private startRouter(port:number) {
@@ -211,6 +213,7 @@ export class ReplicaNetwork extends Network {
     public responde(message) {
         let envelope = this.clients[`${message.client}-${message.operation_id}`];
         this.clientRouter.send([envelope, "", JSON.stringify(message)]);
+        return Promise.resolve();
     }
 
     protected processMessage(data: any, type: string) {
@@ -220,6 +223,18 @@ export class ReplicaNetwork extends Network {
             operation: data.operation
         }
         this.emit('message', message)
+    }
+
+    public sendToOperation( message:Message.Message ){
+        var operationSocket = zmq.socket('req');
+        operationSocket.connect(`tcp://127.0.0.1:${this.operationPort}`)
+        return new Promise((resolve, reject)=>{
+          operationSocket.on('message',( message )=>{
+            operationSocket.disconnect(`tcp://127.0.0.1:${this.operationPort}`)
+            resolve();
+          });
+          operationSocket.send(JSON.stringify(message));
+        });
     }
 
     public sendToLeaders(operation:any) {

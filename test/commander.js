@@ -5,8 +5,12 @@ var Ballot = require('../lib/ballot.js').Ballot;
 
 describe('Tests Commander' , function() {
 
+  var acceptors = new Map();
+  acceptors.set('lyr', new Set());
+  acceptors.set('anu', new Set());
+  acceptors.set('balar', new Set());
   var network ={
-    acceptors :['lyr','anu','balar'],
+    acceptors : acceptors,
     sendToAcceptors : function () { },
     on : function(){}
     }
@@ -19,7 +23,7 @@ describe('Tests Commander' , function() {
     }
 
     var commander = new Commander ({network:network})
-    commander.network.acceptors.length.should.be.exactly(3)
+    commander.network.acceptors.size.should.be.exactly(3)
     commander.network.acceptors.should.equal(network.acceptors)
   })
 
@@ -28,13 +32,13 @@ describe('Tests Commander' , function() {
     var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
     var commander = new Commander ({network:network})
 
-    commander.slots[params.slot] = {
+    commander.slots.set(params.slot, {
       ballot: new Ballot({id:'127.0.0.1',number:2}),
       operation: params.operation,
       decided: false,
       acceptorsResponse:[],
       acceptors: network.acceptors
-    }
+    })
 
     commander.on('preempted',function(ballot){
       ballot = ballot[0]
@@ -51,9 +55,9 @@ describe('Tests Commander' , function() {
     var commander = new Commander ({network:network})
     commander.sendP2A(params)
 
-    commander.slots[params.slot].ballot.id.should.be.exactly('127.0.0.1')
-    commander.slots[params.slot].ballot.number.should.be.exactly(1)
-    commander.slots[params.slot].decided.should.be.not.ok
+    commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
+    commander.slots.get(params.slot).ballot.number.should.be.exactly(1)
+    commander.slots.get(params.slot).decided.should.be.not.ok
   })
 
 
@@ -61,9 +65,9 @@ describe('Tests Commander' , function() {
     var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
     var commander = new Commander ({network:network})
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
-    commander.slots[params.slot].ballot.id.should.be.exactly('127.0.0.1')
-    commander.slots[params.slot].ballot.number.should.be.exactly(1)
-    commander.slots[params.slot].decided.should.be.not.ok
+    commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
+    commander.slots.get(params.slot).ballot.number.should.be.exactly(1)
+    commander.slots.get(params.slot).decided.should.be.not.ok
   })
 
 
@@ -73,10 +77,11 @@ describe('Tests Commander' , function() {
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
 
-    commander.slots[params.slot].ballot.id.should.be.exactly('127.0.0.1')
-    commander.slots[params.slot].ballot.number.should.be.exactly(1)
-    commander.slots[params.slot].decided.should.be.not.ok
-    Object.keys(commander.slots).length.should.be.exactly(1)
+    commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
+    commander.slots.get(params.slot).ballot.number.should.be.exactly(1)
+    commander.slots.get(params.slot).acceptorsResponse.size.should.be.exactly(1)
+    commander.slots.get(params.slot).decided.should.be.not.ok
+    commander.slots.size.should.be.exactly(1)
   })
 
 
@@ -85,8 +90,8 @@ describe('Tests Commander' , function() {
       var commander = new Commander ({network:network})
       commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
 
-      commander.slots[params.slot].acceptorsResponse.length.should.be.exactly(1)
-      commander.slots[params.slot].acceptorsResponse[0].should.be.exactly('lyr')
+      commander.slots.get(params.slot).acceptorsResponse.size.should.be.exactly(1)
+      commander.slots.get(params.slot).acceptorsResponse.has('lyr').should.be.ok
     })
 
 
@@ -117,16 +122,16 @@ describe('Tests Commander' , function() {
       var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:2})}
       var commander = new Commander ({network:network})
 
-      commander.slots[params.slot] = {
+      commander.slots.set(params.slot, {
         ballot: new Ballot({id:'127.0.0.1',number:2}),
         operation: params.operation,
         decided: true,
         acceptorsResponse:[],
         acceptors: network.acceptors
-      }
+      });
 
       commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
-      commander.slots[params.slot].decided.should.be.ok
+      commander.slots.get(params.slot).decided.should.be.ok
 
     })
 

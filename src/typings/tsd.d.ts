@@ -26,7 +26,13 @@ interface ParamsLeader{
   ballot?:Ballot;
 }
 
-
+interface CommanderSlot{
+  ballot: Ballot,
+  operation: any,
+  decided: Boolean,
+  acceptorsResponse:Set<String>,
+  acceptors:Map<Number,Array<String>>
+}
 
 interface P2AMessage{
   from:string;

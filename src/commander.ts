@@ -6,8 +6,6 @@ var ballot = require("./ballot")
 var winston = require('winston')
 var underscore = require("underscore")
 import * as Message from "./message";
-
-//import Emitter = require('./icarus_utils')
 import * as Emitter from "./icarus_utils";
 
 /**
@@ -16,14 +14,14 @@ import * as Emitter from "./icarus_utils";
  */
 export class Commander extends Emitter.Emitter{
 
-  private slots:Object
-  private operation:Object
-  private network:any
+  private slots:Map<Number,CommanderSlot>;
+  private operation:Object;
+  private network:any;
 
   constructor( params:{network:any} ){
     super()
     this.network = params.network
-    this.slots = {}
+    this.slots = new Map();
 
     this.network.on('P2B', (message) => { this.process(message[0]) })
   }
@@ -40,18 +38,18 @@ export class Commander extends Emitter.Emitter{
   }
 
   public sendP2A( params:ParamsLeader ){
-      if(this.slots[params.slot] !== undefined){
-        this.emit('preempted', this.slots[params.slot].ballot)
+      if (this.slots.has(params.slot)){
+        this.emit('preempted', this.slots.get(params.slot).ballot)
         return
       }
       else{
-        this.slots[params.slot] = {
+        this.slots.set(params.slot, {
           ballot: params.ballot,
           operation: params.operation,
           decided: false,
-          acceptorsResponse:[],
+          acceptorsResponse: new Set(),
           acceptors: this.network.acceptors
-        }
+        });
 
         var message = new Message.Message({
           from: params.ballot.id,
@@ -68,39 +66,32 @@ export class Commander extends Emitter.Emitter{
     }
 
     public receiveP2B( params:{acceptor:any; ballot:Ballot; slot:number , operation:any} ){
-        if(!this.existsInArray(this.network.acceptors, params.acceptor))
-            return
+        if(!this.network.acceptors.has(params.acceptor)) return
 
-        if(this.slots[params.slot] === undefined){
-          this.slots[params.slot] = {
+        if (!this.slots.has(params.slot)){
+          this.slots.set(params.slot, {
               ballot: params.ballot,
               operation: params.operation,
               decided: false,
-              acceptorsResponse:[],
-              acceptors: this.network.acceptors}
+              acceptorsResponse: new Set(),
+              acceptors: this.network.acceptors
+            });
         }
-        var existsAcceptor = this.existsInArray(this.slots[params.slot].acceptors, params.acceptor)
-        if(!existsAcceptor || this.slots[params.slot].decided) return
+        var slot = this.slots.get(params.slot);
 
-        if(this.slots[params.slot].ballot.isEqual(params.ballot)){
-          if(!this.existsInArray(this.slots[params.slot].acceptorsResponse, params.acceptor))
-            this.slots[params.slot].acceptorsResponse.push(params.acceptor)
-        }
+        var existsAcceptor = slot.acceptors.has(params.acceptor);
+        if (!existsAcceptor || slot.decided) return
 
-        if(params.ballot.isMayorThanOtherBallot(this.slots[params.slot].ballot)){
+        if (slot.ballot.isEqual(params.ballot))
+          this.slots.get(params.slot).acceptorsResponse.add(params.acceptor)
+
+        if (params.ballot.isMayorThanOtherBallot(slot.ballot)){
             this.emit('preempted', params.ballot)
             return
         }
-        if (this.slots[params.slot].acceptorsResponse.length >= Math.round(( this.slots[params.slot].acceptors.length ) / 2)){
-            this.slots[params.slot].decided = true
+        if (slot.acceptorsResponse.size >= Math.round((slot.acceptors.size ) / 2)){
+            slot.decided = true
             this.emit('decision', {slot:params.slot , operation: params.operation})
         }
       }
-
-    private existsInArray<T>(array:Array<T>, value:T){
-      for (var val of array){
-        if (val === value) return true
-      }
-      return false
-    }
 }

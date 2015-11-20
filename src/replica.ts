@@ -7,12 +7,12 @@ var shuffle = require('shuffle-array');
 
 import * as Ballot from "./ballot";
 import * as Message from "./message";
-import {InternalMap as Map} from "./map";
+import {InternalMap as Map2} from "./map";
 
 
 export class Replica{
   slot_num:number = 0;
-  proposals:any = undefined;
+  proposals:Map<number,Set<any>>;
   decisions:any = undefined;
   performed:any = undefined;
 
@@ -33,11 +33,11 @@ export class Replica{
     this.id = params.name
     this.slot_num = 0;
     this.proposals = new Map();
-    this.decisions = new Map();
-    this.performed = new Map();
+    this.decisions = new Map2();
+    this.performed = new Map2();
 
-    this.operationsProposed = new Map();
-    this.operationsDecided  = new Map();
+    this.operationsProposed = new Map2();
+    this.operationsDecided  = new Map2();
 
     this.promisesPerSlot  = {};
 
@@ -76,17 +76,16 @@ export class Replica{
 
   private propose(operation:any){
     var key = {id:operation.id, client:operation.client}
-    var decided  = this.operationsDecided.get(key)
-    var proposed = this.operationsProposed.get(key)
-    if ( decided === undefined ){
+    if ( !this.operationsDecided.has(key) && !this.operationsProposed.has(key)){
       let slot = this.nextEmpltySlot()
-      if (proposed === undefined){
-        this.proposals.set( slot, operation );
-        this.operationsProposed.set( key, slot );
-        this.lastEmpltySlotInProposals++;
-        operation.slot = slot;
-        this.network.sendToLeaders(operation);
-      }
+      operation.slot = slot;
+
+      if (!this.proposals.has(slot))
+          this.proposals.set(slot, new Set());
+      this.proposals.get(slot).add(operation);
+      this.operationsProposed.set( key, slot );
+      this.lastEmpltySlotInProposals++;
+      this.network.sendToLeaders(operation);
     }
   }
 
@@ -94,55 +93,65 @@ export class Replica{
     if(!this.test)
       winston.info("Decided for slot %s operation %s", slot, JSON.stringify(operation))
 
-    if (this.lastEmpltySlotInDecisions > slot)
-      return;
+    if (this.lastEmpltySlotInDecisions > slot) return Promise.resolve();
+
     this.decisions.set( slot, operation )
     var key = {id:operation.id,client:operation.client};
     this.operationsDecided.set( key , operation );
     this.lastEmpltySlotInDecisions++;
 
     let whileDecisionsInSlot = ( ) => {
-      let value = this.decisions.get( this.slot_num );
-      if ( value !== undefined ){
-        this.reproposeOperation( operation );
-        this.perform( operation );
-        whileDecisionsInSlot();
-      }
+      if (!this.decisions.has(this.slot_num))
+        return Promise.resolve();
+      this.checkOperationsToRepropose( operation );
+      return this.perform( operation ).then(()=>{
+        if (!this.test)
+          winston.info("performed slot %s", this.slot_num - 1)
+        return whileDecisionsInSlot();
+      });
+
+
     }
-    whileDecisionsInSlot();
+    return whileDecisionsInSlot();
   }
 
   private perform( operation ) {
     var slots = this.operationSlotInDecided(operation);
     this.slot_num++;
     if (!this.slotsHaveMenorThanSlotNum( slots , this.slot_num )){
-      if(!this.test)
-        winston.info("performed slot %s", this.slot_num - 1)
+      var message = new Message.Message(
+        {
+          from: '',
+          type: 'OPERATION',
+          command_id: 0,
+          operation: operation
+        });
+        return this.network.sendToOperation(message).then((message) =>{
+            let msg = {client: operation.client,
+               id: operation.id,
+               result:'OK'}
+            return this.network.responde(msg);
+        });
     }
-
   }
 
-  private reproposeOperation( operation:any ){
-    let proposals = this.proposals.get(this.slot_num);
-    let operationsToRepropose = [];
-    if (proposals === undefined) return;
-    if (Array.isArray(proposals)){
-      for (var proposal of proposals ){
-        if (proposal.id !== operation.id || proposal.client !== operation.client){
-          operationsToRepropose.push( proposal );
+  private checkOperationsToRepropose(operation:any){
+      if (!this.proposals.has(this.slot_num)) return;
+      var values = this.proposals.get(this.slot_num).values();
+      var value = values.next();
+      while (!value.done){
+        let op = value.value;
+        if ( op.client_id !== operation.client_id || op.id !== operation.id){
+            this.proposals.get(this.slot_num).delete(op);
+            if (this.proposals.get(this.slot_num).size == 0)
+              this.proposals.delete(this.slot_num);
+            this.propose(op);
         }
+        value = values.next();
       }
-    }else{
-      if (proposals.id !== operation.id || proposals.client !== operation.client){
-        operationsToRepropose.push( proposals );
-      }
-    }
-    for (var proposal of operationsToRepropose) this.propose( proposal );
-    if (operationsToRepropose.length > 0) this.proposals.delete( this.slot_num );
   }
 
-
- private nextEmpltySlot(){
+  private nextEmpltySlot(){
     if (this.lastEmpltySlotInDecisions == this.lastEmpltySlotInProposals)
       return this.lastEmpltySlotInDecisions;
     if (this.lastEmpltySlotInDecisions < this.lastEmpltySlotInProposals)
