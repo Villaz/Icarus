@@ -8,9 +8,22 @@ var winston = require('winston')
 var zmq = require('zmq')
 var Promise = require("bluebird")
 var Discover = require('./discover')
+var Gmetric = require('gmetric');
 
 //import Emitter = require('./icarus_utils')
 import * as Emitter from "./icarus_utils";
+
+
+var gmetric = new Gmetric();
+var metric = {
+  hostname: 'test',
+  group: 'messages',
+  units: 'msg',
+  slope: 'positive',
+  name: 'send_msg',
+  value: 1,
+  type: 'int32'
+};
 
 export class Network extends Emitter.Emitter{
     replicas: Array<any>
@@ -74,6 +87,9 @@ export class Network extends Emitter.Emitter{
 
     public send(name: string, message:Message.Message) {
         this.publishers[name].send(message.type + " " + JSON.stringify(message));
+        metric.name = message.type;
+        gmetric.send('172.28.128.4', 8649, metric);
+        metric.value++
     }
 
     protected processMessage(data: any, type: string) { }

@@ -25,7 +25,8 @@
     "underscore": "^1.8.3",
     "winston": "*",
     "winston-graylog2": "^0.2.3",
-    "zmq": "^2.13.0"
+    "zmq": "^2.13.0",
+    "gmetric": "*"
   },
   "devDependencies": {
     "blanket": "^1.1.7",
