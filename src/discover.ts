@@ -50,12 +50,16 @@ export class DiscoverBonjour extends Discover {
     }
 
     private startAdvertisement() {
-        this.advertisement = mdns.createAdvertisement(mdns.tcp("icarus"), this.port, {name:this.name, txtRecord: this.roles })
+        this.advertisement = mdns.createAdvertisement(mdns.udp("icarus"), this.port, {name:this.name, txtRecord: this.roles })
         this.advertisement.start()
     }
 
     private startBrowser() {
-        this.browser = mdns.createBrowser(mdns.tcp("icarus"))
+        var sequence = [
+          mdns.rst.DNSServiceResolve(),
+          mdns.rst.getaddrinfo({families: [4] })
+        ];
+        this.browser = mdns.createBrowser(mdns.udp("icarus"), {resolverSequence:sequence})
         var self = this
         this.browser.on('serviceUp', (service) => {
             var data = {
