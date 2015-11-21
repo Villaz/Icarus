@@ -192,12 +192,15 @@ export class ReplicaNetwork extends Network {
     private operationSocket:any;
     private operationPort: number;
     private clients = {};
+    private connected: boolean;
 
     constructor(discover: any, connection: { port: number, client:number, operation:number }) {
         super(discover, connection)
         this.startPublisher(connection.port, 'RTLP');
         this.startRouter(connection.client);
         this.operationPort = connection.operation;
+        this.operationSocket = zmq.socket('req');
+        this.connected = false;
     }
 
     private startRouter(port:number) {
@@ -226,14 +229,13 @@ export class ReplicaNetwork extends Network {
     }
 
     public sendToOperation( message:Message.Message ){
-        var operationSocket = zmq.socket('req');
-        operationSocket.connect(`tcp://127.0.0.1:${this.operationPort}`)
+        if (!this.connected)
+          this.operationSocket.connect(`tcp://127.0.0.1:${this.operationPort}`)
         return new Promise((resolve, reject)=>{
-          operationSocket.on('message',( message )=>{
-            operationSocket.disconnect(`tcp://127.0.0.1:${this.operationPort}`)
+          this.operationSocket.on('message',( message )=>{
             resolve();
           });
-          operationSocket.send(JSON.stringify(message));
+          this.operationSocket.send(JSON.stringify(message));
         });
     }
 
