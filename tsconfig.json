@@ -23,6 +23,10 @@
         "./src/discover.ts",
         "./src/name_generator.ts",
         "./src/message.ts",
-        "./src/typings/tsd.d.ts"
+        "./src/typings/tsd.d.ts",
+
+        "./src/network/network.ts",
+        "./src/network/zmq/network.ts",
+        "./src/network/rabbitmq/network.ts"
     ]
 }

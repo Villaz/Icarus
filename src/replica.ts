@@ -2,13 +2,17 @@
 
 
 var winston = require('winston');
-var Network = require('./network').ReplicaNetwork;
 var shuffle = require('shuffle-array');
 
 import * as Ballot from "./ballot";
 import * as Message from "./message";
 import {InternalMap as Map2} from "./map";
 
+var nconf = require('nconf');
+nconf.argv()
+   .env()
+   .file({ file: './conf/icarus.conf' });
+var Network = require('./network/'+nconf.get('network')+'/network').ReplicaNetwork
 
 export class Replica{
   slot_num:number = 0;

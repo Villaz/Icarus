@@ -43,8 +43,6 @@ class Client{
     this.executionSocket.on('message', (message) =>{
       message = JSON.parse(message);
       console.log(message);
-      console.log("AAAA")
-      console.log(this.executions);
       this.executions.get(message.id)[0]();
     });
   }
@@ -60,7 +58,7 @@ class Client{
     return new Promise((resolve, reject)=>{
       this.executions.set(message.id,[resolve, reject])
       this.executionSocket.send(JSON.stringify(message));
-      console.log(this.executions);
+
     });
 
   }

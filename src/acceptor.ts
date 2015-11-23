@@ -2,11 +2,19 @@
 
 var ballot = require("./ballot")
 var winston = require('winston')
-var Network = require('./network').AcceptorNetwork
+
 var shuffle = require('shuffle-array')
 
 import * as Message from "./message";
 import {InternalMap as Map} from "./map";
+
+
+var nconf = require('nconf');
+nconf.argv()
+   .env()
+   .file({ file: './conf/icarus.conf' });
+
+var Network = require('./network/'+nconf.get('network')+'/network').AcceptorNetwork
 
 export class Acceptor{
 
@@ -147,7 +155,7 @@ export class Acceptor{
       }
       var interval = (to - from) / acceptors.length
       var begin = from
-      
+
       for (var acceptor of shuffle(acceptors)) {
           acceptorsMap[acceptor] = { begin: begin, to: begin + interval }
           begin += interval
@@ -156,7 +164,7 @@ export class Acceptor{
           port: 7777,
           intervals: acceptorsMap
       }
-      
+
       var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
       this.network.sendToAcceptors(message)
       return message;

@@ -5,12 +5,17 @@ var Promise = require("bluebird")
 var ballot = require("./ballot")
 var winston = require('winston')
 var commander = require('./commander')
-var Network = require('./network').LeaderNetwork
 var Scout = require('./scout').Scout
 var crc = require('crc');
 import * as Message from "./message";
 
 import {InternalMap as Map} from "./map";
+
+var nconf = require('nconf');
+nconf.argv()
+   .env()
+   .file({ file: './conf/icarus.conf' });
+var Network = require('./network/'+nconf.get('network')+'/network').LeaderNetwork
 
 /**
  * Class Leader

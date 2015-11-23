@@ -10,9 +10,11 @@
   "author": "Luis Villazon",
   "license": "GPL",
   "dependencies": {
+    "amqplib": "^0.4.0",
     "bluebird": "^2.10.0",
     "commander": "*",
     "crc": "*",
+    "gmetric": "*",
     "grunt": ">=0.4",
     "grunt-cli": ">=0.1",
     "hashmap": "*",
@@ -25,8 +27,7 @@
     "underscore": "^1.8.3",
     "winston": "*",
     "winston-graylog2": "^0.2.3",
-    "zmq": "^2.13.0",
-    "gmetric": "*"
+    "zmq": "^2.13.0"
   },
   "devDependencies": {
     "blanket": "^1.1.7",
