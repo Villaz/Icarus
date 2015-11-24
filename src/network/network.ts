@@ -26,7 +26,7 @@ export class Network extends Emitter.Emitter{
 
     protected messagesReceived = {};
 
-    constructor(discover:any, connection: { port: number }) {
+    constructor(discover:any) {
         super();
         this.replicas = [];
         this.leaders = [];

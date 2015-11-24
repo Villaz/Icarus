@@ -19,14 +19,18 @@ export class RabbitMQNetwork extends Network {
   private channel:any;
   private ready:any;
 
-  constructor(discover:any, connection: { port: number }) {
-      super(discover, connection);
-      this.startPublisher(connection.port, '');
+  constructor(discover:any, connection: { port: number , host:string }) {
+      super(discover);
+      this.startPublisher(connection.port, connection.host);
   }
 
   protected startPublisher(port: number, name:string) {
     this.ready = new Promise((resolve, reject) => {
-      amqp.connect('amqp://localhost', (err, conn) => {
+      amqp.connect('amqp://'+ name, (err, conn) => {
+        if (err){
+          console.error(err);
+          process.exit(-1);
+        }
         conn.createChannel((err, ch) => {
           ch.assertExchange('messages', 'direct', {durable: false});
           this.channel = ch;
@@ -71,7 +75,7 @@ export class AcceptorNetwork extends RabbitMQNetwork {
     receivedMessages: Array<any>
     private counter:number=0
 
-    constructor(discover: any, connection: { port: number }) {
+    constructor(discover: any, connection: { port: number , host:string}) {
         super(discover, connection)
         this.receivedMessages = []
         this.subscription({ name: '', subscriptions: ['P1A', 'P2A','REC'], url: '', port: 0})
@@ -104,7 +108,7 @@ export class ReplicaNetwork extends RabbitMQNetwork {
     private clients = {};
     private connected: boolean;
 
-    constructor(discover: any, connection: { port: number, client:number, operation:number }) {
+    constructor(discover: any, connection: { port: number, client:number, operation:number , host:string }) {
         super(discover, connection)
         this.subscription({ name: '', subscriptions: ['DECISION'], url: '', port: 0})
         this.startRouter(connection.client);
@@ -161,7 +165,7 @@ export class ReplicaNetwork extends RabbitMQNetwork {
 
 export class LeaderNetwork extends RabbitMQNetwork {
 
-    constructor(discover: any, connection: { port: number , replica:number }) {
+    constructor(discover: any, connection: { port: number , replica:number , host:string }) {
         super(discover, connection)
         this.subscription({ name: '', subscriptions: ['P1B', 'P2B','PROPOSE'], url: '', port: 0})
 

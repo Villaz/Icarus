@@ -6,15 +6,12 @@ var shuffle = require('shuffle-array');
 
 import * as Ballot from "./ballot";
 import * as Message from "./message";
+import * as Rol from "./rol";
 import {InternalMap as Map2} from "./map";
 
-var nconf = require('nconf');
-nconf.argv()
-   .env()
-   .file({ file: './conf/icarus.conf' });
-var Network = require('./network/'+nconf.get('network')+'/network').ReplicaNetwork
 
-export class Replica{
+
+export class Replica extends Rol.Rol{
   slot_num:number = 0;
   proposals:Map<number,Set<any>>;
   decisions:any = undefined;
@@ -33,8 +30,9 @@ export class Replica{
   id:string;
   test:boolean;
 
-  constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any }}){
-    this.id = params.name
+  constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
+    super('replica', params);
+
     this.slot_num = 0;
     this.proposals = new Map();
     this.decisions = new Map2();
@@ -48,22 +46,10 @@ export class Replica{
     this.lastEmpltySlotInDecisions = 0;
     this.lastEmpltySlotInProposals = 0;
 
-    if(params !== undefined && params.test !== undefined) this.test = params.test
-    else this.test = false
-
-    if (!this.test) {
-        try {
-            winston.add(winston.transports.File, { filename: 'replica' + this.id + '.log' });
-        } catch (e){ }
-      if(params !== undefined && params.network !== undefined)
-        winston.info("Replica %s started in port %s ",this.id, params.network.ports.port);
-    }
-    if (params !== undefined && !this.test && params.network !== undefined) this.startNetwork(params.network);
   }
 
 
-  private startNetwork(params: { discover: Discover, ports:any }) {
-      this.network = new Network(params.discover, params.ports)
+  protected _startNetwork( ) {
       var self = this
       this.network.on('message', (message) => {
           message = message[0]

@@ -7,59 +7,25 @@ var shuffle = require('shuffle-array')
 
 import * as Message from "./message";
 import {InternalMap as Map} from "./map";
+import {Rol} from "./rol"
 
 
-var nconf = require('nconf');
-nconf.argv()
-   .env()
-   .file({ file: './conf/icarus.conf' });
 
-var Network = require('./network/'+nconf.get('network')+'/network').AcceptorNetwork
+export class Acceptor extends Rol{
 
-export class Acceptor{
-
-  private id:string;
   private actualBallot:Ballot;
   private mapOfValues:Map<number, any>;
-  private network:any;
 
   private messages_sended: number = 0
-  private test:boolean
-
-
-  constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any }}){
+  
+  constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
+    super('acceptor', params);
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new Map<number, any>();
-
-    this.id = params.name
-    if(params !== undefined && params.test !== undefined) this.test = params.test
-    else this.test = false
-
-    if (!this.test) {
-        try {
-            winston.add(winston.transports.File, { filename: 'acceptor' + this.id + '.log' })
-            winston.add(require('winston-graylog2'), {
-              name: 'Graylog',
-              level: 'debug',
-              silent: false,
-              handleExceptions: false,
-              graylog: {
-                servers: [{host: '127.0.0.1', port: 12201}],
-                hostname: this.id,
-                facility:"acceptor",
-                bufferSize: 1400
-              }
-            });
-        } catch (e){ }
-      if(params !== undefined && params.network !== undefined)
-        winston.info("Acceptor %s started in port %s ",this.id, params.network.ports.port)
-    }
-    if (params !== undefined && !this.test && params.network !== undefined) this.startNetwork(params.network)
     setTimeout(() => { this.sendRecuperation() },3000)
   }
 
-  private startNetwork(params: { discover:Discover, ports:any }) {
-      this.network = new Network(params.discover, params.ports)
+  protected _startNetwork() {
       var self = this
       this.network.on('message', (message) => {
           message = message[0]

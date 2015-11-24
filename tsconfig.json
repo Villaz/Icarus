@@ -10,6 +10,7 @@
         "target": "es5"
     },
     "files": [
+        "./src/rol.ts",
         "./src/app.ts",
         "./src/ballot.ts",
         "./src/map.ts",

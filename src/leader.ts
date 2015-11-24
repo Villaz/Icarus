@@ -10,67 +10,36 @@ var crc = require('crc');
 import * as Message from "./message";
 
 import {InternalMap as Map} from "./map";
-
-var nconf = require('nconf');
-nconf.argv()
-   .env()
-   .file({ file: './conf/icarus.conf' });
-var Network = require('./network/'+nconf.get('network')+'/network').LeaderNetwork
+import {Rol} from "./rol";
 
 /**
  * Class Leader
  * @class Leader
  */
-export class Leader{
+export class Leader extends Rol{
 
-  id:string
   ballot:Ballot
   active:boolean
   proposals : Map<number,any>;
   scout :any
   commander :any
   lastSlotReceived:any
-  network :any
   actualLeader:any
   started: boolean = false
   test:boolean = false
 
-  constructor(params?: { name: string, test?: boolean, network?: { discover: any, ports: any } }) {
-      this.id = params.name
+  constructor(params?: { name: string, test?: boolean, network?: { discover: any, ports: any, network:any } }) {
+      super('leader', params);
       this.ballot = new ballot.Ballot({ number: 1, id: params.name })
       this.active = false
       this.proposals = new Map<number,any>()
 
-      if(params !== undefined && params.test !== undefined)
-        this.test = params.test
-      if (!params.test) {
-          try {
-              winston.add(winston.transports.File, { filename: 'leader' + this.id + '.log' })
-              winston.add(require('winston-graylog2'), {
-                name: 'Graylog',
-                level: 'debug',
-                silent: false,
-                handleExceptions: false,
-                graylog: {
-                  servers: [{host: '127.0.0.1', port: 12201}],
-                  hostname: this.id,
-                  facility: "leader",
-                  bufferSize: 1400
-                }
-              });
-          } catch (e) { }
-          winston.info("Leader %s started on port %s", params.name, params.network.ports.port);
-      }
-
       process.on('decision',(message:{slot:number,operation:any})=>{
         process.emit('decision', message)
       })
-
-      if(!params.test && params.network !== undefined) this.startNetwork(params.network)
   }
 
-  private startNetwork(params: { discover: any, ports: any }){
-    this.network = new Network(params.discover, params.ports)
+  protected _startNetwork(){
     var self = this;
     this.network.on('acceptor', (info) => {
         if (!self.started) {

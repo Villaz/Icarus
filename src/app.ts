@@ -10,8 +10,9 @@ var nconf = require('nconf');
 
 nconf.argv()
    .env()
+   .file({ file: '/etc/icarus/icarus.conf'})
    .file({ file: './conf/icarus.conf' })
-   .file({ file: './etc/icarus/icarus.conf'});
+
 
 
 function createAndStartRol(){
@@ -30,7 +31,9 @@ if(cluster.isMaster){
       var d = Discover.Discover.createDiscover('bonjour', { name: name, port: nconf.get("acceptor")['discover'], roles: {'A':nconf.get("acceptor")['port']}});
     var rol:any = new Acceptor({ name: name,
                              network: { discover: d,
-                                        ports: { port: nconf.get("acceptor")['port'] } } });
+                                        ports: nconf.get("acceptor"),
+                                        network: nconf.get('network')
+                                        }});
   }
   else if(process.env.rol === 'leader'){
       var d = Discover.Discover.createDiscover('bonjour', {
@@ -44,9 +47,8 @@ if(cluster.isMaster){
       });
       var rol:any = new Leader({ name: name,
                              network: { discover: d,
-                                        ports: { port: nconf.get("leader")['port'],
-                                                 replica: nconf.get("leader")['replica']
-                                               }
+                                        ports: nconf.get('leader'),
+                                        network: nconf.get('network')
                                       }
                                });
   }
@@ -54,6 +56,7 @@ if(cluster.isMaster){
       var d = Discover.Discover.createDiscover('bonjour', { name: name, port: nconf.get("replica")['discover'], roles: {'R':nconf.get("replica")['port']}});
       var rol:any = new Replica({ name: name,
                                   network: { discover: d,
-                                  ports: nconf.get("replica")}});
+                                  ports: nconf.get("replica"),
+                                  network: nconf.get('network')}});
   }
 }

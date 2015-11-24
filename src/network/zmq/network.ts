@@ -30,8 +30,8 @@ var metric = {
 
 export class ZMQNetwork extends Network {
 
-  constructor(discover:any, connection: { port: number }){
-    super(discover, connection);
+  constructor(discover:any){
+    super(discover);
   }
 
   protected startPublisher(port: number, name:string) {
@@ -89,7 +89,7 @@ export class AcceptorNetwork extends ZMQNetwork {
     private counter:number=0
 
     constructor(discover: any, connection: { port: number }) {
-        super(discover, connection)
+        super(discover)
         this.startPublisher(connection.port, 'ATLP')
         this.subscriber = undefined
         this.receivedMessages = []
@@ -136,7 +136,7 @@ export class ReplicaNetwork extends ZMQNetwork {
     private connected: boolean;
 
     constructor(discover: any, connection: { port: number, client:number, operation:number }) {
-        super(discover, connection)
+        super(discover)
         this.startPublisher(connection.port, 'RTLP');
         this.startRouter(connection.client);
         this.operationPort = connection.operation;
@@ -202,7 +202,7 @@ export class ReplicaNetwork extends ZMQNetwork {
 export class LeaderNetwork extends ZMQNetwork {
 
     constructor(discover: any, connection: { port: number , replica:number }) {
-        super(discover, connection)
+        super(discover)
         this.startPublisher(connection.port, "LTAP");
         this.startPublisher(connection.replica, "LTRP");
     }
