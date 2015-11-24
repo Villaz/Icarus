@@ -18,8 +18,6 @@
     "commander": "*",
     "crc": "*",
     "gmetric": "*",
-    "grunt": ">=0.4",
-    "grunt-cli": ">=0.1",
     "hashmap": "*",
     "mdns": "^2.2.10",
     "measured": "^1.0.2",
@@ -35,6 +33,7 @@
   "devDependencies": {
     "blanket": "^1.1.7",
     "grunt": "^0.4.5",
+    "grunt-cli": ">=0.1",
     "grunt-coveralls": "^1.0.0",
     "grunt-mocha-test": "^0.12.7",
     "grunt-plato": "^1.2.1",
