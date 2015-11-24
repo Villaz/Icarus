@@ -1,6 +1,6 @@
 {
   "name": "icarus",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A Typescript Paxos implementation",
   "main": "lib/app.js",
   "repository": {
@@ -11,7 +11,7 @@
     "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register"
   },
   "author": "Luis Villazon",
-  "license": "GPL",
+  "license": "GPL-3.0",
   "dependencies": {
     "amqplib": "^0.4.0",
     "bluebird": "^2.10.0",
