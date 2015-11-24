@@ -1,8 +1,11 @@
 {
   "name": "icarus",
   "version": "0.0.0",
-  "description": "A Coffescript Paxos implementation",
-  "main": "lib/index.js",
+  "description": "A Typescript Paxos implementation",
+  "main": "lib/app.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Villaz/Icarus"},
   "scripts": {
     "test": "grunt jenkins",
     "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register"
