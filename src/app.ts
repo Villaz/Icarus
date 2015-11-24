@@ -10,7 +10,8 @@ var nconf = require('nconf');
 
 nconf.argv()
    .env()
-   .file({ file: './conf/icarus.conf' });
+   .file({ file: './conf/icarus.conf' })
+   .file({ file: './etc/icarus/icarus.conf'});
 
 
 function createAndStartRol(){
