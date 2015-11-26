@@ -13,6 +13,14 @@ var Discover = require('../../discover')
 var Gmetric = require('gmetric');
 import * as Emitter from "../../icarus_utils";
 
+var winston = require('winston');
+var Elasticsearch = require('winston-elasticsearch');
+
+var esTransportOpts = {
+  level: 'debug',
+};
+winston.add(winston.transports.Elasticsearch, esTransportOpts);
+
 
 export class RabbitMQNetwork extends Network {
 
@@ -65,6 +73,7 @@ export class RabbitMQNetwork extends Network {
   public send(name: string, message:Message.Message) {
     var msg = JSON.stringify(message);
     this.channel.publish("messages", message.type, new Buffer(msg));
+    winston.debug(message.type);
   }
 }
 
