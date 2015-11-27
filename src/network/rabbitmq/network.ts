@@ -17,7 +17,7 @@ var winston = require('winston');
 var Elasticsearch = require('winston-elasticsearch');
 
 var esTransportOpts = {
-  level: 'debug',
+  level: 'warning',
 };
 winston.add(winston.transports.Elasticsearch, esTransportOpts);
 

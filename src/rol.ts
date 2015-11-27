@@ -21,10 +21,10 @@ export abstract class  Rol {
 
     if (!this.test) {
         try {
-            winston.add(winston.transports.File, { filename: type + this.id + '.log' });
+            winston.add(winston.transports.File, { filename: type + this.id + '.log' , level:'warning'});
             winston.add(require('winston-graylog2'), {
               name: 'Graylog',
-              level: 'debug',
+              level: 'warning',
               silent: false,
               handleExceptions: false,
               graylog: {
@@ -43,7 +43,7 @@ export abstract class  Rol {
 
   private startNetwork(params: { discover: Discover, ports:any, network:any }){
     var Network = require('./network/'+params.network.type+'/network')[capitalize(this.type)+'Network']
-    
+
     params.ports['host'] = params.network['host']
     this.network = new Network(params.discover, params.ports)
     this._startNetwork();

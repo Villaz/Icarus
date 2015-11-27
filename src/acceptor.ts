@@ -17,11 +17,13 @@ export class Acceptor extends Rol{
   private mapOfValues:Map<number, any>;
 
   private messages_sended: number = 0
-  
+  private last_slot:number;
+
   constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
     super('acceptor', params);
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new Map<number, any>();
+    this.last_slot = -1;
     setTimeout(() => { this.sendRecuperation() },3000)
   }
 
@@ -79,9 +81,11 @@ export class Acceptor extends Rol{
 
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
 
-      var operation = this.mapOfValues.getValues({start:value.slot})[0]
-
-      if(operation !== undefined && operation.client === value.operation && operation.id === value.operation.client.id) return
+      if (value.slot > this.last_slot) this.last_slot = value.slot
+      else{
+        var operation = this.mapOfValues.getValues({start:value.slot})[0]
+        if (operation !== undefined && operation.client === value.operation && operation.id === value.operation.client.id) return
+      }
 
       if(!this.test) winston.info("Received P2A: %s", JSON.stringify(value))
 
