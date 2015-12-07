@@ -1,4 +1,5 @@
 ///<reference path='./typings/tsd.d.ts' />
+
 var winston = require('winston');
 
 var capitalize = function(value) {
@@ -21,8 +22,8 @@ export abstract class  Rol {
 
     if (!this.test) {
         try {
-            winston.add(winston.transports.File, { filename: type + this.id + '.log' , level:'warning'});
-            winston.add(require('winston-graylog2'), {
+            //winston.add(winston.transports.File, { filename: type + this.id + '.log' , level:'warning'});
+            /*winston.add(require('winston-graylog2'), {
               name: 'Graylog',
               level: 'warning',
               silent: false,
@@ -33,7 +34,7 @@ export abstract class  Rol {
                 facility: "leader",
                 bufferSize: 1400
               }
-            });
+            });*/
         } catch (e){ }
       if (params !== undefined && params.network !== undefined)
         winston.info(type +" %s started in port %s ",this.id, params.network.ports.port);
@@ -50,4 +51,9 @@ export abstract class  Rol {
   }
 
   protected abstract _startNetwork();
+}
+
+export function getRol(type:any, params:{ name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}):any{
+  var obj = require('./'+type)[capitalize(type)];
+  return new obj(params);
 }

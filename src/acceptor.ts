@@ -87,13 +87,12 @@ export class Acceptor extends Rol{
         if (operation !== undefined && operation.client === value.operation && operation.id === value.operation.client.id) return
       }
 
-      if(!this.test) winston.info("Received P2A: %s", JSON.stringify(value))
-
+      if(!this.test) winston.info("Received P2A")
       if(value.ballot.isMayorOrEqualThanOtherBallot(this.actualBallot)){
           if(!this.test) winston.info("P2A Updated ballot to %s" ,JSON.stringify(value.ballot))
           this.actualBallot = value.ballot;
           this.mapOfValues.set(value.slot, value.operation, true);
-          if(!this.test) winston.info("P2A Added operation  %s  to slot %s", JSON.stringify(value.operation), value.slot)
+          if(!this.test) winston.info("P2A Added operation to slot %s", value.slot)
       }
       this.sendP2B(value.slot, value.operation)
 

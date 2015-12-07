@@ -16,7 +16,7 @@
   "dependencies": {
     "amqplib": "^0.4.0",
     "bluebird": "^2.10.0",
-    "commander": "*",
+    "commander": "^2.9.0",
     "crc": "*",
     "gmetric": "*",
     "hashmap": "*",

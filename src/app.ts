@@ -1,11 +1,9 @@
 ﻿///<reference path='./typings/tsd.d.ts' />
 import * as cluster from "cluster";
 import * as names from "./name_generator";
-import {Acceptor} from "./acceptor";
-import {Leader} from "./leader";
-import {Replica} from "./replica";
 import * as Discover from "./discover";
 
+var program = require('commander');
 var nconf = require('nconf');
 
 nconf.argv()
@@ -14,9 +12,41 @@ nconf.argv()
    .file({ file: './conf/icarus.conf' })
 
 
+   program
+     .version('0.0.1')
+     .option('--acceptor_name [name]', 'Acceptor name',names.generateName().substr(0, 15))
+     .option('--leader_name [name]', 'Leader name', names.generateName().substr(0, 15))
+     .option('--replica_name [name]', 'replica_name', names.generateName().substr(0, 15))
+     .parse(process.argv);
 
-function createAndStartRol(){
 
+function capitalize(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function createDiscover(type:string, name:string, rol:string){
+  let roles = {}
+  roles[rol[0].toUpperCase()] = []
+  for (let ports in nconf.get(rol)['ports']){
+    roles[rol[0].toUpperCase()].push(nconf.get(rol)['ports'][ports])
+  }
+  let discover = Discover.Discover.createDiscover(type, {
+    name: name,
+    port: nconf.get(rol)['discover'],
+    roles: roles
+  });
+  return discover;
+}
+
+function createRol(type:string, name:string, discover:Discover.Discover):any{
+  var params = { name: name,
+                 network: { discover: discover,
+                            ports: nconf.get(type)['ports'],
+                            network: nconf.get('network')
+                          }
+               }
+  var rol = require("./rol");
+  return rol.getRol(type, params)
 }
 
 if(cluster.isMaster){
@@ -26,37 +56,7 @@ if(cluster.isMaster){
      cluster.fork({'rol':rol}).id = rol;
   }
 }else{
-  var name = names.generateName().substr(0, 15)
-  if(process.env.rol === 'acceptor'){
-      var d = Discover.Discover.createDiscover('bonjour', { name: name, port: nconf.get("acceptor")['discover'], roles: {'A':nconf.get("acceptor")['port']}});
-    var rol:any = new Acceptor({ name: name,
-                             network: { discover: d,
-                                        ports: nconf.get("acceptor"),
-                                        network: nconf.get('network')
-                                        }});
-  }
-  else if(process.env.rol === 'leader'){
-      var d = Discover.Discover.createDiscover('bonjour', {
-        name: name,
-        port: nconf.get("leader")['discover'],
-        roles: {
-          'L':[ nconf.get("leader")['port'],
-                nconf.get("leader")['replica']
-              ]
-        }
-      });
-      var rol:any = new Leader({ name: name,
-                             network: { discover: d,
-                                        ports: nconf.get('leader'),
-                                        network: nconf.get('network')
-                                      }
-                               });
-  }
-  else if (process.env.rol === 'replica'){
-      var d = Discover.Discover.createDiscover('bonjour', { name: name, port: nconf.get("replica")['discover'], roles: {'R':nconf.get("replica")['port']}});
-      var rol:any = new Replica({ name: name,
-                                  network: { discover: d,
-                                  ports: nconf.get("replica"),
-                                  network: nconf.get('network')}});
-  }
+  name = program[process.env.rol+"_name"]
+  let discover = createDiscover('bonjour', name, process.env.rol)
+  var rol:any = createRol(process.env.rol, name, discover)
 }

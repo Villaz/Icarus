@@ -58,10 +58,12 @@ export class ZMQNetwork extends Network {
       }
 
       var self = this;
-      subscriber.on('message', (data) => {
-          var messageType = data.toString().substr(0, data.toString().indexOf("{") - 1)
-          data = data.toString().substr(data.toString().indexOf("{"))
-          data = JSON.parse(data)
+      subscriber.on('message', function(){
+          var args = Array.apply(null, arguments);
+          var messageType = args.shift().toString();
+          var buffer = Buffer.concat(args);
+
+          let data = JSON.parse(buffer.toString())
           if (!self.messagesReceived[data.from])
               self.messagesReceived[data.from] = []
           for (var obj of self.messagesReceived[data.from])
@@ -74,10 +76,33 @@ export class ZMQNetwork extends Network {
   }
 
   public send(name: string, message:Message.Message) {
-      this.publishers[name].send(message.type + " " + JSON.stringify(message));
+      this.publishers[name].send(this.generateBufferMessage(message));
       metric.name = message.type;
       gmetric.send('172.28.128.4', 8649, metric);
       metric.value++
+  }
+
+  private generateBufferMessage(message:Message.Message){
+    let CHUNK = 1024 * 1024;
+    let bufferArray = new Array<Buffer>();
+    bufferArray.push(new Buffer(message.type));
+    var buffer = new Buffer(JSON.stringify(message));
+    if (buffer.length > CHUNK){
+      for (let pos=0; pos < buffer.length; pos += CHUNK){
+        let aux = new Buffer(CHUNK);
+        let copied = buffer.copy(aux, 0, pos, pos + CHUNK);
+        if (copied < CHUNK){
+          let cutted = new Buffer(copied);
+          aux.copy(cutted, 0 , 0, copied);
+          bufferArray.push(cutted)
+        }else{
+          bufferArray.push(aux)
+        }
+      }
+    }else{
+      bufferArray.push(buffer);
+    }
+    return bufferArray;
   }
 }
 
@@ -147,10 +172,15 @@ export class ReplicaNetwork extends ZMQNetwork {
     private startRouter(port:number) {
         this.clientRouter = zmq.socket('router');
         this.clientRouter.bind(`tcp://*:${port}`);
-        this.clientRouter.on('message', (envelope, b, message) => {
-            message = JSON.parse(message);
-            this.clients[`${message.client}-${message.operation_id}`] = envelope
-            this.emit('propose', message);
+        let self = this;
+        this.clientRouter.on('message', function() {
+            var args = Array.apply(null, arguments);
+            var envelope = args.shift();
+            var blank = args.shift();
+            var fs = require("fs")
+            var message = JSON.parse(Buffer.concat(args).toString());
+            self.clients[`${message.client}-${message.operation_id}`] = envelope
+            self.emit('propose', message);
         });
     }
 
@@ -229,14 +259,14 @@ export class LeaderNetwork extends ZMQNetwork {
         }
     }
 
-    protected _upNode(type: string, url:string, port:number) {
+    protected _upNode(type: string, url:string, port:any) {
         switch (type) {
             case 'A':
                 this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B', 'P2B'], url: url, port: port});
                 this.emit('acceptor', url);
                 break;
             case 'R':
-                this.subscription({ name: "replicaSubscriber", subscriptions: ['PROPOSE'], url: url, port: port});
+                this.subscription({ name: "replicaSubscriber", subscriptions: ['PROPOSE'], url: url, port: port.split(',')[0]});
                 break;
 
         }

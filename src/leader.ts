@@ -91,7 +91,7 @@ export class Leader extends Rol{
       result = result[0];
 
       if(!this.test)
-        winston.info("Decided for slot %s operation %s", result.slot, JSON.stringify(result.operation))
+        winston.info("Decided operation for slot %s", result.slot)
 
       var message:Message.Message = new Message.Message({
           type: 'DECISION',
@@ -106,7 +106,7 @@ export class Leader extends Rol{
 
   public propose(params:{slot:number; operation:any}){
       if(!this.test)
-        winston.info("Proposing for slot %s operation %s", params.slot, JSON.stringify(params.operation))
+        winston.info("Proposing operation for slot %s", params.slot)
 
       if(this.proposals.get(params.slot) === undefined){
         this.proposals.set(params.slot, params.operation)

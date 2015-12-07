@@ -81,7 +81,7 @@ export class Replica extends Rol.Rol{
 
   private decision( slot, operation ){
     if(!this.test)
-      winston.info("Decided for slot %s operation %s", slot, JSON.stringify(operation))
+      winston.info("Decided operation for slot %s", slot)
 
     if (this.lastEmpltySlotInDecisions > slot) return Promise.resolve();
 
