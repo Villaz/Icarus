@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "grunt jenkins",
-    "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register"
+    "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register",
+    "start": "node --harmony_default_parameters --harmony_rest_parameters lib/app.js"
   },
   "author": "Luis Villazon",
   "license": "GPL-3.0",

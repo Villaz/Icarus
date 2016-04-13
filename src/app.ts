@@ -56,7 +56,7 @@ if(cluster.isMaster){
      cluster.fork({'rol':rol}).id = rol;
   }
 }else{
-  name = program[process.env.rol+"_name"]
+  let name:string = program[process.env.rol+"_name"]
   let discover = createDiscover('bonjour', name, process.env.rol)
   var rol:any = createRol(process.env.rol, name, discover)
 }

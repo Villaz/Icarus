@@ -1,5 +1,5 @@
 /// <reference path="../typings/node/node.d.ts" />
-/// <reference path="../typings/node/es6.d.ts" />
+
 declare class InternalMap<K, T> {
     private hashMap;
     constructor();

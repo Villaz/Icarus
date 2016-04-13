@@ -117,7 +117,7 @@ export class Acceptor extends Rol{
   }
 
   private sendRecuperation(from:number=0,to?:number) {
-      let acceptors = []
+      let acceptors:Array<any> = []
       let acceptorsMap = {}
       for (var acceptor in this.network.acceptors) {
           if(acceptor !== this.id) acceptors.push(acceptor)
@@ -125,7 +125,7 @@ export class Acceptor extends Rol{
       var interval = (to - from) / acceptors.length
       var begin = from
 
-      for (var acceptor of shuffle(acceptors)) {
+      for (let acceptor of shuffle(acceptors)) {
           acceptorsMap[acceptor] = { begin: begin, to: begin + interval }
           begin += interval
       }
