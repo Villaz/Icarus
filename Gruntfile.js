@@ -60,7 +60,7 @@
               command:'tsc'
             },
             install_istanbul:{
-              command:'npm install istanbul'
+              command:'if [! -d "./node_modules/istanbul" ]; then npm install istanbul; fi'
             },
             install_yuidoc:{
               command:'npm -g install yuidocjs'

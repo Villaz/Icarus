@@ -62,7 +62,7 @@ describe('Leader tests', function(){
 
 
     it('Adopted' , function( ){
-  		var ballot = new Ballot(1,'localhost')
+  		var ballot = new Ballot({number:1, id:'localhost'})
   		var slot = 1
   		var operation = {
   			client_id:'1',
@@ -78,7 +78,7 @@ describe('Leader tests', function(){
     });
 
     it('Adopted duplicated' , function( ){
-  		var ballot = new Ballot(1,'localhost')
+  		var ballot = new Ballot({number:1, id:'localhost'})
   		var slot = 1
   		var operation = {
   			client_id:'1',
@@ -105,7 +105,7 @@ describe('Leader tests', function(){
 
 
     it('Adopted Duplicated Operation diferent Slot' , function( ){
-  		var ballot = new Ballot(1,'localhost')
+  		var ballot = new Ballot({number:1, id:'localhost'})
   		var slot = 1
   		var operation = {
   			client_id:'1',
@@ -129,4 +129,18 @@ describe('Leader tests', function(){
       leader.proposals.get(2).should.be.exactly(operation)
       leader.proposals.size.should.be.exactly(2)
   	});
+
+    it('Preempted', function(){
+      var ballot = new Ballot({number:1,id:'localhostTest'})
+  		var slot = 1
+  		var operation = {
+  			client_id:'1',
+  			operation_id:'1'
+      }
+
+      leader.preempted({ballot:ballot, slot:slot, operation:operation})
+      leader.active.should.be.exactly(false)
+      leader.ballot.number.should.be.exactly(2)
+      leader.actualLeader.should.be.exactly('localhostTest')
+    });
 });
