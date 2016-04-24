@@ -8,9 +8,9 @@
     "url": "https://github.com/Villaz/Icarus"
   },
   "scripts": {
-    "test": "grunt jenkins",
+    "test": "node --debug --harmony_default_parameters --harmony_rest_parameters ./node_modules/.bin/grunt jenkins",
     "bamboo": "mocha -R mocha-bamboo-reporter --compilers coffee:coffee-script/register",
-    "start": "node --harmony_default_parameters --harmony_rest_parameters lib/app.js"
+    "start": "COVERALLS_REPO_TOKEN=txgOtVMo6peHnWGy1Ph4QVX1gvmP8XG7x node --harmony_default_parameters --harmony_rest_parameters lib/app.js"
   },
   "author": "Luis Villazon",
   "license": "GPL-3.0",

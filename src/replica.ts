@@ -87,7 +87,7 @@ export class Replica extends Rol.Rol{
 
     this.decisions.set( slot, operation )
     var key = {id:operation.id,client:operation.client};
-    this.operationsDecided.set( key , operation );
+    this.operationsDecided.set( key , slot );
     this.lastEmpltySlotInDecisions++;
 
     let whileDecisionsInSlot = ( ) => {
@@ -106,9 +106,10 @@ export class Replica extends Rol.Rol{
   }
 
   private perform( operation ) {
-    var slots = this.operationSlotInDecided(operation);
+    var slot = this.operationSlotInDecided(operation);
     this.slot_num++;
-    if (!this.slotsHaveMenorThanSlotNum( slots , this.slot_num )){
+
+    if ( slot < this.slot_num ){
       var message = new Message.Message(
         {
           from: '',
@@ -116,13 +117,14 @@ export class Replica extends Rol.Rol{
           command_id: 0,
           operation: operation
         });
-        return this.network.sendToOperation(message).then((message) =>{
+      return this.network.sendToOperation(message).then((message) =>{
             let msg = {client: operation.client,
                id: operation.id,
                result:'OK'}
             return this.network.responde(msg);
         });
-    }
+    }else
+      return Promise.resolve();
   }
 
   private checkOperationsToRepropose(operation:any){
@@ -166,7 +168,7 @@ export class Replica extends Rol.Rol{
   private slotsHaveMenorThanSlotNum( slots , slot_num ){
     if (slots === undefined)
       return false;
-
+    
     for(let slot of slots){
       if (slot < slot_num) return true;
     }

@@ -64,7 +64,6 @@ describe('Replica tests', function(){
       replica.propose(op2);
 
       replica.decision(0 , op1).then(function(){
-
         done();
       });
     });

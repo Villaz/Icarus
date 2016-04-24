@@ -60,7 +60,7 @@
               command:'tsc'
             },
             install_istanbul:{
-              command:'npm -g install istanbul'
+              command:'npm install istanbul'
             },
             install_yuidoc:{
               command:'npm -g install yuidocjs'
@@ -72,7 +72,7 @@
               command:'npm install doxx -g'
             },
             coverage: {
-                command: 'istanbul cover node_modules/mocha/bin/_mocha -- -R spec',// --compilers ts:typescript-require',
+                command: 'node --harmony_default_parameters --harmony_rest_parameters ./node_modules/.bin/istanbul cover node_modules/mocha/bin/_mocha -- -R spec',// --compilers ts:typescript-require',
                 options: {
                     stderr: false,
                     execOptions: {
