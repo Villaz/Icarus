@@ -1,7 +1,7 @@
 language: node_js
 sudo: required
 node_js:
-  - "0.12"
+  - "5"
 before_install:
   #- npm i npm@2.14.4 --global
   - sudo apt-get  update
