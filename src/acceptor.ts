@@ -24,7 +24,7 @@ export class Acceptor extends Rol{
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new Map<number, any>();
     this.last_slot = -1;
-    setTimeout(() => { this.sendRecuperation() },3000)
+    setTimeout(() => { this.sendRecuperationPetition() },3000)
   }
 
   protected _startNetwork() {
@@ -43,7 +43,8 @@ export class Acceptor extends Rol{
                    });
                   break;
               case 'REC':
-                  self.recuperation()
+                  console.log(message)
+                  self.sendRecuperation(message.from, message.operation)
                   break
           }
       })
@@ -116,7 +117,7 @@ export class Acceptor extends Rol{
 
   }
 
-  private sendRecuperation(from:number=0,to?:number) {
+  private sendRecuperationPetition(from:number=0,to?:number) {
       let acceptors:Array<any> = []
       let acceptorsMap = {}
       for (var acceptor in this.network.acceptors) {
@@ -139,7 +140,8 @@ export class Acceptor extends Rol{
       return message;
   }
 
-  private recuperation() {
+  private sendRecuperation(from:string, operation:{port:number, intervals:any}) {
+  
   }
 
 }

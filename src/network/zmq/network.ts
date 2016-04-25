@@ -78,7 +78,7 @@ export class ZMQNetwork extends Network {
   public send(name: string, message:Message.Message) {
       this.publishers[name].send(this.generateBufferMessage(message));
       metric.name = message.type;
-      gmetric.send('172.28.128.4', 8649, metric);
+      //gmetric.send('172.28.128.4', 8649, metric);
       metric.value++
   }
 
@@ -113,9 +113,10 @@ export class AcceptorNetwork extends ZMQNetwork {
     receivedMessages: Array<any>
     private counter:number=0
 
-    constructor(discover: any, connection: { port: number }) {
+    constructor(discover: any, connection: { port: number, recuperation:number }) {
         super(discover)
         this.startPublisher(connection.port, 'ATLP')
+        this.startPublisher(connection.recuperation, 'ATA');
         this.subscriber = undefined
         this.receivedMessages = []
     }
@@ -125,6 +126,7 @@ export class AcceptorNetwork extends ZMQNetwork {
     }
 
     public sendToAcceptors(message: any) {
+      this.send('ATA', message);
     }
 
     protected processMessage(data:any, type:string) {
@@ -144,7 +146,7 @@ export class AcceptorNetwork extends ZMQNetwork {
                 this.subscription({ name: "subscriberLeader", subscriptions: ['P1A', 'P2A'], url: url, port: port.split(',')[0]});
                 break;
             case 'A':
-                this.subscription({ name: "subscriberAceptor", subscriptions: ['REC'], url: url, port: port });
+                this.subscription({ name: "subscriberAceptor", subscriptions: ['REC'], url: url, port: port.split(',')[1] });
                 break;
         }
     }
@@ -262,7 +264,7 @@ export class LeaderNetwork extends ZMQNetwork {
     protected _upNode(type: string, url:string, port:any) {
         switch (type) {
             case 'A':
-                this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B', 'P2B'], url: url, port: port});
+                this.subscription({ name: "acceptorSubscriber", subscriptions: ['P1B', 'P2B'], url: url, port:  port.split(',')[0]});
                 this.emit('acceptor', url);
                 break;
             case 'R':

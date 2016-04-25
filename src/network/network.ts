@@ -14,14 +14,6 @@ var Gmetric = require('gmetric');
 //import Emitter = require('./icarus_utils')
 import * as Emitter from "../icarus_utils";
 
-var nconf = require('nconf');
-
-nconf.argv()
-   .env()
-   .file({ file: '/etc/icarus/icarus.conf'})
-   .file({ file: './conf/icarus.conf' })
-
-
 export class Network extends Emitter.Emitter{
     replicas: Array<any>
     leaders: Array<any>
@@ -41,16 +33,6 @@ export class Network extends Emitter.Emitter{
         this.discover = discover;
         this.discover.on('up', (service)=> this.upNode(service));
         this.discover.on('down', (service)=> this.downNode(service));
-        for (let rol in nconf.get('cluster')){
-          for (let instance in nconf.get('cluster')[rol]){
-            let aux = { addresses: [ nconf.get('cluster')[rol][instance]['ip'] ],
-                        data: {},
-                        name: nconf.get('cluster')[rol][instance]['name'],
-                      }
-            aux.data[rol[0].toUpperCase()] = nconf.get('cluster')[rol][instance]['ports'].join()
-            this.upNode([aux])
-          }
-        }
     }
 
     protected startPublisher(port: number, name:string):void {}

@@ -6,19 +6,26 @@ import * as Discover from "./discover";
 var program = require('commander');
 var nconf = require('nconf');
 
-nconf.argv()
-   .env()
-   .file({ file: '/etc/icarus/icarus.conf'})
-   .file({ file: './conf/icarus.conf' })
 
 
-   program
-     .version('0.0.1')
-     .option('--acceptor_name [name]', 'Acceptor name',names.generateName().substr(0, 15))
-     .option('--leader_name [name]', 'Leader name', names.generateName().substr(0, 15))
-     .option('--replica_name [name]', 'replica_name', names.generateName().substr(0, 15))
-     .parse(process.argv);
 
+program
+  .version('0.0.1')
+  .option('--acceptor_name [name]', 'Acceptor name',names.generateName().substr(0, 15))
+  .option('--leader_name [name]', 'Leader name', names.generateName().substr(0, 15))
+  .option('--replica_name [name]', 'replica_name', names.generateName().substr(0, 15))
+  .option('--conf [configuration]', 'configuration file')
+  .parse(process.argv);
+
+
+if(program['conf'])
+  nconf.argv().env().file({file: program['conf']});
+else{
+  nconf.argv()
+       .env()
+       .file({ file: '/etc/icarus/icarus.conf'})
+       .file({ file: './conf/icarus.conf' })
+}
 
 function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
