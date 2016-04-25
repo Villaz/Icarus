@@ -79,6 +79,7 @@ export class Network extends Emitter.Emitter{
 
         }
         if (node.data.A !== undefined) {
+            if( node['network'] === undefined) return;
             if (!this.acceptors.has(node.name))
                 this.acceptors.set(node.name, new Set());
             for (let url of node.addresses){
