@@ -43,7 +43,6 @@ export class Acceptor extends Rol{
                    });
                   break;
               case 'REC':
-                  console.log(message)
                   self.sendRecuperation(message.from, message.operation)
                   break
           }
@@ -120,8 +119,9 @@ export class Acceptor extends Rol{
   private sendRecuperationPetition(from:number=0,to?:number) {
       let acceptors:Array<any> = []
       let acceptorsMap = {}
-      for (var acceptor in this.network.acceptors) {
-          if(acceptor !== this.id) acceptors.push(acceptor)
+      for (var acceptor of this.network.acceptors) {
+          console.log(acceptor[0])
+          if(acceptor[0] !== this.id) acceptors.push(acceptor[0])
       }
       var interval = (to - from) / acceptors.length
       var begin = from
@@ -136,12 +136,28 @@ export class Acceptor extends Rol{
       }
 
       var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
+      console.log(JSON.stringify(message))
       this.network.sendToAcceptors(message)
       return message;
   }
 
   private sendRecuperation(from:string, operation:{port:number, intervals:any}) {
-  
+
+    let intervals = operation.intervals[this.id];
+    let values = [];
+    for(let value in this.mapOfValues){
+      if(value[0] >= intervals.begin && (intervals.to === undefined || intervals.to >= values[0]))
+        values.push(value);
+    }
+
+    var message = new Message.Message({
+      from: this.id,
+      to: this.id,
+      type: 'RECACK',
+      command_id: this.messages_sended++,
+      operation:values
+    })
+    this.network.sendToAcceptors(message);
   }
 
 }

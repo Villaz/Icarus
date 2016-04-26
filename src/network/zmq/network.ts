@@ -110,15 +110,31 @@ export class AcceptorNetwork extends ZMQNetwork {
 
     subscriber: any
     private acceptorSubscriber: any
+    private clientRecuperation: any;
     receivedMessages: Array<any>
     private counter:number=0
 
     constructor(discover: any, connection: { port: number, recuperation:number }) {
         super(discover)
         this.startPublisher(connection.port, 'ATLP')
-        this.startPublisher(connection.recuperation, 'ATA');
+        this.startPublisher(connection.recuperation, 'ATA')
+        this.startRecuperationRouter(connection.recuperation);
         this.subscriber = undefined
         this.receivedMessages = []
+    }
+
+    private startRecuperationRouter(port:number) {
+        this.clientRecuperation = zmq.socket('router');
+        this.clientRecuperation.bind(`tcp://*:${port}`);
+        let self = this;
+        this.clientRecuperation.on('message', function() {
+            var args = Array.apply(null, arguments);
+            var envelope = args.shift();
+            var blank = args.shift();
+            var fs = require("fs")
+            var message = JSON.parse(Buffer.concat(args).toString());
+            self.emit('RECACK', message);
+        });
     }
 
     public sendToLeaders(message: any) {
@@ -126,7 +142,11 @@ export class AcceptorNetwork extends ZMQNetwork {
     }
 
     public sendToAcceptors(message: any) {
-      this.send('ATA', message);
+      if( message.type == 'RECACK'){
+
+      }else{
+        this.send('ATA', message);
+      }
     }
 
     protected processMessage(data:any, type:string) {

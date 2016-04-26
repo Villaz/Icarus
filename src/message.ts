@@ -3,7 +3,7 @@ var crc = require('crc');
 var moment = require('moment');
 
 export class Message {
-    
+
     from: string
     type: string
     command_id: number
@@ -11,7 +11,7 @@ export class Message {
     timestamp: string
     crc: string
 
-    constructor(params: { from: string, type: string, command_id: number, operation: any }) {
+    constructor(params: { from: string, to?:string, type: string, command_id: number, operation: any }) {
         this.from = params.from
         this.type = params.type
         this.command_id = params.command_id
