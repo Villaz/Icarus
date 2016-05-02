@@ -24,7 +24,8 @@ export class Acceptor extends Rol{
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new Map<number, any>();
     this.last_slot = -1;
-    setTimeout(() => { this.sendRecuperationPetition() },3000)
+    if(!params.test)
+      setTimeout(() => { this.sendRecuperationPetition(params.network.ports.recuperation2) },3000)
   }
 
   protected _startNetwork() {
@@ -44,7 +45,9 @@ export class Acceptor extends Rol{
                   break;
               case 'REC':
                   self.sendRecuperation(message.from, message.operation)
-                  break
+                  break;
+              case 'RECACK':
+                  self.processRecuperation(message.operation)
           }
       })
   }
@@ -116,11 +119,10 @@ export class Acceptor extends Rol{
 
   }
 
-  private sendRecuperationPetition(from:number=0,to?:number) {
+  private sendRecuperationPetition(recuperation:number,from:number=0,to?:number) {
       let acceptors:Array<any> = []
       let acceptorsMap = {}
       for (var acceptor of this.network.acceptors) {
-          console.log(acceptor[0])
           if(acceptor[0] !== this.id) acceptors.push(acceptor[0])
       }
       var interval = (to - from) / acceptors.length
@@ -131,18 +133,16 @@ export class Acceptor extends Rol{
           begin += interval
       }
       var body = {
-          port: 7777,
+          port: recuperation,
           intervals: acceptorsMap
       }
 
       var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
-      console.log(JSON.stringify(message))
       this.network.sendToAcceptors(message)
       return message;
   }
 
   private sendRecuperation(from:string, operation:{port:number, intervals:any}) {
-
     let intervals = operation.intervals[this.id];
     let values = [];
     for(let value in this.mapOfValues){
@@ -152,12 +152,28 @@ export class Acceptor extends Rol{
 
     var message = new Message.Message({
       from: this.id,
-      to: this.id,
+      to: `tcp://${[...this.network.acceptors.get(from)][0]}:${operation.port}`,
       type: 'RECACK',
       command_id: this.messages_sended++,
-      operation:values
+      operation:{
+        ballot: this.actualBallot,
+        values:values
+      }
     })
     this.network.sendToAcceptors(message);
+  }
+
+
+  private processRecuperation(operation:any){
+    let opBallot = new ballot.Ballot(operation.ballot);
+    if(opBallot.isMayorThanOtherBallot(this.actualBallot))
+    {
+      if(!this.test) winston.info("REC Updated ballot to %s", JSON.stringify(opBallot))
+      this.actualBallot = opBallot
+    }
+    for(var value of operation.values){
+      this.mapOfValues.set(value.slot, value.operation, true);
+    }
   }
 
 }

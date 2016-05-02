@@ -114,26 +114,23 @@ export class AcceptorNetwork extends ZMQNetwork {
     receivedMessages: Array<any>
     private counter:number=0
 
-    constructor(discover: any, connection: { port: number, recuperation:number }) {
+    constructor(discover: any, connection: { port: number, recuperation:number, recuperation2:number }) {
         super(discover)
         this.startPublisher(connection.port, 'ATLP')
         this.startPublisher(connection.recuperation, 'ATA')
-        this.startRecuperationRouter(connection.recuperation);
+        this.startRecuperationRouter(connection.recuperation2);
         this.subscriber = undefined
         this.receivedMessages = []
     }
 
     private startRecuperationRouter(port:number) {
         this.clientRecuperation = zmq.socket('router');
-        this.clientRecuperation.bind(`tcp://*:${port}`);
+        this.clientRecuperation.identity = `recuperationA${process.pid}`;
+        this.clientRecuperation.bindSync(`tcp://*:${port}`);
+
         let self = this;
-        this.clientRecuperation.on('message', function() {
-            var args = Array.apply(null, arguments);
-            var envelope = args.shift();
-            var blank = args.shift();
-            var fs = require("fs")
-            var message = JSON.parse(Buffer.concat(args).toString());
-            self.emit('RECACK', message);
+        this.clientRecuperation.on('message', (blank, message) => {
+            self.emit('message', JSON.parse(message.toString()));
         });
     }
 
@@ -143,7 +140,9 @@ export class AcceptorNetwork extends ZMQNetwork {
 
     public sendToAcceptors(message: any) {
       if( message.type == 'RECACK'){
-
+          let dealer = zmq.socket('dealer');
+          dealer.connect(message.to);
+          dealer.send(JSON.stringify(message));
       }else{
         this.send('ATA', message);
       }
@@ -193,6 +192,7 @@ export class ReplicaNetwork extends ZMQNetwork {
 
     private startRouter(port:number) {
         this.clientRouter = zmq.socket('router');
+        this.clientRouter.identity = `acceptorrouter`;
         this.clientRouter.bind(`tcp://*:${port}`);
         let self = this;
         this.clientRouter.on('message', function() {

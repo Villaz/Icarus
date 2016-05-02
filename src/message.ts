@@ -5,6 +5,7 @@ var moment = require('moment');
 export class Message {
 
     from: string
+    to: string
     type: string
     command_id: number
     operation: any
@@ -13,6 +14,7 @@ export class Message {
 
     constructor(params: { from: string, to?:string, type: string, command_id: number, operation: any }) {
         this.from = params.from
+        this.to = params.to
         this.type = params.type
         this.command_id = params.command_id
         this.operation = params.operation
