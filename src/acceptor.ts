@@ -125,12 +125,12 @@ export class Acceptor extends Rol{
       for (var acceptor of this.network.acceptors) {
           if(acceptor[0] !== this.id) acceptors.push(acceptor[0])
       }
-      var interval = (to - from) / acceptors.length
+      var interval = Math.round((to - from) / acceptors.length)
       var begin = from
 
       for (let acceptor of shuffle(acceptors)) {
-          acceptorsMap[acceptor] = { begin: begin, to: begin + interval }
-          begin += interval
+          acceptorsMap[acceptor] = { begin: begin, to: begin + interval + 1 > to ? to : begin + interval  }
+          begin += interval + 1
       }
       var body = {
           port: recuperation,
@@ -145,14 +145,18 @@ export class Acceptor extends Rol{
   private sendRecuperation(from:string, operation:{port:number, intervals:any}) {
     let intervals = operation.intervals[this.id];
     let values = [];
-    for(let value in this.mapOfValues){
-      if(value[0] >= intervals.begin && (intervals.to === undefined || intervals.to >= values[0]))
-        values.push(value);
+
+    for(let value of this.mapOfValues.keys){
+      value = parseInt(value);
+      if(value >= intervals.begin && (isNaN(intervals.to) || intervals.to >= value))
+        values.push({slot:value, operation:this.mapOfValues.get(value)});
     }
+
+    let ipConnection = this.network.acceptors.get(from)
 
     var message = new Message.Message({
       from: this.id,
-      to: `tcp://${[...this.network.acceptors.get(from)][0]}:${operation.port}`,
+      to: `tcp://${[...ipConnection][0]}:${operation.port}`,
       type: 'RECACK',
       command_id: this.messages_sended++,
       operation:{
@@ -161,6 +165,7 @@ export class Acceptor extends Rol{
       }
     })
     this.network.sendToAcceptors(message);
+    return message;
   }
 
 
