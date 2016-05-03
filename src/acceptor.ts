@@ -148,7 +148,7 @@ export class Acceptor extends Rol{
 
     for(let value of this.mapOfValues.keys){
       value = parseInt(value);
-      if(value >= intervals.begin && (isNaN(intervals.to) || intervals.to >= value))
+      if(value >= intervals.begin && (isNaN(intervals.to) || intervals.to >= value || intervals.to === null))
         values.push({slot:value, operation:this.mapOfValues.get(value)});
     }
 
@@ -176,7 +176,9 @@ export class Acceptor extends Rol{
       if(!this.test) winston.info("REC Updated ballot to %s", JSON.stringify(opBallot))
       this.actualBallot = opBallot
     }
+    console.log(operation);
     for(var value of operation.values){
+      winston.info(value.slot);
       this.mapOfValues.set(value.slot, value.operation, true);
     }
   }
