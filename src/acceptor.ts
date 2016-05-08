@@ -19,37 +19,55 @@ export class Acceptor extends Rol{
   private messages_sended: number = 0
   private last_slot:number;
 
+  private active:boolean = false;
+  private recived_rec:boolean = false;
+  private pending_messages:Array<any>;
+
   constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
     super('acceptor', params);
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new Map<number, any>();
     this.last_slot = -1;
-    if(!params.test)
-      setTimeout(() => { this.sendRecuperationPetition(params.network.ports.recuperation2) },3000)
+    this.pending_messages = new Array<any>();
+
+    if(!params.test){
+      setInterval(() => {
+         this.recived_rec = false;
+         this.sendRecuperationPetition(params.network.ports.recuperation2, this.last_slot)
+       },60000);
+      setTimeout(() => {this.sendRecuperationPetition(params.network.ports.recuperation2)}, 1000);
+    }
   }
 
   protected _startNetwork() {
       var self = this
       this.network.on('message', (message) => {
           message = message[0]
-          switch (message.type) {
-              case 'P1A':
-                  self.processP1A(message.operation.ballot, message.operation.from)
-                  break
-              case 'P2A':
-                  self.processP2A(
-                    {slot:message.operation.slot,
-                     operation:message.operation.operation,
-                     ballot:message.operation.ballot
-                   });
-                  break;
-              case 'REC':
-                  self.sendRecuperation(message.from, message.operation)
-                  break;
-              case 'RECACK':
-                  self.processRecuperation(message.operation)
-          }
+          if(!this.active && message.type !== 'REC' && message.type !== 'RECACK')
+            self.pending_messages.push(message);
+          else
+            self.processMessages(message);
       })
+  }
+
+  private processMessages(message){
+    switch (message.type) {
+        case 'P1A':
+            this.processP1A(message.operation.ballot, message.operation.from)
+            break
+        case 'P2A':
+            this.processP2A(
+              {slot:message.operation.slot,
+               operation:message.operation.operation,
+               ballot:message.operation.ballot
+             });
+            break;
+        case 'REC':
+            this.sendRecuperation(message.from, message.operation)
+            break;
+        case 'RECACK':
+            this.processRecuperation(message.operation)
+    }
   }
 
   public clear(){
@@ -83,11 +101,10 @@ export class Acceptor extends Rol{
   }
 
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
-
       if (value.slot > this.last_slot) this.last_slot = value.slot
       else{
-        var operation = this.mapOfValues.getValues({start:value.slot})[0]
-        if (operation !== undefined && operation.client === value.operation && operation.id === value.operation.client.id) return
+        var operation = this.mapOfValues.getValues({start:value.slot})[0].operation;
+        if (operation !== undefined && operation.client === value.operation.client && operation.id === value.operation.id) return
       }
 
       if(!this.test) winston.info("Received P2A")
@@ -115,10 +132,6 @@ export class Acceptor extends Rol{
       this.network.sendToLeaders(message);
   }
 
-  private getIntervalsFromMap(from:number, to?:number){
-
-  }
-
   private sendRecuperationPetition(recuperation:number,from:number=0,to?:number) {
       let acceptors:Array<any> = []
       let acceptorsMap = {}
@@ -139,6 +152,15 @@ export class Acceptor extends Rol{
 
       var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
       this.network.sendToAcceptors(message)
+      setTimeout(()=>{
+         if(!this.recived_rec){
+          for(let petition of this.pending_messages)
+            this.processMessages(petition);
+          this.pending_messages.splice(0,this.pending_messages.length)
+          this.active = true;
+
+         }
+       }, 10000);
       return message;
   }
 
@@ -170,17 +192,25 @@ export class Acceptor extends Rol{
 
 
   private processRecuperation(operation:any){
+    this.recived_rec = true;
+
     let opBallot = new ballot.Ballot(operation.ballot);
     if(opBallot.isMayorThanOtherBallot(this.actualBallot))
     {
       if(!this.test) winston.info("REC Updated ballot to %s", JSON.stringify(opBallot))
       this.actualBallot = opBallot
     }
-    console.log(operation);
+
     for(var value of operation.values){
-      winston.info(value.slot);
+      if(!this.test) winston.info("Saving slot %s from REC" ,value.slot);
       this.mapOfValues.set(value.slot, value.operation, true);
+      this.last_slot = value.slot;
     }
+    for(let petition of this.pending_messages)
+      this.processMessages(petition);
+    this.pending_messages.splice(0,this.pending_messages.length)
+    this.active = true;
+    this.recived_rec = false;
   }
 
 }
