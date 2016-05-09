@@ -53,8 +53,8 @@ export class Leader extends Rol{
     });
     this.network.on('leaderDown', (name) => {
         if (!this.test) winston.info("Leader %s down!!", name[0]);
-        winston.info("The actual leader was %s", this.actualLeader);
-        if (this.actualLeader === name[0]) {
+        winston.info("The actual leader is %s", this.actualLeader);
+        if (this.actualLeader === name[0] || this.network.leaders.indexOf(this.actualLeader) < 0) {
             if (!this.test) winston.info("The actual leader %s is down, try to win!", name);
             this.spawnScout();
         }
@@ -78,6 +78,7 @@ export class Leader extends Rol{
     this.scout.on('adopted', (body: any) => {
         body = body[0]
         this.adopted(body)
+        this.actualLeader = body.ballot.id;
         if(!this.test)
             winston.info("%s is the new leader; ballot %s adopted", body.ballot.id, JSON.stringify(body.ballot))
     })
@@ -120,9 +121,10 @@ export class Leader extends Rol{
         params.pvalues.update(this.proposals)
         this.proposals = params.pvalues
         this.sendToCommanderAllproposals(this.proposals.keys);
-        this.active = true
+        this.actualLeader = this.id;
+        this.active = true;
         if(!this.test)
-          winston.info("Leader %s is active!!!", this.id)
+          winston.info("Leader %s is active!!!", this.id);
   };
 
   private sendToCommanderAllproposals(keys:Iterator<any>){
