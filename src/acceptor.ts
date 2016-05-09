@@ -13,15 +13,17 @@ import {Rol} from "./rol"
 
 export class Acceptor extends Rol{
 
-  private actualBallot:Ballot;
-  private mapOfValues:Map<number, any>;
+  actualBallot:Ballot;
+  mapOfValues:Map<number, any>;
 
-  private messages_sended: number = 0
-  private last_slot:number;
+  messages_sended: number = 0
+  last_slot:number;
 
-  private active:boolean = false;
-  private recived_rec:boolean = false;
-  private pending_messages:Array<any>;
+  active:boolean = false;
+  recived_rec:boolean = false;
+  pending_messages:Array<any>;
+
+  recuperation:any;
 
   constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
     super('acceptor', params);
@@ -31,26 +33,33 @@ export class Acceptor extends Rol{
     this.pending_messages = new Array<any>();
 
     if(!params.test){
-      setInterval(() => {
-         this.recived_rec = false;
-         this.sendRecuperationPetition(params.network.ports.recuperation2, this.last_slot)
-       },60000);
-      setTimeout(() => {this.sendRecuperationPetition(params.network.ports.recuperation2)}, 1000);
+      this.recuperation = new RecAcceptor(this, params.test);
+      this.recuperation.start(params.network.ports.recuperation2);
     }
   }
 
-  protected _startNetwork() {
-      var self = this
-      this.network.on('message', (message) => {
-          message = message[0]
-          if(!this.active && message.type !== 'REC' && message.type !== 'RECACK')
-            self.pending_messages.push(message);
-          else
-            self.processMessages(message);
-      })
+  get Network():any{
+    return this.network;
   }
 
-  private processMessages(message){
+  get Id():string{
+    return this.id;
+  }
+
+
+  protected _startNetwork() {
+      var self = this
+
+      this.network.on('message', (message) => {
+          message = message[0]
+          if(!this.active || message.type === 'REC' || message.type === 'RECACK')
+            this.recuperation.processMessages(message);
+          else
+            self.processMessages(message);
+      });
+  }
+
+  public processMessages(message){
     switch (message.type) {
         case 'P1A':
             this.processP1A(message.operation.ballot, message.operation.from)
@@ -62,11 +71,6 @@ export class Acceptor extends Rol{
                ballot:message.operation.ballot
              });
             break;
-        case 'REC':
-            this.sendRecuperation(message.from, message.operation)
-            break;
-        case 'RECACK':
-            this.processRecuperation(message.operation)
     }
   }
 
@@ -103,8 +107,8 @@ export class Acceptor extends Rol{
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
       if (value.slot > this.last_slot) this.last_slot = value.slot
       else{
-        var operation = this.mapOfValues.getValues({start:value.slot})[0].operation;
-        if (operation !== undefined && operation.client === value.operation.client && operation.id === value.operation.id) return
+        var operation = this.mapOfValues.getValues({start:value.slot})[0];
+        if (operation !== undefined && operation.operation.client === value.operation.client && operation.operation.id === value.operation.id) return
       }
 
       if(!this.test) winston.info("Received P2A")
@@ -131,17 +135,59 @@ export class Acceptor extends Rol{
       });
       this.network.sendToLeaders(message);
   }
+}
 
-  private sendRecuperationPetition(recuperation:number,from:number=0,to?:number) {
-      let acceptors:Array<any> = []
+
+export class RecAcceptor{
+
+  private acceptor:Acceptor;
+  private pending_messages:Array<any>;
+  private recived_rec:boolean = false;
+
+  private sended_acceptors:Array<any>;
+  private received_acceptors:Array<any>;
+
+  private test:boolean = false;
+
+  constructor(acceptor:Acceptor, test:boolean=false){
+    this.acceptor = acceptor;
+    this.pending_messages = [];
+    this.test = test;
+  }
+
+  public start(port){
+    setInterval(() => {
+       this.recived_rec = false;
+       this.sendRecuperationMessage(port, this.acceptor.last_slot + 1)
+     },60000);
+    setTimeout(() => {this.sendRecuperationMessage(port)}, 1000);
+  }
+
+  public processMessages(message){
+    switch (message.type) {
+        case 'REC':
+            this.sendACKRecuperationMessage(message.from, message.operation);
+            break;
+        case 'RECACK':
+            this.processRecuperation(message);
+            break;
+        default:
+            this.pending_messages.push(message);
+    }
+  }
+
+  public sendRecuperationMessage(recuperation:number,from:number=0,to?:number) {
+      if(from < 0) from = 0;
+      this.sended_acceptors = []
       let acceptorsMap = {}
-      for (var acceptor of this.network.acceptors) {
-          if(acceptor[0] !== this.id) acceptors.push(acceptor[0])
+
+      for (var acceptor of this.acceptor.Network.acceptors) {
+          if(acceptor[0] !== this.acceptor.Id) this.sended_acceptors.push(acceptor[0])
       }
-      var interval = Math.round((to - from) / acceptors.length)
+      var interval = Math.round((to - from) / this.sended_acceptors.length)
       var begin = from
 
-      for (let acceptor of shuffle(acceptors)) {
+      for (let acceptor of shuffle(this.sended_acceptors)) {
           acceptorsMap[acceptor] = { begin: begin, to: begin + interval + 1 > to ? to : begin + interval  }
           begin += interval + 1
       }
@@ -150,67 +196,72 @@ export class Acceptor extends Rol{
           intervals: acceptorsMap
       }
 
-      var message = new Message.Message({from:this.id, type: 'REC', command_id: this.messages_sended++, operation: body })
-      this.network.sendToAcceptors(message)
+      var message = new Message.Message({from:this.acceptor.Id, type: 'REC', command_id: this.acceptor.messages_sended++, operation: body })
+      this.received_acceptors = [];
+
+      this.acceptor.Network.sendToAcceptors(message);
       setTimeout(()=>{
          if(!this.recived_rec){
           for(let petition of this.pending_messages)
-            this.processMessages(petition);
-          this.pending_messages.splice(0,this.pending_messages.length)
-          this.active = true;
-
+            this.acceptor.processMessages(petition);
+          this.pending_messages.splice(0,this.pending_messages.length);
+          this.acceptor.active = true;
          }
        }, 10000);
       return message;
   }
 
-  private sendRecuperation(from:string, operation:{port:number, intervals:any}) {
-    let intervals = operation.intervals[this.id];
+
+  public sendACKRecuperationMessage(from:string, operation:{port:number, intervals:any}) {
+    let intervals = operation.intervals[this.acceptor.Id];
     let values = [];
 
-    for(let value of this.mapOfValues.keys){
+    for(let value of this.acceptor.mapOfValues.keys){
       value = parseInt(value);
       if(value >= intervals.begin && (isNaN(intervals.to) || intervals.to >= value || intervals.to === null))
-        values.push({slot:value, operation:this.mapOfValues.get(value)});
+        values.push({slot:value, operation:this.acceptor.mapOfValues.get(value)});
     }
 
-    let ipConnection = this.network.acceptors.get(from)
+    let ipConnection = this.acceptor.Network.acceptors.get(from)
 
     var message = new Message.Message({
-      from: this.id,
+      from: this.acceptor.Id,
       to: `tcp://${[...ipConnection][0]}:${operation.port}`,
       type: 'RECACK',
-      command_id: this.messages_sended++,
+      command_id: this.acceptor.messages_sended++,
       operation:{
-        ballot: this.actualBallot,
+        ballot: this.acceptor.actualBallot,
         values:values
       }
     })
-    this.network.sendToAcceptors(message);
+    this.acceptor.Network.sendToAcceptors(message);
     return message;
   }
 
-
-  private processRecuperation(operation:any){
+  public processRecuperation(message:any){
     this.recived_rec = true;
 
-    let opBallot = new ballot.Ballot(operation.ballot);
-    if(opBallot.isMayorThanOtherBallot(this.actualBallot))
+    this.received_acceptors.push(message.from);
+
+    let opBallot = new ballot.Ballot(message.operation.ballot);
+    if(opBallot.isMayorThanOtherBallot(this.acceptor.actualBallot))
     {
       if(!this.test) winston.info("REC Updated ballot to %s", JSON.stringify(opBallot))
-      this.actualBallot = opBallot
+      this.acceptor.actualBallot = opBallot
     }
 
-    for(var value of operation.values){
+    for(var value of message.operation.values){
       if(!this.test) winston.info("Saving slot %s from REC" ,value.slot);
-      this.mapOfValues.set(value.slot, value.operation, true);
-      this.last_slot = value.slot;
+      this.acceptor.mapOfValues.set(value.slot, value.operation, true);
+      this.acceptor.last_slot = value.slot;
     }
-    for(let petition of this.pending_messages)
-      this.processMessages(petition);
-    this.pending_messages.splice(0,this.pending_messages.length)
-    this.active = true;
-    this.recived_rec = false;
-  }
 
+    if(this.sended_acceptors.every((v,i)=> v === this.received_acceptors[i])){
+      for(let petition of this.pending_messages)
+        this.acceptor.processMessages(petition);
+      this.pending_messages.splice(0,this.pending_messages.length)
+      this.acceptor.active = true;
+      this.recived_rec = false;
+    }
+  }
 }
