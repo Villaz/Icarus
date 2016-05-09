@@ -92,8 +92,8 @@ export class Network extends Emitter.Emitter{
         if (this.leaders[node.name] !== undefined) {
             delete this.leaders[node.name];
             this.emit('leaderDown', node.name);
-        } else if (this.acceptors[node.name] !== undefined) {
-            delete this.acceptors[node.name];
+        } else if (this.acceptors.has(node.name)) {
+            this.acceptors.delete(node.name);
             this.emit('acceptorDown', node.name);
         } else if (this.replicas[node.name] !== undefined) {
             delete this.replicas[node.name];

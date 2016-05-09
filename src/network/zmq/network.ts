@@ -169,8 +169,6 @@ export class AcceptorNetwork extends ZMQNetwork {
                 break;
         }
     }
-
-    public downNode(node) { }
 }
 
 export class ReplicaNetwork extends ZMQNetwork {
