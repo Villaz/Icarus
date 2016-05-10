@@ -25,12 +25,7 @@ export class Replica extends Rol.Rol{
 
   promisesPerSlot:any = undefined
 
-  network:any;
-
-  id:string;
-  test:boolean;
-
-  constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
+  constructor(params?: { name:string, test?: boolean, external?:boolean, network?:{ discover: any, ports: any, network:any }}){
     super('replica', params);
 
     this.slot_num = 0;
@@ -64,8 +59,8 @@ export class Replica extends Rol.Rol{
       });
   }
 
-  private propose(operation:any){
-    var key = {id:operation.id, client:operation.client}
+  protected propose(operation:any){
+    var key = {id:operation.command_id, client:operation.client}
     if ( !this.operationsDecided.has(key) && !this.operationsProposed.has(key)){
       let slot = this.nextEmpltySlot()
       operation.slot = slot;
@@ -86,7 +81,7 @@ export class Replica extends Rol.Rol{
     if (this.lastEmpltySlotInDecisions > slot) return Promise.resolve();
 
     this.decisions.set( slot, operation )
-    var key = {id:operation.id,client:operation.client};
+    var key = {id:operation.command_id,client:operation.client};
     this.operationsDecided.set( key , slot );
     this.lastEmpltySlotInDecisions++;
 
@@ -108,21 +103,25 @@ export class Replica extends Rol.Rol{
   private perform( operation ) {
     var slot = this.operationSlotInDecided(operation);
     this.slot_num++;
-
     if ( slot < this.slot_num ){
       var message = new Message.Message(
         {
           from: '',
           type: 'OPERATION',
-          command_id: 0,
+          command_id: operation.command_id,
           operation: operation
         });
-      return this.network.sendToOperation(message).then((message) =>{
+
+      if(!this.external){
+        return this.executeOperation(message);
+      }else{
+        return this.network.sendToOperation(message).then((message) =>{
             let msg = {client: operation.client,
-               id: operation.id,
+               id: operation.command_id,
                result:'OK'}
             return this.network.responde(msg);
         });
+      }
     }else
       return Promise.resolve();
   }
@@ -133,7 +132,7 @@ export class Replica extends Rol.Rol{
       var value = values.next();
       while (!value.done){
         let op = value.value;
-        if ( op.client_id !== operation.client_id || op.id !== operation.id){
+        if ( op.client_id !== operation.client_id || op.command_id !== operation.command_id){
             this.proposals.get(this.slot_num).delete(op);
             if (this.proposals.get(this.slot_num).size == 0)
               this.proposals.delete(this.slot_num);
@@ -154,13 +153,13 @@ export class Replica extends Rol.Rol{
 
 
   private isOperationInProposed( operation ) {
-    var search = {id:operation.id,client:operation.client};
+    var search = {id:operation.command_id,client:operation.client};
     return this.operationsProposed.get(search);
   }
 
 
   private operationSlotInDecided( operation:any ){
-    var search = {id:operation.id,client:operation.client};
+    var search = {id:operation.command_id,client:operation.client};
     return this.operationsDecided.get(search);
   }
 
@@ -168,11 +167,15 @@ export class Replica extends Rol.Rol{
   private slotsHaveMenorThanSlotNum( slots , slot_num ){
     if (slots === undefined)
       return false;
-    
+
     for(let slot of slots){
       if (slot < slot_num) return true;
     }
     return false;
+  }
+
+  protected executeOperation(message:any){
+    return Promise.reject("Not implemented");
   }
 
 }
