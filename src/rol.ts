@@ -11,14 +11,18 @@ export abstract class  Rol {
   private type:string;
   protected network:any;
   protected test:boolean;
+  protected external:boolean;
   protected id:string;
 
-  constructor(type:string, params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
+  constructor(type:string, params?: { name:string, test?: boolean, external?:boolean, network?:{ discover: any, ports: any, network:any }}){
     this.type = type;
     this.id = params.name;
 
     if (params !== undefined && params.test !== undefined) this.test = params.test
     else this.test = false
+
+    if (params !== undefined && params.external !== undefined) this.external = params.external
+    else this.external = false
 
     if (!this.test) {
         try {
@@ -54,6 +58,7 @@ export abstract class  Rol {
 }
 
 export function getRol(type:any, params:{ name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}):any{
+  if(type === 'replica') type = 'clientIcarus';
   var obj = require('./'+type)[capitalize(type)];
   return new obj(params);
 }
