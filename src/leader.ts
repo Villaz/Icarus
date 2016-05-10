@@ -63,7 +63,7 @@ export class Leader extends Rol{
 
   public start(){
       this.spawnScout()
-      this.spawnCommander()
+      //this.spawnCommander()
   }
 
   private spawnScout() {
@@ -86,8 +86,12 @@ export class Leader extends Rol{
 
   }
 
-  private spawnCommander(params?:{key:any, operation:any}){
-    this.commander = new commander.Commander({network:this.network})
+  private spawnCommander(params:{slot:any, operation:any}){
+    this.commander = new commander.Commander({network:this.network});
+    this.commander.sendP2A({ slot:params.slot,
+                             operation:params.operation,
+                             ballot:this.ballot});
+
     this.commander.on('decision', (result) =>{
       result = result[0];
 
@@ -130,10 +134,9 @@ export class Leader extends Rol{
   private sendToCommanderAllproposals(keys:Iterator<any>){
       let entry = keys.next();
       while(!entry.done){
-        let key = entry.value;
+        let key:number = parseInt(entry.value);
         var operation:any = this.proposals.get(key)
-        this.commander.sendP2A({key:key,operation:operation,ballot:this.ballot})
-        this.spawnCommander({key:key, operation:operation})
+        this.spawnCommander({slot:key, operation:operation})
         entry = keys.next();
       }
   }
