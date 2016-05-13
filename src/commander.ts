@@ -16,18 +16,17 @@ export class Commander extends Emitter.Emitter{
 
   private slots:Map<Number,CommanderSlot>;
   private operation:Object;
-  private network:any;
+  private leader:any;
 
-  constructor( params:{network:any} ){
+  constructor( leader:any ){
     super()
-    this.network = params.network
+    this.leader = leader;
     this.slots = new Map();
-
-    this.network.on('P2B', (message) => { this.process(message[0]) })
+    this.leader.network.on('P2B', (message) => { this.process(message[0]) })
   }
 
   public process( message:Message.Message){
-    if (message.type == 'P2B'){
+    if (message.type == 'P2B' && this.leader.active){
       this.receiveP2B({
         acceptor: message.from,
         ballot: message.operation.ballot,
@@ -48,7 +47,7 @@ export class Commander extends Emitter.Emitter{
           operation: params.operation,
           decided: false,
           acceptorsResponse: new Set(),
-          acceptors: this.network.acceptors
+          acceptors: this.leader.network.acceptors
         });
 
         var message = new Message.Message({
@@ -61,12 +60,12 @@ export class Commander extends Emitter.Emitter{
             ballot: params.ballot
           }
         });
-        this.network.sendToAcceptors(message)
+        this.leader.network.sendToAcceptors(message)
       }
     }
 
     public receiveP2B( params:{acceptor:any; ballot:Ballot; slot:number , operation:any} ){
-        if(!this.network.acceptors.has(params.acceptor)) return
+        if(!this.leader.network.acceptors.has(params.acceptor)) return
 
         if (!this.slots.has(params.slot)){
           this.slots.set(params.slot, {
@@ -74,7 +73,7 @@ export class Commander extends Emitter.Emitter{
               operation: params.operation,
               decided: false,
               acceptorsResponse: new Set(),
-              acceptors: this.network.acceptors
+              acceptors: this.leader.network.acceptors
             });
         }
         var slot = this.slots.get(params.slot);

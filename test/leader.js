@@ -19,9 +19,8 @@ describe('Leader tests', function(){
     var leader = undefined
 
     beforeEach(function(){
-        leader = new Leader({name:'test', test: true })
-        leader.network = network
-        leader.commander = commander
+        leader = new Leader({name:'test', test: true , network:network});
+        leader.commander = commander;
         leader.spawnCommander = function(){}
     });
 

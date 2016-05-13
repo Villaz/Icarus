@@ -1,5 +1,8 @@
+"use strict"
+
 var should = require('should');
 var Commander = require('../lib/commander.js').Commander;
+var Leader = require('../lib/leader.js').Leader;
 var Ballot = require('../lib/ballot.js').Ballot;
 
 
@@ -15,6 +18,17 @@ describe('Tests Commander' , function() {
     on : function(){}
     }
 
+  let leader = undefined;
+  let commander = undefined;
+
+  beforeEach(function(){
+        leader = new Leader({name:'test', test: true })
+        leader.network = network
+        leader.commander = commander
+        leader.spawnCommander = function(){}
+        commander = new Commander(leader);
+  });
+
   it('Constructor' , function( ){
     var operation = {
       client:{op:1, id:'127.0.0.1'},
@@ -22,15 +36,13 @@ describe('Tests Commander' , function() {
       operation:'%$·'
     }
 
-    var commander = new Commander ({network:network})
-    commander.network.acceptors.size.should.be.exactly(3)
-    commander.network.acceptors.should.equal(network.acceptors)
+    commander.leader.network.acceptors.size.should.be.exactly(3)
+    commander.leader.network.acceptors.should.equal(network.acceptors)
   })
 
 
   it('on sendP2A preempted operation with an existent slot',function(done){
     var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
-    var commander = new Commander ({network:network})
 
     commander.slots.set(params.slot, {
       ballot: new Ballot({id:'127.0.0.1',number:2}),
@@ -52,7 +64,7 @@ describe('Tests Commander' , function() {
 
   it('on sendP2A send message to acceptors', function(){
     var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
-    var commander = new Commander ({network:network})
+
     commander.sendP2A(params)
 
     commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
@@ -63,7 +75,7 @@ describe('Tests Commander' , function() {
 
   it('on receiveP2B receive a message with slot that not exists', function(){
     var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
-    var commander = new Commander ({network:network})
+
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
     commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
     commander.slots.get(params.slot).ballot.number.should.be.exactly(1)
@@ -73,7 +85,7 @@ describe('Tests Commander' , function() {
 
   it('on receiveP2B receive duplicate message from acceptor', function(){
     var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
-    var commander = new Commander ({network:network})
+
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
 
@@ -87,7 +99,7 @@ describe('Tests Commander' , function() {
 
     it('on receiveP2B add new acceptor to received', function(){
       var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
-      var commander = new Commander ({network:network})
+
       commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
 
       commander.slots.get(params.slot).acceptorsResponse.size.should.be.exactly(1)
@@ -97,7 +109,7 @@ describe('Tests Commander' , function() {
 
     it('on receiveP2B received mayority of acceptors', function(done){
       var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
-      var commander = new Commander ({network:network})
+
 
       commander.on('decision', function(decision){
         decision = decision[0]
@@ -113,14 +125,13 @@ describe('Tests Commander' , function() {
 
     it('on receivedP2B received from unknown acceptor', function(){
       var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:1})}
-      var commander = new Commander ({network:network})
+
       commander.receiveP2B({acceptor:'strange', ballot:params.ballot, slot:params.slot , operation:params.operation})
       commander.slots.should.not.have.property('strange')
     })
 
     it('on receivedP2B received accepted slot', function(){
       var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:2})}
-      var commander = new Commander ({network:network})
 
       commander.slots.set(params.slot, {
         ballot: new Ballot({id:'127.0.0.1',number:2}),
@@ -137,7 +148,6 @@ describe('Tests Commander' , function() {
 
 
   it('on receivedP2B receive a greater ballot', function(done){
-    var commander = new Commander({network:network})
     var operation ={
       client:'127.0.0.1',
       client_op:1,

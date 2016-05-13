@@ -26,17 +26,12 @@ export class Leader extends Rol{
   lastSlotReceived:any
   actualLeader:any
   started: boolean = false
-  test:boolean = false
 
   constructor(params?: { name: string, test?: boolean, network?: { discover: any, ports: any, network:any } }) {
       super('leader', params);
       this.ballot = new ballot.Ballot({ number: 1, id: params.name })
       this.active = false
       this.proposals = new Map<number,any>()
-
-      process.on('decision',(message:{slot:number,operation:any})=>{
-        process.emit('decision', message)
-      })
   }
 
   protected _startNetwork(){
@@ -63,7 +58,21 @@ export class Leader extends Rol{
 
   public start(){
       this.spawnScout()
-      //this.spawnCommander()
+      this.commander = new commander.Commander(this);
+      this.commander.on('decision', (result) =>{
+        result = result[0];
+
+        if(!this.test)
+          winston.info("Decided operation for slot %s", result.slot)
+
+        var message:Message.Message = new Message.Message({
+            type: 'DECISION',
+            from: this.ballot.id,
+            command_id: 0,
+            operation:result
+        })
+        this.network.sendToReplicas(message);
+      });
   }
 
   private spawnScout() {
@@ -85,29 +94,6 @@ export class Leader extends Rol{
     this.scout.start()
 
   }
-
-  private spawnCommander(params:{slot:any, operation:any}){
-    this.commander = new commander.Commander({network:this.network});
-    this.commander.sendP2A({ slot:params.slot,
-                             operation:params.operation,
-                             ballot:this.ballot});
-
-    this.commander.on('decision', (result) =>{
-      result = result[0];
-
-      if(!this.test)
-        winston.info("Decided operation for slot %s", result.slot)
-
-      var message:Message.Message = new Message.Message({
-          type: 'DECISION',
-          from: this.ballot.id,
-          command_id: 0,
-          operation:result
-      })
-      this.network.sendToReplicas(message);
-    })
-  }
-
 
   public propose(params:{slot:number; operation:any}){
       if(!this.test)
@@ -134,9 +120,11 @@ export class Leader extends Rol{
   private sendToCommanderAllproposals(keys:Iterator<any>){
       let entry = keys.next();
       while(!entry.done){
-        let key:number = parseInt(entry.value);
-        var operation:any = this.proposals.get(key)
-        this.spawnCommander({slot:key, operation:operation})
+        let slot:number = parseInt(entry.value);
+        var operation:any = this.proposals.get(slot)
+        this.commander.sendP2A({ slot:slot,
+                                 operation:operation,
+                                 ballot:this.ballot});
         entry = keys.next();
       }
   }
@@ -147,8 +135,6 @@ export class Leader extends Rol{
           this.active = false
           this.ballot.number = params.ballot.number + 1
           this.actualLeader = params.ballot.id
-          if(params.slot !== undefined)
-              process.emit('preempted', { slot:params.slot, operation:params.operation, replica:params.ballot.id})
           if (!this.test)
               winston.info("Leader %s is preempted, the actual leader is %s", this.id, this.actualLeader);
       }
