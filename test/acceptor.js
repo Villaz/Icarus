@@ -1,6 +1,5 @@
 "use strict";
 
-console.log(require('../lib/acceptor.js'));
 var should = require('should');
 var Acceptor = require('../lib/acceptor.js').Acceptor;
 var RecAcceptor = require('../lib/acceptor.js').RecAcceptor;
