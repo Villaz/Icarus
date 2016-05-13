@@ -92,7 +92,7 @@ export class InternalMap<K extends number,T>{
   /**
   * Returns the object or objects stored in a given slot
   *@method getValue
-  *@param {number} slot
+  *@param {K} slot
   */
   public get(slot:K):any{
     return this.hashMap.get(JSON.stringify(slot));
