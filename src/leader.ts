@@ -72,6 +72,9 @@ export class Leader extends Rol{
             operation:result
         })
         this.network.sendToReplicas(message);
+        //Once the message is sended to all replicas, the leader can remove
+        //the operation from proposals
+        this.proposals.delete(result.slot);
       });
   }
 

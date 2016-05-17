@@ -88,7 +88,12 @@ export class Commander extends Emitter.Emitter{
             this.emit('preempted', params.ballot)
             return
         }
+
+        //if the mayority of acceptors have accepted the operation, the
+        //commander adopts the operation and emits a message to the leader.
         if (slot.acceptorsResponse.size >= Math.round((slot.acceptors.size ) / 2)){
+            //removes the operation from slots
+            this.slots.delete(params.slot);
             slot.decided = true
             this.emit('decision', {slot:params.slot , operation: params.operation})
         }
