@@ -29,6 +29,6 @@
         "./src/typings/tsd.d.ts",
         "./src/network/network.ts",
         "./src/network/zmq/network.ts",
-        "./src/network/rabbitmq/network.ts",
+        "./src/network/rabbitmq/network.ts"
     ]
 }
