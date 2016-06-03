@@ -14,6 +14,8 @@
         "./src/app.ts",
         "./src/ballot.ts",
         "./src/map.ts",
+        "./src/client.ts",
+        "./src/clientIcarus.ts",
         "./src/replica.ts",
         "./src/acceptor.ts",
         "./src/leader.ts",
@@ -25,9 +27,8 @@
         "./src/name_generator.ts",
         "./src/message.ts",
         "./src/typings/tsd.d.ts",
-
         "./src/network/network.ts",
         "./src/network/zmq/network.ts",
-        "./src/network/rabbitmq/network.ts"
+        "./src/network/rabbitmq/network.ts",
     ]
 }

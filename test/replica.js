@@ -1,7 +1,6 @@
 var should = require('should');
 var Replica = require('../lib/replica.js').Replica;
 var Ballot = require('../lib/ballot.js').Ballot;
-var Promise = require('bluebird');
 
 describe('Replica tests', function(){
 
@@ -51,9 +50,9 @@ describe('Replica tests', function(){
         var op1 = {command_id:1,client:1,op:{name:'hello'}}
         replica.decision(0 , op1).then(function(){
           replica.lastEmpltySlotInDecisions.should.be.exactly(1);
-          var value = replica.decisions.get(0);
-          value.command_id.should.be.exactly(1)
-          value.client.should.be.exactly(1)
+          var value = replica.operationsDecided.get({id:op1.command_id,client:op1.client});
+          value.should.be.exactly(0);
+          replica.decisions.size.should.be.exactly(0);
           done();
         });
     });

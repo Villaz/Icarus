@@ -46,7 +46,6 @@ export class Network extends Emitter.Emitter{
     protected processMessage(data: any, type: string){}
 
     public upNode(node) {
-        node = node[0]
         if (node.name == this.discover.name) return
         if (node.data.L !== undefined) {
             if (this.leaders[node.name] === undefined) {
@@ -55,19 +54,19 @@ export class Network extends Emitter.Emitter{
             for (let url of node.addresses){
               if (!this.leaders[node.name].has(url)){
                 this.leaders[node.name].add(url)
-                this._upNode('L', url, node.data.L);
+                this._upNode('L', url, node.data.L.toString());
               }
             }
-
         }
+
         if (node.data.A !== undefined) {
-            if( node['network'] === undefined) return;
+            //if( node['network'] === undefined) return;
             if (!this.acceptors.has(node.name))
                 this.acceptors.set(node.name, new Set());
             for (let url of node.addresses){
               if (!this.acceptors.get(node.name).has(url)){
                 this.acceptors.get(node.name).add(url)
-                this._upNode('A', url, node.data.A);
+                this._upNode('A', url, node.data.A.toString());
               }
             }
         }
@@ -79,15 +78,13 @@ export class Network extends Emitter.Emitter{
             for (let url of node.addresses){
               if (!this.replicas[node.name].has(url)){
                 this.replicas[node.name].add(url)
-                this._upNode('R', url, node.data.R);
+                this._upNode('R', url, node.data.R.toString());
               }
             }
         }
-
     }
 
     public downNode(node) {
-        node = node[0];
         if (node.name === this.discover.name) return
         if (this.leaders[node.name] !== undefined) {
             delete this.leaders[node.name];

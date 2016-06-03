@@ -15,7 +15,6 @@ export class Replica extends Rol.Rol{
   slot_num:number = 0;
   proposals:Map<number,Set<any>>;
   decisions:any = undefined;
-  performed:any = undefined;
 
   operationsProposed:any = undefined;
   operationsDecided:any = undefined
@@ -31,7 +30,6 @@ export class Replica extends Rol.Rol{
     this.slot_num = 0;
     this.proposals = new Map();
     this.decisions = new Map2();
-    this.performed = new Map2();
 
     this.operationsProposed = new Map2();
     this.operationsDecided  = new Map2();
@@ -88,8 +86,10 @@ export class Replica extends Rol.Rol{
     let whileDecisionsInSlot = ( ) => {
       if (!this.decisions.has(this.slot_num))
         return Promise.resolve();
-      this.checkOperationsToRepropose( operation );
-      return this.perform( operation ).then(()=>{
+      let operationInSlot = this.decisions.get(this.slot_num);
+      this.checkOperationsToRepropose( operationInSlot );
+      return this.perform( operationInSlot ).then(()=>{
+        this.decisions.delete(this.slot_num - 1);
         if (!this.test)
           winston.info("performed slot %s", this.slot_num - 1)
         return whileDecisionsInSlot();

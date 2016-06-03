@@ -1,16 +1,9 @@
 ﻿///<reference path='./typings/tsd.d.ts' />
 
-var Promise = require("bluebird")
-var ballot = require("./ballot")
-var winston = require('winston')
-var underscore = require("underscore")
-var dgram = require('dgram')
-var mdns = require('mdns')
+import events = require('events');
+var mdns = undefined;
 
-//import Emitter = require('./icarus_utils')
-import * as Emitter from "./icarus_utils";
-
-export class Discover extends Emitter.Emitter {
+export class Discover extends events.EventEmitter {
     name: string
     port: number
     roles: any
@@ -18,7 +11,10 @@ export class Discover extends Emitter.Emitter {
     static createDiscover(discoverType: string, params: { name: string, port: number, roles: any }):Discover {
         switch (discoverType) {
             case 'bonjour':
-                return new DiscoverBonjour(params)
+                mdns = require('mdns');
+                return new DiscoverBonjour(params);
+            case 'hefesto':
+                return new DiscoverHefesto(params);
         }
     }
 }
@@ -26,6 +22,7 @@ export class Discover extends Emitter.Emitter {
 export class DiscoverBonjour extends Discover {
     advertisement: any
     browser: any
+
 
     constructor(params: { name: string, port: number, roles: any }) {
         super()
@@ -85,65 +82,107 @@ export class DiscoverBonjour extends Discover {
     }
 }
 
-/*
-export class DiscoverUDP extends Discover
-{
-    nodes: any
-    interface:any
+export class DiscoverHefesto extends Discover{
 
-    constructor(params: { name: string, port: number, roles: any }) {
-        super()
-        this.name = params.name
-        this.port = params.port
-        this.roles = params.roles
+  private zmq = require('zmq');
+  private server:any;
+  private nodes:Set<string>;
+
+  constructor(params: { name: string, port: number, roles: any }) {
+      super()
+      this.name = params.name
+      this.port = params.port
+      this.roles = params.roles
+      this.nodes = new Set<string>();
+      this.start()
+  }
+
+  private start():void{
+    let interval = setInterval(()=>{
+      let message = {address: this.getIPs()[0], name:this.name, data: this.roles };
+      let client = this.zmq.socket('dealer');
+      client.connect('tcp://localhost:6666');
+      client.send(JSON.stringify(message));
+      client.close();
+    }, 1000);
+
+
+    let socket = this.zmq.socket('sub');
+    socket.connect('tcp://localhost:5555');
+    socket.subscribe('INFO');
+    socket.on('message', (data)=>{
+      clearInterval(interval);
+      this.startPing();
+      data = data.toString();
+      let messageType = data.substr(0, data.indexOf(' '));
+      let message = JSON.parse(data.substr(data.indexOf(' ')+1));
+      //check UPs
+      this.processUPs(message);
+      //check Downs
+      this.processDowns(message);
+    });
+  }
+
+  private startPing():void{
+    setInterval(()=>{
+      let message = {address: this.getIPs()[0], name:this.name, type:"PING"};
+      let client = this.zmq.socket('dealer');
+      client.connect('tcp://localhost:6666');
+      client.send(JSON.stringify(message));
+      client.close();
+    }, 1000);
+  }
+
+  private processUPs(message):void
+  {
+    for(let node of message.nodes ){
+      let key = node.address + '/' + node.name;
+      if(!this.nodes.has(key)){
+        this.nodes.add(key);
+        let data = {
+            addresses: [node.address],
+            data: node.data,
+            name: node.name,
+            network: undefined
+          }
+          this.emit('up', data);
+      }
     }
+  }
 
-    public start() {
-        var processMessage = (message, rdata) => {
-            message = JSON.parse(message)
-            this.nodes ['message'] = new Date()
-            this.emit('up', message)
+  private processDowns(message):void
+  {
+    for(let node of this.nodes){
+      let exists:boolean = false;
+      for(let node2 of message.nodes){
+        let key = node2.address + '/' + node2.name;
+        if(node === key){
+          exists = true;
+          break;
         }
-        var server = dgram.createSocket('udp4')
-        server.on('message' , processMessage)
-        server.bind(8080, () => {
-            server.setBroadcast(true)
-            server.setMulticastTTL(128)
-            server.addMembership('230.185.192.108')
-        })
-        setInterval(this.sendUDP, 60000)
-        setInterval(this.checkDown , 180000)
-        this.sendUDP()
-    }
-
-    private retrieve_ip(){
-        return require('os').networkInterfaces()[this.interface][0]['address']
-    }
-
-    private sendUDP(){
-        var message = {
-            address: this.retrieve_ip(),
-            data: this.roles
+      }
+      if(!exists){
+        let ip = node.substr(0, node.indexOf("/"));
+        let name = node.substr(node.indexOf("/")+1);
+        let data = {
+          addresses: [ip],
+          data: undefined,
+          name: name,
+          network: undefined
         }
-        var bufferMessage = new Buffer(JSON.stringify(message))
-        var client = dgram.createSocket("udp4")
-        client.bind(5001, () => {
-            client.setBroadcast(true)
-            client.setMulticastTTL(128)
-            client.addMembership('230.185.192.108')
-            client.send(bufferMessage, 0, bufferMessage.length, 8080, "128.141.72.127", (err, bytes) => {
-                client.close()
-            })
-        })
+        console.log(data);
+        this.emit('down', data);
+      }
     }
+  }
 
-    private checkDown() {
-        var date = new Date()
-        for (var node of this.nodes) {
-            var difference = (date - node) / 1000
-            if (difference > 20) this.emit('down', '')
-        }
-    }
+  private getIPs():Array<string>{
+    let addresses = []
+    const networks = require('os').networkInterfaces()
+    for (let network in networks)
+      for(let sub of networks[network])
+          if(!sub.internal && sub.family !== 'IPv6')
+            addresses.push(sub.address);
+    return addresses;
+  }
 }
-}
-*/

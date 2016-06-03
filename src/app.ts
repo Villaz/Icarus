@@ -6,9 +6,6 @@ import * as Discover from "./discover";
 var program = require('commander');
 var nconf = require('nconf');
 
-
-
-
 program
   .version('0.0.1')
   .option('--acceptor_name [name]', 'Acceptor name',names.generateName().substr(0, 15))
@@ -49,8 +46,8 @@ function createRol(type:string, name:string, discover:Discover.Discover):any{
   var params = { name: name,
                  network: { discover: discover,
                             ports: nconf.get(type)['ports'],
-                            network: nconf.get('network')
-                          }
+                            network: nconf.get('network'),
+                          },
                }
   var rol = require("./rol");
   return rol.getRol(type, params)

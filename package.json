@@ -19,6 +19,7 @@
     "bluebird": "^2.10.0",
     "commander": "^2.9.0",
     "crc": "*",
+    "elasticsearch": "^11.0.1",
     "gmetric": "*",
     "hashmap": "*",
     "mdns": "^2.2.10",

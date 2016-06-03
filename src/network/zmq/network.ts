@@ -7,26 +7,9 @@ import * as Message from "../../message";
 var map = require("../../map").Map
 var winston = require('winston')
 var zmq = require('zmq')
-var amqp = require('amqplib/callback_api');
-var Promise = require("bluebird")
 var Discover = require('../../discover')
-var Gmetric = require('gmetric');
-
 import {Network} from "../network";
-
 import * as Emitter from "../../icarus_utils";
-
-
-var gmetric = new Gmetric();
-var metric = {
-  hostname: 'test',
-  group: 'messages',
-  units: 'msg',
-  slope: 'positive',
-  name: 'send_msg',
-  value: 1,
-  type: 'int32'
-};
 
 export class ZMQNetwork extends Network {
 
@@ -76,10 +59,8 @@ export class ZMQNetwork extends Network {
   }
 
   public send(name: string, message:Message.Message) {
-      this.publishers[name].send(this.generateBufferMessage(message));
-      metric.name = message.type;
-      //gmetric.send('172.28.128.4', 8649, metric);
-      metric.value++
+      let buffer = this.generateBufferMessage(message);
+      this.publishers[name].send(buffer);
   }
 
   private generateBufferMessage(message:Message.Message){
@@ -288,7 +269,6 @@ export class LeaderNetwork extends ZMQNetwork {
             case 'R':
                 this.subscription({ name: "replicaSubscriber", subscriptions: ['PROPOSE'], url: url, port: port.split(',')[0]});
                 break;
-
         }
     }
 }
