@@ -58,7 +58,7 @@ export class Replica extends Rol.Rol{
   }
 
   protected propose(operation:any){
-    var key = {id:operation.command_id, client:operation.client}
+    var key = {id:operation.command_id, client:operation.client_id}
     if ( !this.operationsDecided.has(key) && !this.operationsProposed.has(key)){
       let slot = this.nextEmpltySlot()
       operation.slot = slot;
@@ -77,9 +77,8 @@ export class Replica extends Rol.Rol{
       winston.info("Decided operation for slot %s", slot)
 
     if (this.lastEmpltySlotInDecisions > slot) return Promise.resolve();
-
     this.decisions.set( slot, operation )
-    var key = {id:operation.command_id,client:operation.client};
+    var key = {id:operation.command_id,client:operation.client_id};
     this.operationsDecided.set( key , slot );
     this.lastEmpltySlotInDecisions++;
 
@@ -133,6 +132,7 @@ export class Replica extends Rol.Rol{
       while (!value.done){
         let op = value.value;
         if ( op.client_id !== operation.client_id || op.command_id !== operation.command_id){
+            this.operationsProposed.delete({id:op.command_id, client:op.client_id})
             this.proposals.get(this.slot_num).delete(op);
             if (this.proposals.get(this.slot_num).size == 0)
               this.proposals.delete(this.slot_num);
@@ -153,13 +153,13 @@ export class Replica extends Rol.Rol{
 
 
   private isOperationInProposed( operation ) {
-    var search = {id:operation.command_id,client:operation.client};
+    var search = {id:operation.command_id,client:operation.client_id};
     return this.operationsProposed.get(search);
   }
 
 
   private operationSlotInDecided( operation:any ){
-    var search = {id:operation.command_id,client:operation.client};
+    var search = {id:operation.command_id,client:operation.client_id};
     return this.operationsDecided.get(search);
   }
 
