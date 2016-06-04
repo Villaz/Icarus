@@ -3,22 +3,26 @@ var zmq = require('zmq');
 var Promise = require('bluebird');
 import * as Message from "buffer";
 import * as Replica from "../replica";
+import events = require('events');
+
 
 export class LocalClient extends Replica.Replica{
 
   private operations:number;
   private executions:Map<any,any>;
-
+  protected emmiter: events.EventEmitter;
 
   constructor(params?: { name:string, test?: boolean, external?:boolean, network?:{ discover: any, ports: any, network:any }}){
     super(params);
 
     this.operations = 1;
     this.executions = new Map();
+    this.emmiter = new events.EventEmitter();
   }
 
-  public execute(operation):Promise<any>{
+  public execute(operation){//:Promise<any>{
     operation.command_id = this.operations;
+    operation.client_id = this.id;
     var message = {client:this.id,
         id:this.operations,
         operation:operation
@@ -47,13 +51,14 @@ export class LocalClient extends Replica.Replica{
 
   protected executeOperation(message):Promise<any>{
     return this.work(message.operation).then((value) =>{
-      console.log("WORK!");
       if(this.executions.has(message.operation.command_id)){
+        this.emmiter.emit("result", value);
         return this.executions.get(message.operation.command_id)['resolve'](value);
       }else
       {
         let promise = Promise.resolve(value);
         this.executions.set(message.id,{'promise':promise});
+        this.emmiter.emit("result", value);
         return promise;
       }
     });
