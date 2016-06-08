@@ -33,6 +33,7 @@ export class Acceptor extends Rol{
     this.pending_messages = new Array<any>();
 
     if(!params.test){
+      winston.info("%s is inactive", this.id);
       this.recuperation = new RecAcceptor(this, params.test);
       this.recuperation.start(params.network.ports.recuperation2);
     }
@@ -111,7 +112,6 @@ export class Acceptor extends Rol{
         if (operation !== undefined && operation.operation.client === value.operation.client && operation.operation.id === value.operation.id) return
       }
 
-      if(!this.test) winston.info("Received P2A")
       if(value.ballot.isMayorOrEqualThanOtherBallot(this.actualBallot)){
           if(!this.test) winston.info("P2A Updated ballot to %s" ,JSON.stringify(value.ballot))
           this.actualBallot = value.ballot;
@@ -159,7 +159,7 @@ export class RecAcceptor{
     setInterval(() => {
        this.recived_rec = false;
        this.sendRecuperationMessage(port, this.acceptor.last_slot + 1)
-     },60000);
+     },30000);
     setTimeout(() => {this.sendRecuperationMessage(port)}, 1000);
   }
 
@@ -172,38 +172,30 @@ export class RecAcceptor{
             this.processRecuperation(message);
             break;
         default:
+            winston.info("Received message but %s is inactive", this.acceptor.Id);
             this.pending_messages.push(message);
     }
   }
 
-  public sendRecuperationMessage(recuperation:number,from:number=0,to?:number) {
+  public sendRecuperationMessage(recuperation:number,from:number=0) {
       if(from < 0) from = 0;
       this.sended_acceptors = []
       let acceptorsMap = {}
 
-      for (var acceptor of this.acceptor.Network.acceptors) {
-          if(acceptor[0] !== this.acceptor.Id) this.sended_acceptors.push(acceptor[0])
-      }
-      var interval = Math.round((to - from) / this.sended_acceptors.length)
-      var begin = from
-
-      for (let acceptor of shuffle(this.sended_acceptors)) {
-          acceptorsMap[acceptor] = { begin: begin, to: begin + interval + 1 > to ? to : begin + interval  }
-          begin += interval + 1
-      }
       var body = {
           port: recuperation,
-          intervals: acceptorsMap
+          from: from
       }
 
       var message = new Message.Message({from:this.acceptor.Id, type: 'REC', command_id: this.acceptor.messages_sended++, operation: body })
       this.received_acceptors = [];
-
       this.acceptor.Network.sendToAcceptors(message);
+      //if the acceptor does not receive messages in 10 seconds, it is the only one in the system
+      //and becomes active
       setTimeout(()=>{
          if(!this.recived_rec){
-          for(let petition of this.pending_messages)
-            this.acceptor.processMessages(petition);
+           for(let petition of this.pending_messages)
+             this.acceptor.processMessages(petition);
           this.pending_messages.splice(0,this.pending_messages.length);
           this.acceptor.active = true;
          }
@@ -212,13 +204,12 @@ export class RecAcceptor{
   }
 
 
-  public sendACKRecuperationMessage(from:string, operation:{port:number, intervals:any}) {
-    let intervals = operation.intervals[this.acceptor.Id];
+  public sendACKRecuperationMessage(from:string, operation:{port:number, from:any}) {
     let values = [];
 
     for(let value of this.acceptor.mapOfValues.keys){
       value = parseInt(value);
-      if(value >= intervals.begin && (isNaN(intervals.to) || intervals.to >= value || intervals.to === null))
+      if(value >= from)
         values.push({slot:value, operation:this.acceptor.mapOfValues.get(value)});
     }
 
@@ -233,7 +224,7 @@ export class RecAcceptor{
         ballot: this.acceptor.actualBallot,
         values:values
       }
-    })
+    });
     this.acceptor.Network.sendToAcceptors(message);
     return message;
   }
@@ -256,7 +247,7 @@ export class RecAcceptor{
       this.acceptor.last_slot = value.slot;
     }
 
-    if(this.sended_acceptors.every((v,i)=> v === this.received_acceptors[i])){
+    if(this.sended_acceptors.every((v,i)=> this.received_acceptors.indexOf(v) >= 0)){
       for(let petition of this.pending_messages)
         this.acceptor.processMessages(petition);
       this.pending_messages.splice(0,this.pending_messages.length)
