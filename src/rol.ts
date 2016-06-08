@@ -26,7 +26,7 @@ export abstract class  Rol {
 
     if (!this.test) {
         try {
-            //winston.add(winston.transports.File, { filename: type + this.id + '.log' , level:'warning'});
+            winston.add(winston.transports.File, { filename: `./logs/${type}-${this.id}.log` , level:'info'});
             /*winston.add(require('winston-graylog2'), {
               name: 'Graylog',
               level: 'warning',
