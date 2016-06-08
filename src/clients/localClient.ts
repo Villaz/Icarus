@@ -1,6 +1,7 @@
 ///<reference path='../typings/tsd.d.ts' />
 var zmq = require('zmq');
 var Promise = require('bluebird');
+var sha3 = require('sha3');
 import * as Message from "buffer";
 import * as Replica from "../replica";
 import events = require('events');
@@ -22,7 +23,9 @@ export class LocalClient extends Replica.Replica{
 
   public execute(operation){//:Promise<any>{
     operation.command_id = this.operations;
+    operation.sha = new sha3.SHA3Hash().update(JSON.stringify(operation)).digest('hex');
     operation.client_id = this.id;
+
     var message = {client:this.id,
         id:this.operations,
         operation:operation
