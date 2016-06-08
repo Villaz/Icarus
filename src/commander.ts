@@ -15,6 +15,7 @@ import * as Emitter from "./icarus_utils";
 export class Commander extends Emitter.Emitter{
 
   private slots:Map<Number,CommanderSlot>;
+  private slotsDecided:Set<number>;
   private operation:Object;
   private leader:any;
 
@@ -22,6 +23,7 @@ export class Commander extends Emitter.Emitter{
     super()
     this.leader = leader;
     this.slots = new Map();
+    this.slotsDecided = new Set();
     this.leader.network.on('P2B', (message) => { this.process(message[0]) })
   }
 
@@ -37,6 +39,7 @@ export class Commander extends Emitter.Emitter{
   }
 
   public sendP2A( params:ParamsLeader ){
+      if(this.slotsDecided.has(params.slot)) return;
       if (this.slots.has(params.slot)){
         this.emit('preempted', this.slots.get(params.slot).ballot)
         return
@@ -45,7 +48,6 @@ export class Commander extends Emitter.Emitter{
         this.slots.set(params.slot, {
           ballot: params.ballot,
           operation: params.operation,
-          decided: false,
           acceptorsResponse: new Set(),
           acceptors: this.leader.network.acceptors
         });
@@ -66,24 +68,21 @@ export class Commander extends Emitter.Emitter{
 
     public receiveP2B( params:{acceptor:any; ballot:Ballot; slot:number , operation:any} ){
         if(!this.leader.network.acceptors.has(params.acceptor)) return
-
+        if(this.slotsDecided.has(params.slot)) return
+        
         if (!this.slots.has(params.slot)){
           this.slots.set(params.slot, {
               ballot: params.ballot,
               operation: params.operation,
-              decided: false,
               acceptorsResponse: new Set(),
               acceptors: this.leader.network.acceptors
             });
         }
         var slot = this.slots.get(params.slot);
-
-        var existsAcceptor = slot.acceptors.has(params.acceptor);
-        if (!existsAcceptor || slot.decided) return
+        if(!slot.acceptors.has(params.acceptor)) return;
 
         if (slot.ballot.isEqual(params.ballot))
           this.slots.get(params.slot).acceptorsResponse.add(params.acceptor)
-
         if (params.ballot.isMayorThanOtherBallot(slot.ballot)){
             this.emit('preempted', params.ballot)
             return
@@ -94,7 +93,7 @@ export class Commander extends Emitter.Emitter{
         if (slot.acceptorsResponse.size >= Math.round((slot.acceptors.size ) / 2)){
             //removes the operation from slots
             this.slots.delete(params.slot);
-            slot.decided = true
+            this.slotsDecided.add(params.slot);
             this.emit('decision', {slot:params.slot , operation: params.operation})
         }
       }

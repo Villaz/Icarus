@@ -18,7 +18,7 @@ import {InternalMap as Map} from "./map";
  */
 export class Scout extends Emitter.Emitter{
 
-  acceptors: Array<string>
+  acceptors: any;
   acceptorsResponsed : Array<string>
   pvalues : Array<any>
   slotsOfValues : Array<any>
@@ -66,12 +66,20 @@ export class Scout extends Emitter.Emitter{
 
   private updateAcceptedValuesAndAcceptorsResponse(message:any){
     this.addAcceptedToPValues(message.operation.accepted)
-    if (this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors[message.from] !== undefined)
+    if (this.acceptorsResponsed.indexOf(message.from) < 0 && this.acceptors.has(message.from))
       this.acceptorsResponsed.push(message.from)
   }
 
   private ifResponseMayorOfAcceptorsSendAdopted(){
-    var numberAcceptors = Object.keys(this.acceptors).length
+
+    var acceptors = () => {
+      let counter = 0;
+      for(let key of this.acceptors)
+        counter++;
+      return counter;
+    }
+
+    var numberAcceptors = acceptors();
     if (numberAcceptors == 2)
       numberAcceptors = 3
     if (this.acceptorsResponsed.length >= Math.round( numberAcceptors / 2 )){
