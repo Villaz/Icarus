@@ -211,8 +211,8 @@ export class ReplicaNetwork extends ZMQNetwork {
         });
     }
 
-    public sendToLeaders(operation:any) {
-        var message = new Message.Message({from:'1',
+    public sendToLeaders(operation:any, from:string) {
+        var message = new Message.Message({from:from,
                                            type:'PROPOSE',
                                            command_id:0,
                                            operation:operation});
