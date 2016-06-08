@@ -27,6 +27,7 @@
     "moment": "^2.10.6",
     "nconf": "^0.8.2",
     "q": "^2.0.3",
+    "sha3": "^1.2.0",
     "shuffle-array": "^0.1.0",
     "underscore": "^1.8.3",
     "winston": "*",
