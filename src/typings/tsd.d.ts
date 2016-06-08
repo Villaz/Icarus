@@ -28,7 +28,6 @@ interface ParamsLeader{
 interface CommanderSlot{
   ballot: Ballot,
   operation: any,
-  decided: Boolean,
   acceptorsResponse:Set<String>,
   acceptors:Map<Number,Array<String>>
 }
