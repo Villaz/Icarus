@@ -28,39 +28,39 @@ function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function createDiscover(type:string, name:string, rol:string){
+function createDiscover(type:string, name:string, rol:any){
   let roles = {}
-  roles[rol[0].toUpperCase()] = []
-  for (let ports in nconf.get(rol)['ports']){
-    roles[rol[0].toUpperCase()].push(nconf.get(rol)['ports'][ports])
+  roles[process.env.rol[0].toUpperCase()] = []
+  for (let ports in rol['ports']){
+    roles[process.env.rol[0].toUpperCase()].push(rol['ports'][ports])
   }
   let discover = Discover.Discover.createDiscover(type, {
     name: name,
-    port: nconf.get(rol)['discover'],
+    port: rol['discover'],
     roles: roles
   });
   return discover;
 }
 
-function createRol(type:string, name:string, discover:Discover.Discover):any{
+function createRol(rol:any, name:string, discover:Discover.Discover):any{
   var params = { name: name,
                  network: { discover: discover,
-                            ports: nconf.get(type)['ports'],
+                            ports: rol['ports'],
                             network: nconf.get('network'),
                           },
                }
   var rol = require("./rol");
-  return rol.getRol(type, params)
+  return rol.getRol(process.env.rol, params)
 }
 
 if(cluster.isMaster){
-  let roles = {}
-
   for(let rol of nconf.get("roles")){
-     cluster.fork({'rol':rol}).id = rol;
+    let counter = 1;
+    for(let r of nconf.get(rol+"s"))
+      cluster.fork({'data':JSON.stringify(r), 'rol': rol}).id = rol+counter;
   }
 }else{
-  let name:string = program[process.env.rol+"_name"]
-  let discover = createDiscover('bonjour', name, process.env.rol)
-  var rol:any = createRol(process.env.rol, name, discover)
+  let name:string = program[process.env.rol+'_name']
+  let discover = createDiscover('bonjour', name, JSON.parse(process.env.data))
+  var rol:any = createRol(JSON.parse(process.env.data), name, discover)
 }
