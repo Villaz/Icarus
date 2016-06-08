@@ -68,13 +68,13 @@ export class Replica extends Rol.Rol{
       this.proposals.get(slot).add(operation);
       this.operationsProposed.set( key, slot );
       this.lastEmpltySlotInProposals++;
-      this.network.sendToLeaders(operation);
+      this.network.sendToLeaders(operation, this.id);
     }
   }
 
   private decision( slot, operation ){
     if(!this.test)
-      winston.info("Decided operation for slot %s", slot)
+      winston.info("Decided operation for slot %s", slot);
 
     if (this.lastEmpltySlotInDecisions > slot) return Promise.resolve();
     this.decisions.set( slot, operation )
@@ -90,7 +90,7 @@ export class Replica extends Rol.Rol{
       return this.perform( operationInSlot ).then(()=>{
         this.decisions.delete(this.slot_num - 1);
         if (!this.test)
-          winston.info("performed slot %s", this.slot_num - 1)
+          winston.info("performed slot %s", this.slot_num - 1);
         return whileDecisionsInSlot();
       });
 
@@ -131,7 +131,9 @@ export class Replica extends Rol.Rol{
       var value = values.next();
       while (!value.done){
         let op = value.value;
-        if ( op.client_id !== operation.client_id || op.command_id !== operation.command_id){
+        if (op.sha === operation.sha)
+          this.proposals.get(this.slot_num).delete(op);
+        else{
             this.operationsProposed.delete({id:op.command_id, client:op.client_id})
             this.proposals.get(this.slot_num).delete(op);
             if (this.proposals.get(this.slot_num).size == 0)
