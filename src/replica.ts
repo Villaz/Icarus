@@ -3,6 +3,7 @@
 
 var winston = require('winston');
 var shuffle = require('shuffle-array');
+var moment = require('moment');
 
 import * as Ballot from "./ballot";
 import * as Message from "./message";
@@ -21,6 +22,7 @@ export class Replica extends Rol.Rol{
 
   lastEmpltySlotInProposals:any = undefined
   lastEmpltySlotInDecisions:any = undefined
+  lastDecidedMessage:any = undefined;
 
   promisesPerSlot:any = undefined
 
@@ -39,8 +41,25 @@ export class Replica extends Rol.Rol{
     this.lastEmpltySlotInDecisions = 0;
     this.lastEmpltySlotInProposals = 0;
 
+    setInterval(()=>{this.checkSendGAP()},10000);
+
   }
 
+  private checkSendGAP( ):Message.Message{
+    let actual = moment().unix()
+    let message:Message.Message = undefined;
+    if( this.lastDecidedMessage === undefined || actual - this.lastDecidedMessage > 10 ){
+      message = new Message.Message(
+        {
+          from: this.id,
+          type: 'GAP',
+          operation:{
+            slot: this.slot_num
+          }
+        });
+    }
+    return message;
+  }
 
   protected _startNetwork( ) {
       var self = this
@@ -76,11 +95,20 @@ export class Replica extends Rol.Rol{
     if(!this.test)
       winston.info("Decided operation for slot %s", slot);
 
+    //The operation was decided before
     if (this.lastEmpltySlotInDecisions > slot) return Promise.resolve();
+
+    //Adds the operation to decisions
     this.decisions.set( slot, operation )
     var key = {id:operation.command_id,client:operation.client_id};
     this.operationsDecided.set( key , slot );
-    this.lastEmpltySlotInDecisions++;
+
+    //Updates the value to the last emplty slot
+    if(this.lastEmpltySlotInDecisions === slot)
+      do{
+        this.lastEmpltySlotInDecisions++;
+      }while(this.decisions.has(this.lastEmpltySlotInDecisions))
+
 
     let whileDecisionsInSlot = ( ) => {
       if (!this.decisions.has(this.slot_num))

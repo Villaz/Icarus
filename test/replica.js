@@ -69,6 +69,26 @@ describe('Replica tests', function(){
       });
     });
 
+    it('Decide operation with empty slots', function(done){
+      var op1 = {command_id:1,client_id:1,op:{name:'hello'}}
+      var op2 = {command_id:2,client_id:1,op:{name:'hello2'}}
+      replica.decision(1 , op1).then(function(){
+        replica.lastEmpltySlotInDecisions.should.be.exactly(0);
+        var value = replica.operationsDecided.get({id:op1.command_id,client:op1.client_id});
+        value.should.be.exactly(1);
+        replica.decisions.size.should.be.exactly(1);
+        replica.decision(0 , op2).then(function(){
+          replica.lastEmpltySlotInDecisions.should.be.exactly(2);
+          var value = replica.operationsDecided.get({id:op1.command_id,client:op1.client_id});
+          value.should.be.exactly(1);
+          replica.operationsDecided.get({id:op2.command_id,client:op2.client_id}).should.be.exactly(0);
+          //the operations has been performed
+          replica.decisions.size.should.be.exactly(0);
+          done();
+        });
+      });
+    });
+
 
     it('reproposeOperation' , function(  ){
         var op1 = {command_id:1,client_id:1,op:'hello', sha:'123'}
@@ -120,5 +140,9 @@ describe('Replica tests', function(){
         replica.slotsHaveMenorThanSlotNum(slots,1).should.be.false
         replica.slotsHaveMenorThanSlotNum(slots,2).should.be.false
         replica.slotsHaveMenorThanSlotNum(slots,5).should.be.true
+    });
+
+    it('Send GAP message', function(){
+
     });
   });
