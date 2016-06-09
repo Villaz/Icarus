@@ -69,7 +69,7 @@ describe('Tests Commander' , function() {
 
     commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
     commander.slots.get(params.slot).ballot.number.should.be.exactly(1)
-    commander.slots.get(params.slot).decided.should.be.not.ok
+    commander.slotsDecided.has(params.slot).should.be.false()
   })
 
 
@@ -79,7 +79,7 @@ describe('Tests Commander' , function() {
     commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
     commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
     commander.slots.get(params.slot).ballot.number.should.be.exactly(1)
-    commander.slots.get(params.slot).decided.should.be.not.ok
+    commander.slotsDecided.has(params.slot).should.be.false()
   })
 
 
@@ -92,7 +92,7 @@ describe('Tests Commander' , function() {
     commander.slots.get(params.slot).ballot.id.should.be.exactly('127.0.0.1')
     commander.slots.get(params.slot).ballot.number.should.be.exactly(1)
     commander.slots.get(params.slot).acceptorsResponse.size.should.be.exactly(1)
-    commander.slots.get(params.slot).decided.should.be.not.ok
+    commander.slotsDecided.has(params.slot).should.be.false()
     commander.slots.size.should.be.exactly(1)
   })
 
@@ -115,11 +115,13 @@ describe('Tests Commander' , function() {
         decision = decision[0]
         decision.slot.should.be.exactly(1)
         decision.operation.should.be.exactly('%$')
+        commander.slotsDecided.has(params.slot).should.be.true()
         done()
       })
 
       commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
       commander.receiveP2B({acceptor:'anu', ballot:params.ballot, slot:params.slot , operation:params.operation})
+
     })
 
 
@@ -130,23 +132,7 @@ describe('Tests Commander' , function() {
       commander.slots.should.not.have.property('strange')
     })
 
-    it('on receivedP2B received accepted slot', function(){
-      var params = {slot:1, operation:'%$', ballot:new Ballot({id:'127.0.0.1',number:2})}
-
-      commander.slots.set(params.slot, {
-        ballot: new Ballot({id:'127.0.0.1',number:2}),
-        operation: params.operation,
-        decided: true,
-        acceptorsResponse:[],
-        acceptors: network.acceptors
-      });
-
-      commander.receiveP2B({acceptor:'lyr', ballot:params.ballot, slot:params.slot , operation:params.operation})
-      commander.slots.get(params.slot).decided.should.be.ok
-
-    })
-
-
+    
   it('on receivedP2B receive a greater ballot', function(done){
     var operation ={
       client:'127.0.0.1',
