@@ -137,12 +137,48 @@ describe('Replica tests', function(){
 
     it('slotsHaveMenorThanSlotNum', function(){
         var slots = [2,3,4]
-        replica.slotsHaveMenorThanSlotNum(slots,1).should.be.false
-        replica.slotsHaveMenorThanSlotNum(slots,2).should.be.false
-        replica.slotsHaveMenorThanSlotNum(slots,5).should.be.true
+        replica.slotsHaveMenorThanSlotNum(slots,1).should.be.false()
+        replica.slotsHaveMenorThanSlotNum(slots,2).should.be.false()
+        replica.slotsHaveMenorThanSlotNum(slots,5).should.be.true()
     });
 
-    it('Send GAP message', function(){
+    it('Send GAP message no operations', function(){
+       var slots = replica.checkSendGAP();
+       slots.has(0).should.be.true()
+    });
 
+    it('Send GAP message with operation', function(done){
+      var op1 = {command_id:1,client_id:1,op:{name:'hello'}}
+      replica.decision(0 , op1).then(function(){
+       var slots = replica.checkSendGAP();
+       slots.has(0).should.be.false();
+       slots.has(1).should.be.true();
+       done();
+     });
+    });
+
+    it('Send GAP message with operation and space', function(done){
+      var op1 = {command_id:1,client_id:1,op:{name:'hello'}}
+      replica.decision(1 , op1).then(function(){
+       var slots = replica.checkSendGAP();
+       slots.has(0).should.be.true();
+       slots.has(1).should.be.false();
+       done();
+     });
+    });
+
+    it('Send GAP message with operations and multiple spaces', function(done){
+      var op1 = {command_id:1,client_id:1,op:{name:'hello'}}
+      var op1 = {command_id:2,client_id:2,op:{name:'hello2'}}
+      replica.decision(1 , op1).then(function(){
+       replica.decision(3 , op1).then(function(){
+         var slots = replica.checkSendGAP();
+         slots.has(0).should.be.true();
+         slots.has(1).should.be.false();
+         slots.has(2).should.be.true();
+         slots.has(3).should.be.false();
+         done();
+       });
+     });
     });
   });

@@ -20,8 +20,9 @@ export class Replica extends Rol.Rol{
   operationsProposed:any = undefined;
   operationsDecided:any = undefined
 
-  lastEmpltySlotInProposals:any = undefined
-  lastEmpltySlotInDecisions:any = undefined
+  lastEmpltySlotInProposals:number = undefined;
+  lastEmpltySlotInDecisions:number = undefined;
+  greaterSlotDecided:number = -1;
   lastDecidedMessage:any = undefined;
 
   promisesPerSlot:any = undefined
@@ -45,20 +46,22 @@ export class Replica extends Rol.Rol{
 
   }
 
-  private checkSendGAP( ):Message.Message{
+  private checkSendGAP( ):Set<number>{
     let actual = moment().unix()
-    let message:Message.Message = undefined;
+    let slots:Set<number> = new Set();
     if( this.lastDecidedMessage === undefined || actual - this.lastDecidedMessage > 10 ){
-      message = new Message.Message(
-        {
-          from: this.id,
-          type: 'GAP',
-          operation:{
-            slot: this.slot_num
-          }
-        });
+      if(this.lastEmpltySlotInDecisions === this.slot_num && this.decisions.size == 0)
+        slots.add(this.slot_num);
+      else{
+        for(var i = this.lastEmpltySlotInDecisions; i <= this.greaterSlotDecided; i++){
+          if(!this.decisions.has(i))
+            slots.add(i);
+        }
+
+      }
     }
-    return message;
+    this.network.sendToLeaders(slots, this.id);
+    return slots;
   }
 
   protected _startNetwork( ) {
@@ -102,6 +105,8 @@ export class Replica extends Rol.Rol{
     this.decisions.set( slot, operation )
     var key = {id:operation.command_id,client:operation.client_id};
     this.operationsDecided.set( key , slot );
+
+    if(this.greaterSlotDecided < slot) this.greaterSlotDecided = slot;
 
     //Updates the value to the last emplty slot
     if(this.lastEmpltySlotInDecisions === slot)
