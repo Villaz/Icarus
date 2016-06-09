@@ -71,8 +71,8 @@ describe('Replica tests', function(){
 
 
     it('reproposeOperation' , function(  ){
-        var op1 = {command_id:1,client_id:1,op:'hello'}
-        var op2 = {command_id:2,client_id:1,op:'hello2'}
+        var op1 = {command_id:1,client_id:1,op:'hello', sha:'123'}
+        var op2 = {command_id:2,client_id:1,op:'hello2', sha:'124'}
 
         replica.proposals.set( 0 , new Set([op1]) )
         replica.lastEmpltySlotInProposals = 1
@@ -86,16 +86,15 @@ describe('Replica tests', function(){
     });
 
     it('repropose same operation' , function( ){
-        var op1 = {command_id:1,client_id:1,op:'hello'}
+        var op1 = {command_id:1,client_id:1,op:'hello', sha:'1234'}
 
         replica.proposals.set(0 , new Set([op1]))
         replica.lastEmpltySlotInProposals = 1
         replica.lastEmpltySlotInDecisions = 1
         replica.slot_num = 0
-
         replica.checkOperationsToRepropose(op1)
         replica.lastEmpltySlotInProposals.should.be.exactly(1)
-        replica.proposals.get(0).values().next().value.command_id.should.be.exactly(1)
+        replica.proposals.get(0).values().should.be.empty()
     });
 
     it('nextEmpltySlot' , function(){
