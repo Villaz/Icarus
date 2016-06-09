@@ -211,14 +211,13 @@ export class ReplicaNetwork extends ZMQNetwork {
         });
     }
 
-    public sendToLeaders(operation:any, from:string) {
+    public sendToLeaders(operation:any, from:string, type:string='PROPOSE') {
         var message = new Message.Message({from:from,
-                                           type:'PROPOSE',
+                                           type: type,
                                            command_id:0,
                                            operation:operation});
         this.send("RTLP", message);
     }
-
 
     protected _upNode(type: string, url:string, port:any) {
         switch (type) {
