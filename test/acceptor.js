@@ -112,7 +112,7 @@ describe('Acceptor tests', function(){
     });
 
     it('sendACKRecuperationMessage with no intervals, no operations', () =>{
-      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, intervals:{test:{begin:0, to:NaN}}});
+      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, from:0});
       message.operation.ballot.number.should.be.exactly(-1);
       message.operation.values.should.be.empty();
     });
@@ -120,8 +120,7 @@ describe('Acceptor tests', function(){
     it('sendACKRecuperationMessage with no intervals, with operations', () =>{
       var value = {slot:1,ballot:new Ballot({number:1, id:"localhost"}),operation:"hola"}
       acceptor.processP2A(value)
-      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, intervals:{test:{begin:0, to:NaN}}});
-
+      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, from:0});
       message.operation.ballot.number.should.be.exactly(1);
       message.operation.values.should.not.be.empty();
       message.operation.values.should.containEql({slot:1, operation:"hola"});
@@ -131,7 +130,7 @@ describe('Acceptor tests', function(){
     it('sendACKRecuperationMessage with intervals, with operations', () =>{
       var value = {slot:1,ballot:new Ballot({number:1, id:"localhost"}),operation:"hola"}
       acceptor.processP2A(value)
-      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, intervals:{test:{begin:2, to:NaN}}});
+      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, from:2});
       message.operation.ballot.number.should.be.exactly(1);
       message.operation.values.should.be.empty();
     });
@@ -143,7 +142,7 @@ describe('Acceptor tests', function(){
       acceptor.processP2A(value)
       acceptor.processP2A(value2)
       acceptor.processP2A(value3)
-      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, intervals:{test:{begin:1, to:NaN}}});
+      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, from:1});
       message.operation.ballot.number.should.be.exactly(1);
       message.operation.values.should.be.containEql({slot:1, operation:"hola"},{slot:2, operation:"hola2"},{slot:3, operation:"hola3"});
     });
@@ -156,9 +155,9 @@ describe('Acceptor tests', function(){
       acceptor.processP2A(value2)
       acceptor.processP2A(value3)
 
-      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, intervals:{test:{begin:1, to:2}}});
+      let message = recAcceptor.sendACKRecuperationMessage('balar', {port:5555, from:2});
       message.operation.ballot.number.should.be.exactly(1);
-      message.operation.values.should.be.containEql({slot:1, operation:"hola"},{slot:2, operation:"hola2"});
+      message.operation.values.should.be.containEql({slot:2, operation:"hola2"},{slot:3, operation:"hola3"});
     });
 
     it('Process recuperation with all acceptors responsed', ()=>{

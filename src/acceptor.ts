@@ -208,8 +208,9 @@ export class RecAcceptor{
     let values = [];
 
     for(let value of this.acceptor.mapOfValues.keys){
+
       value = parseInt(value);
-      if(value >= from)
+      if(value >= operation.from)
         values.push({slot:value, operation:this.acceptor.mapOfValues.get(value)});
     }
 
