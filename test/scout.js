@@ -1,10 +1,9 @@
 var should = require('should')
 var Ballot = require('../lib/ballot').Ballot
-var Map = require('../lib/map').Map
 var Scout = require('../lib/scout').Scout
 
 var network = {
-    acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
+    acceptors : new Map([['lyr',{}],['anu',{}], ['balar',{}]]),
     sendToAcceptors : function () { },
     on: function () { },
     removeAllListeners: function (name) { }
@@ -63,7 +62,7 @@ describe('Tests Scout', function(){
   it('Process accepted message' , function( ){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
-    scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
+    scout.acceptors = new Map([ ['127.0.0.1',{}], ['127.0.0.2',{}] , ['127.0.0.3',{}]])
 
     var message = {
       type:'P1B',
@@ -124,7 +123,7 @@ describe('Tests Scout', function(){
   it('Process accepted message and adopted with 2 acceptors', function(done){
     var ballot = new Ballot({ number: 1 , id: '127.0.0.1' })
     var network = {
-        acceptors : { 'lyr': {}, 'anu': {} },
+        acceptors : new Map([['lyr',{}],['anu',{}]]),
         sendMessageToAllAcceptors : function () { },
         on: function () { },
         removeAllListeners: function(name){}
@@ -169,7 +168,7 @@ describe('Tests Scout', function(){
   it('if unknown acceptor sends message, should not process it' ,function(done){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
-    scout.acceptors = [ '127.0.0.1', '127.0.0.2' , '127.0.0.3' ]
+    scout.acceptors = new Map([ ['127.0.0.1',{}], ['127.0.0.2',{}] , ['127.0.0.3',{}]])
 
     scout.on('adopted', function( body ){
       body.ballot.id.should.be.exactly(ballot.id)
@@ -209,7 +208,7 @@ describe('Tests Scout', function(){
   it('Preempted if adopted is true', function( done ){
     var ballot = new Ballot({number:1 , id:'127.0.0.1'})
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
-    scout.acceptors = [ '127.0.0.1', '127.0.0.2' ]
+    scout.acceptors = new Map([ ['127.0.0.1',{}], ['127.0.0.2',{}]])
     scout.adopted = true
     scout.pvalues = [{slot:1},{slot:2}]
 
