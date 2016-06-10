@@ -9,7 +9,8 @@ describe('Leader tests', function(){
     var network = {
         acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
         sendToLeaders : function () { },
-        sendToAcceptors : function () { }
+        sendToAcceptors : function () { },
+        sendToReplicas: function(){}
     }
 
     var commander = {
@@ -141,5 +142,16 @@ describe('Leader tests', function(){
       leader.active.should.be.exactly(false)
       leader.ballot.number.should.be.exactly(2)
       leader.actualLeader.should.be.exactly('localhostTest')
+    });
+
+    it('Process GAP not exists slot', function(){
+      var slots = leader.processGAP(new Set([1]));
+      slots.size.should.be.exactly(0);
+    });
+
+    it('Process GAP exists GAP', function(){
+      leader.network = network;
+      leader.decided.set(2, {test:'test'});
+      var slots = leader.processGAP(new Set([2]));
     });
 });

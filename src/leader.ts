@@ -21,6 +21,7 @@ export class Leader extends Rol{
   ballot:Ballot
   active:boolean
   proposals : Map<number,any>;
+  decided: Map<number,any>;
   scout :any
   commander :any
   lastSlotReceived:any
@@ -29,9 +30,10 @@ export class Leader extends Rol{
 
   constructor(params?: { name: string, test?: boolean, network?: { discover: any, ports: any, network:any } }) {
       super('leader', params);
-      this.ballot = new ballot.Ballot({ number: 1, id: params.name })
-      this.active = false
-      this.proposals = new Map<number,any>()
+      this.ballot = new ballot.Ballot({ number: 1, id: params.name });
+      this.active = false;
+      this.proposals = new Map<number,any>();
+      this.decided = new Map<number,any>();
   }
 
   protected _startNetwork(){
@@ -46,6 +48,11 @@ export class Leader extends Rol{
         message = message[0];
         this.propose({operation:message.operation, slot:message.operation.slot});
     });
+
+    this.network.on('gap', (message) =>{
+      this.processGAP(message[0].operation.slots);
+    });
+
     this.network.on('leaderDown', (name) => {
         if (!this.test) winston.info("Leader %s down!!", name[0]);
         winston.info("The actual leader is %s", this.actualLeader);
@@ -74,6 +81,7 @@ export class Leader extends Rol{
         this.network.sendToReplicas(message);
         //Once the message is sended to all replicas, the leader can remove
         //the operation from proposals
+        this.decided.set(result.slot, result.operation);
         this.proposals.delete(result.slot);
       });
   }
@@ -119,6 +127,22 @@ export class Leader extends Rol{
         if(!this.test)
           winston.info("Leader %s is active!!!", this.id);
   };
+
+  private processGAP(slots:Set<number>):Set<any>{
+    let operations = new Set();
+    for(let slot of slots){
+      if(this.decided.has(slot)){
+        var message:Message.Message = new Message.Message({
+          type: 'DECISION',
+          from: this.ballot.id,
+          command_id: 0,
+          operation:this.decided.get(slot)
+        });
+        this.network.sendToReplicas(message);
+      }
+    }
+    return operations;
+  }
 
   private sendToCommanderAllproposals(keys:Iterator<any>){
       let entry = keys.next();

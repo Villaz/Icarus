@@ -46,21 +46,20 @@ export class Replica extends Rol.Rol{
 
   }
 
-  private checkSendGAP( ):Set<number>{
+  private checkSendGAP( ):Array<number>{
     let actual = moment().unix()
-    let slots:Set<number> = new Set();
+    let slots:Array<number> = new Array();
     if( this.lastDecidedMessage === undefined || actual - this.lastDecidedMessage > 10 ){
       if(this.lastEmpltySlotInDecisions === this.slot_num && this.decisions.size == 0)
-        slots.add(this.slot_num);
+        slots.push(this.slot_num);
       else{
         for(var i = this.lastEmpltySlotInDecisions; i <= this.greaterSlotDecided; i++){
           if(!this.decisions.has(i))
-            slots.add(i);
+            slots.push(i);
         }
-
       }
     }
-    this.network.sendToLeaders(slots, this.id);
+    this.network.sendToLeaders({slots:slots, port:this.network.routerPort}, this.id, 'GAP');
     return slots;
   }
 

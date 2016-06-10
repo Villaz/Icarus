@@ -63,7 +63,7 @@ export class ZMQNetwork extends Network {
       this.publishers[name].send(buffer);
   }
 
-  private generateBufferMessage(message:Message.Message){
+  protected generateBufferMessage(message:Message.Message){
     let CHUNK = 1024 * 1024;
     let bufferArray = new Array<Buffer>();
     bufferArray.push(new Buffer(message.type));
@@ -160,8 +160,11 @@ export class ReplicaNetwork extends ZMQNetwork {
     private clients = {};
     private connected: boolean;
 
+    routerPort:number = undefined;
+
     constructor(discover: any, connection: { port: number, client:number, operation:number }) {
         super(discover)
+        this.routerPort = connection.client;
         this.startPublisher(connection.port, 'RTLP');
         this.startRouter(connection.client);
         this.operationPort = connection.operation;
@@ -245,17 +248,26 @@ export class LeaderNetwork extends ZMQNetwork {
         this.send("LTRP", message);
     }
 
+    public sendToReplica(message: Message.Message){
+      let dealer = zmq.socket('dealer');
+      dealer.connect(message.to);
+      let buffer = this.generateBufferMessage(message);
+      dealer.send(buffer);
+    }
+
     protected processMessage(data: any, type: string) {
         var message = {
             type: type,
             from: data.from,
             operation: data.operation
         }
-        if (type !== 'PROPOSE'){
+        if( type === 'PROPOSE')
+          this.emit('propose', message);
+        else if(type === 'GAP')
+          this.emit('gap', message);
+        else{
             message.operation.ballot = new Ballot({ number: message.operation.ballot.number, id: message.operation.ballot.id })
             this.emit(type, message);
-        }else{
-          this.emit('propose', message);
         }
     }
 
@@ -266,7 +278,7 @@ export class LeaderNetwork extends ZMQNetwork {
                 this.emit('acceptor', url);
                 break;
             case 'R':
-                this.subscription({ name: "replicaSubscriber", subscriptions: ['PROPOSE'], url: url, port: port.split(',')[0]});
+                this.subscription({ name: "replicaSubscriber", subscriptions: ['PROPOSE', 'GAP'], url: url, port: port.split(',')[0]});
                 break;
         }
     }
