@@ -21,7 +21,7 @@ describe 'Tests Leader' , ->
 			done(e)
 
 	beforeEach ( ) ->
-		@leader = new Leader.Leader( )
+		@leader = new Leader.Leader undefined , true 
 
 
 	it 'Constructor' , ( ) ->

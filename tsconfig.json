@@ -1,0 +1,34 @@
+{
+    "compilerOptions": {
+        "module": "umd",
+        "noImplicitAny": false,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "outDir": "./lib/",
+        "sourceMap": true,
+        "declaration":true,
+        "target": "es6"
+    },
+    "files": [
+        "./src/rol.ts",
+        "./src/app.ts",
+        "./src/ballot.ts",
+        "./src/map.ts",
+        "./src/client.ts",
+        "./src/clientIcarus.ts",
+        "./src/replica.ts",
+        "./src/acceptor.ts",
+        "./src/leader.ts",
+        "./src/commander.ts",
+        "./src/scout.ts",
+        "./src/network.ts",
+        "./src/icarus_utils.ts",
+        "./src/discover.ts",
+        "./src/name_generator.ts",
+        "./src/message.ts",
+        "./src/typings/tsd.d.ts",
+        "./src/network/network.ts",
+        "./src/network/zmq/network.ts",
+        "./src/network/rabbitmq/network.ts"
+    ]
+}

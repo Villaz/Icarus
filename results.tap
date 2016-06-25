@@ -1,0 +1,85 @@
+1..71
+ok 1 Acceptor tests constructor
+ok 2 Acceptor tests processP1A
+ok 3 Acceptor tests processP2A
+ok 4 Acceptor tests Process equals P2A operations
+ok 5 Acceptor tests clear
+ok 6 Acceptor tests sendRecuperationPetition from 0 with no end
+ok 7 Acceptor tests sendRecuperationPetition with operations with begin no end
+ok 8 Acceptor tests sendRecuperationPetition with operations no begin, with end
+ok 9 Acceptor tests sendRecuperation with no intervals, no operations
+ok 10 Acceptor tests sendRecuperation with no intervals, with operations
+ok 11 Acceptor tests sendRecuperation with intervals, with operations
+ok 12 Acceptor tests sendRecuperation with intervals, with operations
+ok 13 Acceptor tests sendRecuperation with intervals, with operations 2
+ok 14 Acceptor tests Process recuperation
+ok 15 Ballot tests when ballot is created id is undefined and number -1
+ok 16 Ballot tests when constructor call with id, id has the value
+ok 17 Ballot tests actual ballot is mayor than other
+ok 18 Ballot tests actual ballot is less or equal than other
+ok 19 Ballot tests actual ballot is equal than other
+ok 20 Tests Commander Constructor
+ok 21 Tests Commander on sendP2A preempted operation with an existent slot
+ok 22 Tests Commander on sendP2A send message to acceptors
+ok 23 Tests Commander on receiveP2B receive a message with slot that not exists
+ok 24 Tests Commander on receiveP2B receive duplicate message from acceptor
+ok 25 Tests Commander on receiveP2B add new acceptor to received
+ok 26 Tests Commander on receiveP2B received mayority of acceptors
+ok 27 Tests Commander on receivedP2B received from unknown acceptor
+ok 28 Tests Commander on receivedP2B received accepted slot
+ok 29 Tests Commander on receivedP2B receive a greater ballot
+ok 30 Leader tests Constructor
+info: Proposing operation for slot 1
+ok 31 Leader tests Propose value
+info: Proposing operation for slot 1
+info: Proposing operation for slot 1
+ok 32 Leader tests Propose value to not empty slot
+info: Proposing operation for slot 1
+info: Leader test is active!!!
+ok 33 Leader tests Adopted
+info: Proposing operation for slot 1
+info: Leader test is active!!!
+ok 34 Leader tests Adopted duplicated
+info: Proposing operation for slot 1
+info: Leader test is active!!!
+ok 35 Leader tests Adopted Duplicated Operation diferent Slot
+info: Leader test is preempted, the actual leader is localhostTest
+ok 36 Leader tests Preempted
+ok 37 Map tests with Map Add value to map
+ok 38 Map tests with Map Value is overrided
+ok 39 Map tests with Map Add values to map
+ok 40 Map tests with Map Number of slots in mapOfValues is 2
+ok 41 Map tests with Map Return all store values 
+ok 42 Map tests with Map Return filtered values with from
+ok 43 Map tests with Map Return filtered values with to
+ok 44 Map tests with Map Return filtered values with from and to
+ok 45 Map tests with Map Remove values
+ok 46 Map tests with Map Update map
+ok 47 Map tests with Map Update map with duplicates
+ok 48 Map tests with Map Update map with empty
+ok 49 Map tests with Map Update map with empty 2
+ok 50 Map tests with Map count elements
+ok 51 Map tests with Map clear map
+ok 52 Map tests with Map obj is in array
+ok 53 Map tests with Map obj is not in array
+ok 54 Replica tests Propose operation
+ok 55 Replica tests Propose operation same slot
+ok 56 Replica tests Decision operation
+ok 57 Replica tests Decide and repropose operations
+ok 58 Replica tests reproposeOperation
+ok 59 Replica tests repropose same operation
+ok 60 Replica tests nextEmpltySlot
+ok 61 Replica tests slotsHaveMenorThanSlotNum
+ok 62 Tests Scout Constructor
+ok 63 Tests Scout start
+ok 64 Tests Scout Process Preempted message
+ok 65 Tests Scout Process accepted message
+ok 66 Tests Scout Process accepted message and adopted
+ok 67 Tests Scout Process accepted message and adopted with 2 acceptors
+ok 68 Tests Scout if unknown acceptor sends message, should not process it
+ok 69 Tests Scout Preempted if adopted is true
+ok 70 Tests Scout updateAcceptedValuesAndAcceptorsResponse
+ok 71 Tests Scout addAcceptedToPValues
+# tests 71
+# pass 71
+# fail 0
