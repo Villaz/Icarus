@@ -1,7 +1,8 @@
 ﻿///<reference path='./typings/tsd.d.ts' />
 import * as cluster from "cluster";
 import * as names from "./name_generator";
-import * as Discover from "./discover";
+import {Discover as Discover} from "./discover";
+import {ZMQNetwork as Network} from "./network/zmq/network";
 
 var program = require('commander');
 var nconf = require('nconf');
@@ -28,6 +29,7 @@ function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+/*
 function createDiscover(type:string, name:string, rol:any){
   let roles = {}
   roles[process.env.rol[0].toUpperCase()] = []
@@ -52,7 +54,24 @@ function createRol(rol:any, name:string, discover:Discover.Discover):any{
   var rol = require("./rol");
   return rol.getRol(process.env.rol, params)
 }
+*/
 
+
+if(cluster.isMaster){
+  const rol = require("./rol");
+  let name = names.generateName().substr(0, 15);
+  var discover = Discover.createDiscover('bonjour',{name: name, ports:nconf.get('network').ports, roles:nconf.get('roles')});
+  var network = new Network(discover, nconf.get('network').ports);
+  var replica;
+  var acceptor;
+  if(nconf.get('roles').indexOf('replica') >= 0)
+    replica = rol.getRol('replica', {name:name, network:network});
+  if(nconf.get('roles').indexOf('acceptor') >= 0)
+    acceptor = rol.getRol('acceptor', {name:name, network:network});
+
+}
+
+/*
 if(cluster.isMaster){
   for(let rol of nconf.get("roles")){
     let counter = 1;
@@ -64,3 +83,4 @@ if(cluster.isMaster){
   let discover = createDiscover('bonjour', name, JSON.parse(process.env.data))
   var rol:any = createRol(JSON.parse(process.env.data), name, discover)
 }
+*/

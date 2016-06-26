@@ -9,8 +9,8 @@ describe('Acceptor tests', function(){
 
     var network = {
         acceptors : new Map(),
-        sendToLeaders : function () { },
-        sendToAcceptors : function () { }
+        send : function () { },
+        on: function() {}
     }
 
 
@@ -18,7 +18,7 @@ describe('Acceptor tests', function(){
     var recAcceptor = undefined;
 
     beforeEach(function(){
-        acceptor = new Acceptor({name:'test', test: true })
+        acceptor = new Acceptor({name:'test', test: true, network:network })
         recAcceptor = new RecAcceptor(acceptor,true);
         network.acceptors = new Map();
         network.acceptors.set('lyr', []);
@@ -85,8 +85,7 @@ describe('Acceptor tests', function(){
     })
 
     it('sendRecuperationMessage from 0 with no end', ()=>{
-      let message = recAcceptor.sendRecuperationMessage(8888);
-      message.operation.port.should.be.exactly(8888);
+      let message = recAcceptor.sendRecuperationMessage();
       for( let acceptor in message.operation.intervals){
           let interval = message.operation.intervals[acceptor]
           interval.begin.should.be.oneOf(0, NaN);
@@ -94,8 +93,7 @@ describe('Acceptor tests', function(){
     });
 
     it('sendRecuperationMessage with operations with begin no end', ()=>{
-      let message = recAcceptor.sendRecuperationMessage(8888, 10);
-      message.operation.port.should.be.exactly(8888);
+      let message = recAcceptor.sendRecuperationMessage(10);
       for( let acceptor in message.operation.intervals){
           let interval = message.operation.intervals[acceptor]
           interval.begin.should.be.oneOf(10, NaN);
@@ -103,8 +101,7 @@ describe('Acceptor tests', function(){
     });
 
     it('sendRecuperationMessage with operations no begin, with end', ()=>{
-      let message = recAcceptor.sendRecuperationMessage(8888, 0, 10);
-      message.operation.port.should.be.exactly(8888);
+      let message = recAcceptor.sendRecuperationMessage(0, 10);
       for( let acceptor in message.operation.intervals){
           let interval = message.operation.intervals[acceptor]
           interval.begin.should.be.oneOf(0, 3, 4, 7, 8, 10);

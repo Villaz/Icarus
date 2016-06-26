@@ -19,7 +19,7 @@ import {Rol} from "./rol";
 export class Leader extends Rol{
 
   ballot:Ballot
-  active:boolean
+  private active:boolean = false;
   proposals : Map<number,any>;
   decided: Map<number,any>;
   scout :any
@@ -28,12 +28,11 @@ export class Leader extends Rol{
   actualLeader:any
   started: boolean = false
 
-  constructor(params?: { name: string, test?: boolean, network?: { discover: any, ports: any, network:any } }) {
-      super('leader', params);
-      this.ballot = new ballot.Ballot({ number: 1, id: params.name });
-      this.active = false;
-      this.proposals = new Map<number,any>();
-      this.decided = new Map<number,any>();
+  constructor(params?:{name:string, test?:boolean, replica:any, network:any}){
+    super('leader', params);
+    this.ballot = new ballot.Ballot({ number: 1, id: params.name });
+    this.proposals = new Map<number,any>();
+    this.decided = new Map<number,any>();
   }
 
   protected _startNetwork(){
@@ -87,22 +86,20 @@ export class Leader extends Rol{
   }
 
   private spawnScout() {
-      if (this.scout !== undefined) {
-          delete this.scout;
-      }
-    this.scout = new Scout({ballot:this.ballot, slot:this.lastSlotReceived, network:this.network})
+    this.scout = new Scout({ballot:this.ballot, slot:this.lastSlotReceived, network:this.network});
 
     this.scout.on('preempted', ( body:any ) =>{
-        this.preempted({ballot:body[0].ballot})
-    })
+        this.preempted({ballot:body[0].ballot});
+    });
+
     this.scout.on('adopted', (body: any) => {
         body = body[0]
         this.adopted(body)
         this.actualLeader = body.ballot.id;
         if(!this.test)
             winston.info("%s is the new leader; ballot %s adopted", body.ballot.id, JSON.stringify(body.ballot))
-    })
-    this.scout.start()
+    });
+    this.scout.start();
 
   }
 

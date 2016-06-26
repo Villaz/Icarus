@@ -1,5 +1,6 @@
 ///<reference path='../../typings/tsd.d.ts' />
 
+/*
 import {Ballot} from "../../ballot";
 import * as Message from "../../message";
 import {Network} from "../network";
@@ -202,3 +203,4 @@ export class LeaderNetwork extends RabbitMQNetwork {
         }
     }
 }
+*/

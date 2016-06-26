@@ -4,84 +4,57 @@ import {Ballot} from "../ballot";
 import * as Message from "../message";
 
 var map = require("../map").Map
-var winston = require('winston')
-var zmq = require('zmq')
-var amqp = require('amqplib/callback_api');
-var Promise = require("bluebird")
 var Discover = require('../discover')
-var Gmetric = require('gmetric');
+import events = require('events');
 
-//import Emitter = require('./icarus_utils')
-import * as Emitter from "../icarus_utils";
 
-export class Network extends Emitter.Emitter{
-    replicas: Array<any>
-    leaders: Array<any>
+export enum Type{
+  PUB
+}
+
+export class Network extends events.EventEmitter{
+    replicas: Map<string,Set<string>>;
+    leaders: Map<string,Set<string>>;
     acceptors: Map<string,Set<string>>;
-    discover: any
+    discover: any;
 
-    protected publishers = {};
-    protected subscriptions = {};
-
-    protected messagesReceived = {};
+    protected messagesReceived:Map<String, Set<any>> = new Map();
 
     constructor(discover:any) {
         super();
-        this.replicas = [];
-        this.leaders = [];
+        this.replicas = new Map();
+        this.leaders = new Map();
         this.acceptors = new Map();
         this.discover = discover;
         this.discover.on('up', (service)=> this.upNode(service));
         this.discover.on('down', (service)=> this.downNode(service));
     }
 
-    protected startPublisher(port: number, name:string):void {}
-
-    protected subscription(params: { url?: string, port?: number, name?: string, subscriptions: Array<string>}):void {}
-
-    protected createSubscription(name: string, subscriptions: Array<string>, url: string, port: number):void {}
-
-    public send(name: string, message:Message.Message):void{}
-
-    protected processMessage(data: any, type: string){}
-
     public upNode(node) {
-        if (node.name == this.discover.name) return
-        if (node.data.L !== undefined) {
-            if (this.leaders[node.name] === undefined) {
-                this.leaders[node.name] = new Set();
-            }
-            for (let url of node.addresses){
-              if (!this.leaders[node.name].has(url)){
-                this.leaders[node.name].add(url)
-                this._upNode('L', url, node.data.L.toString());
-              }
-            }
-        }
+        let newNode = !this.replicas.has(node.name) || !this.leaders.has(node.name) || !this.acceptors.has(node.name);
+        if(node.data.roles.indexOf('A') >= 0)
+          this.addRol(this.acceptors, node);
 
-        if (node.data.A !== undefined) {
-            //if( node['network'] === undefined) return;
-            if (!this.acceptors.has(node.name))
-                this.acceptors.set(node.name, new Set());
-            for (let url of node.addresses){
-              if (!this.acceptors.get(node.name).has(url)){
-                this.acceptors.get(node.name).add(url)
-                this._upNode('A', url, node.data.A.toString());
-              }
-            }
-        }
+        if (node.data.roles.indexOf('L') >= 0)
+            this.addRol(this.leaders, node);
 
-        if (node.data.R !== undefined) {
-            if (this.replicas[node.name] === undefined) {
-                this.replicas[node.name] = new Set();
-            }
-            for (let url of node.addresses){
-              if (!this.replicas[node.name].has(url)){
-                this.replicas[node.name].add(url)
-                this._upNode('R', url, node.data.R.toString());
-              }
-            }
-        }
+        if (node.data.roles.indexOf('R') >= 0)
+            this.addRol(this.replicas, node);
+
+        if(newNode)
+          this._upNode(node);
+    }
+
+    private addRol(rol:Map<string,Set<string>>, node:any){
+      if(!rol.has(node.name))
+        rol.set(node.name, new Set());
+      if( !(node.addresses instanceof String))
+        for (let url of node.addresses)
+          if (!rol.get(node.name).has(url))
+            rol.get(node.name).add(url);
+      else
+        if (!rol.get(node.name).has(node.addresses))
+          rol.get(node.name).add(node.addresses);
     }
 
     public downNode(node) {
@@ -98,17 +71,35 @@ export class Network extends Emitter.Emitter{
         }
     }
 
-    protected _upNode(type: string, url:string, port:any){
-      switch (type) {
-          case 'A':
-              this.emit('acceptor', url);
-              break;
-          case 'R':
-              this.emit('replica', url);
-              break;
-          case 'L':
-              this.emit('leader', url);
-              break;
+    protected _upNode(node){
+      if(node.data.roles.indexOf('A') >= 0)
+          this.emit('acceptor', node.addresses[0]);
+      if(node.data.roles.indexOf('R') >= 0)
+          this.emit('replica', node.addresses[0]);
+      if(node.data.roles.indexOf('L') >= 0)
+          this.emit('leader', node.addresses[0]);
+    }
+
+    protected generateBufferMessage(message:Message.Message){
+      let CHUNK = 1024 * 1024;
+      let bufferArray = new Array<Buffer>();
+      bufferArray.push(new Buffer(message.type));
+      var buffer = new Buffer(JSON.stringify(message));
+      if (buffer.length > CHUNK){
+        for (let pos=0; pos < buffer.length; pos += CHUNK){
+          let aux = new Buffer(CHUNK);
+          let copied = buffer.copy(aux, 0, pos, pos + CHUNK);
+          if (copied < CHUNK){
+            let cutted = new Buffer(copied);
+            aux.copy(cutted, 0 , 0, copied);
+            bufferArray.push(cutted)
+          }else{
+            bufferArray.push(aux)
+          }
+        }
+      }else{
+        bufferArray.push(buffer);
       }
-    };
+      return bufferArray;
+    }
 }

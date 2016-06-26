@@ -14,9 +14,10 @@ export abstract class  Rol {
   protected external:boolean;
   protected id:string;
 
-  constructor(type:string, params?: { name:string, test?: boolean, external?:boolean, network?:{ discover: any, ports: any, network:any }}){
+  constructor(type:string, params?: { name:string, test?: boolean, external?:boolean, network?:any}){
     this.type = type;
     this.id = params.name;
+    this.network = params.network;
 
     if (params !== undefined && params.test !== undefined) this.test = params.test
     else this.test = false
@@ -27,34 +28,11 @@ export abstract class  Rol {
     if (!this.test) {
         try {
             winston.add(winston.transports.File, { filename: `./logs/${type}-${this.id}.log` , level:'info'});
-            /*winston.add(require('winston-graylog2'), {
-              name: 'Graylog',
-              level: 'warning',
-              silent: false,
-              handleExceptions: false,
-              graylog: {
-                servers: [{host: '127.0.0.1', port: 12201}],
-                hostname: this.id,
-                facility: "leader",
-                bufferSize: 1400
-              }
-            });*/
         } catch (e){ }
       if (params !== undefined && params.network !== undefined)
-        winston.info(type +" %s started in port %s ",this.id, params.network.ports.port);
+        winston.info(type +" %s started",this.id);
     }
-    if (params !== undefined && !this.test && params.network !== undefined) this.startNetwork(params.network);
   }
-
-  private startNetwork(params: { discover: Discover, ports:any, network:any }){
-    var Network = require('./network/'+params.network.type+'/network')[capitalize(this.type)+'Network']
-
-    params.ports['host'] = params.network['host']
-    this.network = new Network(params.discover, params.ports)
-    this._startNetwork();
-  }
-
-  protected abstract _startNetwork();
 }
 
 export function getRol(type:any, params:{ name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}):any{

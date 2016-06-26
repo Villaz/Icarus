@@ -10,8 +10,8 @@ var underscore = require("underscore")
 import * as Message from "./message";
 import * as Emitter from "./icarus_utils";
 import {InternalMap as Map} from "./map";
+import {Type as Type} from "./network/network";
 
-//import * as Emitter from "./icarus_utils";
 /**
  * Class Scout
  * @class Scout
@@ -28,16 +28,16 @@ export class Scout extends Emitter.Emitter{
   network:any
 
   constructor(params:{ballot:Ballot; lastSlotReceived:any; network?:any}){
-    super()
-    this.slotsOfValues = []
-    this.pvalues = []
-    this.acceptorsResponsed = []
-    this.acceptors = params.network.acceptors
-    this.adopted = false
-    this.ballot = params.ballot
-    this.lastSlotReceived = params.lastSlotReceived
-    this.network = params.network
-    this.network.on('P1B', (message) => { this.process(message[0]) })
+    super();
+    this.slotsOfValues = [];
+    this.pvalues = [];
+    this.acceptorsResponsed = [];
+    this.acceptors = params.network.acceptors;
+    this.adopted = false;
+    this.ballot = params.ballot;
+    this.lastSlotReceived = params.lastSlotReceived;
+    this.network = params.network;
+    this.network.on('P1B', (message) => { this.process(message) });
 
   }
 
@@ -48,7 +48,7 @@ export class Scout extends Emitter.Emitter{
           lastSlotReceived: this.lastSlotReceived
       };
     var message = new Message.Message({ type: 'P1A', from: this.ballot.id, command_id: 0, operation: operation });
-    this.network.sendToAcceptors(message);
+    this.network.send(message, Type.PUB);
     return message;
   }
 

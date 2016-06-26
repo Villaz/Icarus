@@ -4,7 +4,7 @@ var Scout = require('../lib/scout').Scout
 
 var network = {
     acceptors : new Map([['lyr',{}],['anu',{}], ['balar',{}]]),
-    sendToAcceptors : function () { },
+    send : function () { },
     on: function () { },
     removeAllListeners: function (name) { }
 };

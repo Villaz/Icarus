@@ -13,7 +13,7 @@ export class LocalClient extends Replica.Replica{
   private executions:Map<any,any>;
   protected emmiter: events.EventEmitter;
 
-  constructor(params?: { name:string, test?: boolean, external?:boolean, network?:{ discover: any, ports: any, network:any }}){
+  constructor(params?: { name:string, test?: boolean, external?:boolean, network?:any}){
     super(params);
 
     this.operations = 1;

@@ -8,7 +8,7 @@ var shuffle = require('shuffle-array')
 import * as Message from "./message";
 import {InternalMap as Map} from "./map";
 import {Rol} from "./rol"
-
+import {Type as Type} from "./network/network";
 
 
 export class Acceptor extends Rol{
@@ -32,10 +32,15 @@ export class Acceptor extends Rol{
     this.last_slot = -1;
     this.pending_messages = new Array<any>();
 
+    this.network.on('P1A',(message) =>{ this.processMessages(message);});
+    this.network.on('P2A',(message) =>{ this.processMessages(message);});
+    this.network.on('REC-A',(message) =>{ this.recuperation.processMessages(message);});
+    this.network.on('RECACK-A',(message) =>{ this.recuperation.processMessages(message);});
+
     if(!params.test){
       winston.info("%s is inactive", this.id);
       this.recuperation = new RecAcceptor(this, params.test);
-      this.recuperation.start(params.network.ports.recuperation2);
+      this.recuperation.start();
     }
   }
 
@@ -47,20 +52,12 @@ export class Acceptor extends Rol{
     return this.id;
   }
 
-
-  protected _startNetwork() {
-      var self = this
-
-      this.network.on('message', (message) => {
-          message = message[0]
-          if(!this.active || message.type === 'REC' || message.type === 'RECACK')
-            this.recuperation.processMessages(message);
-          else
-            self.processMessages(message);
-      });
-  }
-
-  public processMessages(message){
+  public processMessages(message, check:boolean=true){
+    if(!this.active && check)
+    {
+      this.recuperation.processMessages(message);
+      return;
+    }
     switch (message.type) {
         case 'P1A':
             this.processP1A(message.operation.ballot, message.operation.from)
@@ -102,7 +99,7 @@ export class Acceptor extends Rol{
        from:this.id,
        command_id:0,
        operation:operation});
-    this.network.sendToLeaders(message);
+    this.network.send(message, Type.PUB);
   }
 
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
@@ -133,7 +130,7 @@ export class Acceptor extends Rol{
               operation: operation
           }
       });
-      this.network.sendToLeaders(message);
+      this.network.send(message, Type.PUB);
   }
 }
 
@@ -155,20 +152,20 @@ export class RecAcceptor{
     this.test = test;
   }
 
-  public start(port){
+  public start( ){
     setInterval(() => {
        this.recived_rec = false;
-       this.sendRecuperationMessage(port, this.acceptor.last_slot + 1)
+       this.sendRecuperationMessage(this.acceptor.last_slot + 1)
      },30000);
-    setTimeout(() => {this.sendRecuperationMessage(port)}, 1000);
+    setTimeout(() => {this.sendRecuperationMessage( )}, 1000);
   }
 
   public processMessages(message){
     switch (message.type) {
-        case 'REC':
+        case 'REC-A':
             this.sendACKRecuperationMessage(message.from, message.operation);
             break;
-        case 'RECACK':
+        case 'RECACK-A':
             this.processRecuperation(message);
             break;
         default:
@@ -177,25 +174,24 @@ export class RecAcceptor{
     }
   }
 
-  public sendRecuperationMessage(recuperation:number,from:number=0) {
+  public sendRecuperationMessage(from:number=0) {
       if(from < 0) from = 0;
       this.sended_acceptors = []
       let acceptorsMap = {}
 
       var body = {
-          port: recuperation,
           from: from
       }
 
-      var message = new Message.Message({from:this.acceptor.Id, type: 'REC', command_id: this.acceptor.messages_sended++, operation: body })
+      var message = new Message.Message({from:this.acceptor.Id, type: 'REC-A', command_id: this.acceptor.messages_sended++, operation: body })
       this.received_acceptors = [];
-      this.acceptor.Network.sendToAcceptors(message);
+      this.acceptor.Network.send(message, Type.PUB);
       //if the acceptor does not receive messages in 10 seconds, it is the only one in the system
       //and becomes active
       setTimeout(()=>{
          if(!this.recived_rec){
            for(let petition of this.pending_messages)
-             this.acceptor.processMessages(petition);
+             this.acceptor.processMessages(petition, false);
           this.pending_messages.splice(0,this.pending_messages.length);
           this.acceptor.active = true;
          }
@@ -219,14 +215,14 @@ export class RecAcceptor{
     var message = new Message.Message({
       from: this.acceptor.Id,
       to: `tcp://${[...ipConnection][0]}:${operation.port}`,
-      type: 'RECACK',
+      type: 'RECACK-A',
       command_id: this.acceptor.messages_sended++,
       operation:{
         ballot: this.acceptor.actualBallot,
         values:values
       }
     });
-    this.acceptor.Network.sendToAcceptors(message);
+    this.acceptor.Network.send(message, Type.PUB);
     return message;
   }
 
@@ -250,7 +246,7 @@ export class RecAcceptor{
 
     if(this.sended_acceptors.every((v,i)=> this.received_acceptors.indexOf(v) >= 0)){
       for(let petition of this.pending_messages)
-        this.acceptor.processMessages(petition);
+        this.acceptor.processMessages(petition, false);
       this.pending_messages.splice(0,this.pending_messages.length)
       this.acceptor.active = true;
       this.recived_rec = false;
