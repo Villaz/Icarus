@@ -175,9 +175,8 @@ export class RecAcceptor{
   public sendRecuperationMessage(from:number=0) {
       if(from < 0) from = 0;
       this.sended_acceptors = []
-      let acceptorsMap = {}
 
-      var body = {
+      let body = {
           from: from
       }
 
