@@ -49,9 +49,11 @@ export class DiscoverBonjour extends Discover {
         let addresses = [];
         for(let int in os.networkInterfaces())
         {
-          for(let v of os.networkInterfaces()[int]){
-            if(!v.internal && v.family === 'IPv4')
-              addresses.push(v.address);
+          if (os.networkInterfaces().hasOwnProperty(int)) {
+            for(let v of os.networkInterfaces()[int]){
+              if(!v.internal && v.family === 'IPv4')
+                addresses.push(v.address);
+            }
           }
         }
         let txtRecord = {roles:[],
