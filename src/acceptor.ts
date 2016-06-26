@@ -28,7 +28,7 @@ export class Acceptor extends Rol{
     this.actualBallot = new ballot.Ballot()
     this.mapOfValues = new Map<number, any>();
     this.last_slot = -1;
-    this.pending_messages = new Array<any>();
+    this.pending_messages = [];
 
     this.network.on('P1A',(message) =>{ this.processMessages(message);});
     this.network.on('P2A',(message) =>{ this.processMessages(message);});
