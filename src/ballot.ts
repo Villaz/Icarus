@@ -82,11 +82,10 @@ export class Ballot{
   */
   private getBytes( id:string ){
       var bytes:any = []
-      var char:string = undefined
       var str = encodeURI(id)
 
       while(str.length){
-        char = str.slice(0, 1)
+        var char = str.slice(0, 1)
         str =  str.slice(1)
 
         if ('%' !== char)
