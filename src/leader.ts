@@ -1,12 +1,10 @@
 /// <reference path="./typings/tsd.d.ts"/>
 
 
-var Promise = require("bluebird")
 var ballot = require("./ballot")
 var winston = require('winston')
 var commander = require('./commander')
 var Scout = require('./scout').Scout
-var crc = require('crc');
 import * as Message from "./message";
 
 import {InternalMap as Map} from "./map";
