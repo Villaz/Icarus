@@ -3,8 +3,6 @@
 var ballot = require("./ballot")
 var winston = require('winston')
 
-var shuffle = require('shuffle-array')
-
 import * as Message from "./message";
 import {InternalMap as Map} from "./map";
 import {Rol} from "./rol"
