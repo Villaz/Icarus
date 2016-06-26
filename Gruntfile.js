@@ -84,16 +84,6 @@
             command:'yuidoc -e .ts src',
           },
         },
-          coveralls: {
-              // Options relevant to all targets
-              options: {
-                force: false
-              },
-              icarus: {
-                // LCOV coverage file (can be string, glob or array)
-                src: './coverage/lcov.info',
-              },
-            },
         /*  documentation_docco:{
             command:'docco src/*.ts',
           },
@@ -105,5 +95,5 @@
     });
 
     grunt.registerTask('default', ['mochaTest','shell','plato']);
-    grunt.registerTask('jenkins', ['shell:compile_ts','mochaTest','shell:install_istanbul','shell:coverage','coveralls'])
+    grunt.registerTask('jenkins', ['shell:compile_ts','mochaTest','shell:install_istanbul','shell:coverage'])
 };
