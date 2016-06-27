@@ -41,9 +41,6 @@ describe('Operation tests', function(){
     map.set(1,[op,op2]);
     map.set(2,[op3]);
 
-    for( var [key, value] of map.entries())
-      console.log(value);
-
 
   });
 });
