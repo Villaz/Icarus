@@ -128,9 +128,9 @@ export class Replica extends Rol.Rol{
 
   private checkSendGAP( ):Array<number>{
     let actual = moment().unix()
-    let slots:Array<number> = new Array();
+    let slots:Array<number> = [];
     if( this.lastDecidedMessage === undefined || actual - this.lastDecidedMessage > 10 ){
-      if(this.nextSlotInDecisions === this.slotToExecute && this.decisions.size == 0)
+      if(this.nextSlotInDecisions === this.slotToExecute && this.decisions.size === 0)
         slots.push(this.slotToExecute);
       else{
         for(var i = this.nextSlotInDecisions; i <= this.greaterSlotDecided; i++){
