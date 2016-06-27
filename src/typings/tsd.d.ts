@@ -19,6 +19,15 @@ declare class DiscoverBonjour extends Discover {
     private startBrowser(): void;
 }
 
+declare class Operation extends Object{
+  public operation_id:number;
+  public client_id:number;
+  public operation:Object;
+  public slot:number;
+  public sha:string;
+  public equals(o:Operation);
+}
+
 interface ParamsLeader{
   slot?:number;
   operation?:any;

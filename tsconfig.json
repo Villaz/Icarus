@@ -20,6 +20,7 @@
         "./src/acceptor.ts",
         "./src/leader.ts",
         "./src/commander.ts",
+        "./src/operation.ts",
         "./src/scout.ts",
         "./src/icarus_utils.ts",
         "./src/discover.ts",

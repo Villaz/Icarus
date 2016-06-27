@@ -12,103 +12,68 @@ import {Leader as Leader} from "./leader";
 
 export class Replica extends Rol.Rol{
 
-  slot_num:number = 0;
 
-  operationsToProposeBySlot:Map<number,Set<any>> = new Map();
-
-  operationsProposedBySlot:Map<number,Set<any>> = new Map();
-  operationsProposedByOperation:Map<string,any> = new Map();
-
-  operationsDecidedBySlot:Map<number,Set<any>> = new Map();
-  operationsDecidedByOperation:Map<string, number> = new Map();
-
-  lastEmpltySlotInProposals:number = 0;
-  lastEmpltySlotInDecisions:number = 0;
   greaterSlotDecided:number = -1;
   lastDecidedMessage:any = undefined;
 
+  private slotToExecute:number = 0;
+  private nextSlotInProposals: number = 0;
+  private nextSlotInDecisions: number = 0;
+  private proposals:Map<number,Set<Operation>> = new Map();
+  private decisions:Map<number,Operation> = new Map();
   private leader:any;
+
 
   constructor(params?: {name:string, test?:boolean, external?:boolean, network?:any}){
     super('replica', params);
     if(!this.test){
       this.leader = new Leader({name:params.name, test:params.test, replica:this, network:params.network });
       setTimeout(()=>{this.leader.start()}, 5000);
-      setInterval(()=>{this.checkSendGAP()},10000);
+      //setInterval(()=>{this.checkSendGAP()},10000);
     }
   }
 
-
-  protected _startNetwork( ) {
-      var self = this
-      this.network.on('message', (message) => {
-          message = message[0]
-          switch (message.type) {
-              case 'DECISION':
-                  //self.decision( message.operation.slot , message.operation.operation )
-                  break
-          }
-      });
-      this.network.on('propose', (message) =>{
-        this.propose(message[0]);
-      });
-  }
-
-  protected propose(operation:any){
-    var key = JSON.stringify({id:operation.command_id, client:operation.client_id});
-    if ( !this.operationsDecidedByOperation.has(key) && !this.operationsProposedByOperation.has(key)){
-      let slot = this.nextEmpltySlot()
-      operation.slot = slot;
-
-      if (!this.operationsToProposeBySlot.has(slot))
-          this.operationsToProposeBySlot.set(slot, new Set());
-      this.operationsToProposeBySlot.get(slot).add(operation);
-      this.operationsProposedByOperation.set( key, slot );
-      this.lastEmpltySlotInProposals++;
-      //this.network.sendToLeaders(operation, this.id);
+  public processOperationFromClient(operation:Operation):void{
+    if(!this.isOperationInProposalsOrDecisions(operation)){
+      operation.slot = this.nextEmpltySlot();
+      this.addOperationToProposals(operation);
+      this.nextSlotInProposals = operation.slot + 1;
+      this.propose(operation);
     }
   }
 
-  private decision( slot, operation ){
-    if(!this.test)
-      winston.info("Decided operation for slot %s", slot);
+  protected propose(operation:Operation):void{
+    return null;
+  }
 
-    let key = JSON.stringify({id:operation.command_id,client:operation.client_id});
-    //The operation was decided before
-    if (this.lastEmpltySlotInDecisions > slot) return Promise.resolve();
-
-    //Adds the operation to decisions
-    this.operationsDecidedBySlot.set( slot, operation )
-    this.operationsDecidedByOperation.set( key , slot );
-
-    if(this.greaterSlotDecided < slot) this.greaterSlotDecided = slot;
+  private decision(operation:Operation):Promise<void>{
+    if (this.nextSlotInDecisions > operation.slot)
+      return Promise.reject("Slot already decided");
+    this.decisions.set(operation.slot, operation);
 
     //Updates the value to the last emplty slot
-    if(this.lastEmpltySlotInDecisions === slot)
-      do{
-        this.lastEmpltySlotInDecisions++;
-      }while(this.operationsDecidedBySlot.has(this.lastEmpltySlotInDecisions))
-
+    if(this.nextSlotInDecisions === operation.slot)
+      do
+        this.nextSlotInDecisions++;
+      while(this.decisions.has(this.nextSlotInDecisions))
 
     let whileDecisionsInSlot = ( ) => {
-      if (!this.operationsDecidedBySlot.has(this.slot_num))
-        return Promise.resolve();
-      let operationInSlot = this.operationsDecidedBySlot.get(this.slot_num);
+      if (!this.decisions.has(this.slotToExecute)) return Promise.resolve();
+      let operationInSlot = this.decisions.get(this.slotToExecute);
       this.checkOperationsToRepropose( operationInSlot );
       return this.perform( operationInSlot ).then(()=>{
-        this.operationsDecidedBySlot.delete(this.slot_num - 1);
         if (!this.test)
-          winston.info("performed slot %s", this.slot_num - 1);
+          winston.info("performed slot %s", this.slotToExecute - 1);
         return whileDecisionsInSlot();
       });
     }
     return whileDecisionsInSlot();
   }
 
+
   private perform( operation ) {
-    var slot = this.operationSlotInDecided(operation);
-    this.slot_num++;
-    if ( slot < this.slot_num ){
+    this.slotToExecute++;
+    if ( operation.slot < this.slotToExecute ){
       var message = new Message.Message(
         {
           from: '',
@@ -129,57 +94,53 @@ export class Replica extends Rol.Rol{
       }
     }else
       return Promise.resolve();
+    }
+
+
+  private isOperationInProposalsOrDecisions(operation:Operation):boolean{
+    if( new Set(this.decisions.values()).has(operation)) return true;
+    for( var [key, value] of this.proposals.entries())
+      if(value.has(operation)) return true;
+    return false;
   }
+
+  private addOperationToProposals(operation:Operation):void{
+    if(!this.proposals.has(operation.slot))
+      this.proposals.set(operation.slot, new Set());
+    this.proposals.get(operation.slot).add(operation);
+  }
+
+  private checkOperationsToRepropose(operation:Operation):void{
+    if(!this.proposals.has(this.slotToExecute)) return;
+    for(let op of this.proposals.get(this.slotToExecute).values()){
+      this.proposals.get(this.slotToExecute).delete(op);
+      if(this.proposals.get(this.slotToExecute).size === 0)
+        this.proposals.delete(this.slotToExecute);
+      if(op.sha !== operation.sha)
+        this.processOperationFromClient(op);
+    }
+  }
+
+  private nextEmpltySlot():number{
+    return this.nextSlotInProposals && this.nextSlotInDecisions;
+  }
+
 
   private checkSendGAP( ):Array<number>{
     let actual = moment().unix()
     let slots:Array<number> = new Array();
     if( this.lastDecidedMessage === undefined || actual - this.lastDecidedMessage > 10 ){
-      if(this.lastEmpltySlotInDecisions === this.slot_num && this.operationsDecidedBySlot.size == 0)
-        slots.push(this.slot_num);
+      if(this.nextSlotInDecisions === this.slotToExecute && this.decisions.size == 0)
+        slots.push(this.slotToExecute);
       else{
-        for(var i = this.lastEmpltySlotInDecisions; i <= this.greaterSlotDecided; i++){
-          if(!this.operationsDecidedBySlot.has(i))
+        for(var i = this.nextSlotInDecisions; i <= this.greaterSlotDecided; i++){
+          if(!this.decisions.has(i))
             slots.push(i);
         }
       }
     }
     //this.network.sendToLeaders({slots:slots, port:this.network.routerPort}, this.id, 'GAP');
     return slots;
-  }
-
-  private nextEmpltySlot(){
-    if (this.lastEmpltySlotInDecisions == this.lastEmpltySlotInProposals)
-      return this.lastEmpltySlotInDecisions;
-    if (this.lastEmpltySlotInDecisions < this.lastEmpltySlotInProposals)
-      return this.lastEmpltySlotInDecisions;
-    else
-      return this.lastEmpltySlotInProposals;
-  }
-
-  private checkOperationsToRepropose(operation:any){
-      if (!this.operationsToProposeBySlot.has(this.slot_num)) return;
-      var values = this.operationsToProposeBySlot.get(this.slot_num).values();
-      var value = values.next();
-      while (!value.done){
-        let op = value.value;
-        let key = JSON.stringify({id:op.command_id, client:op.client_id});
-        if (op.sha === operation.sha)
-          this.operationsToProposeBySlot.get(this.slot_num).delete(op);
-        else{
-            this.operationsProposedByOperation.delete(key);
-            this.operationsToProposeBySlot.get(this.slot_num).delete(op);
-            if (this.operationsToProposeBySlot.get(this.slot_num).size == 0)
-              this.operationsToProposeBySlot.delete(this.slot_num);
-            this.propose(op);
-        }
-        value = values.next();
-      }
-  }
-
-  private operationSlotInDecided( operation:any ){
-    var search = JSON.stringify({id:operation.command_id,client:operation.client_id});
-    return this.operationsDecidedByOperation.get(search);
   }
 
   protected executeOperation(message:any){
