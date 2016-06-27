@@ -57,9 +57,9 @@ export class Replica extends Rol.Rol{
         this.nextSlotInDecisions++;
       while(this.decisions.has(this.nextSlotInDecisions))
 
-    let whileDecisionsInSlot = ( ) => {
+    const whileDecisionsInSlot = ( ) => {
       if (!this.decisions.has(this.slotToExecute)) return Promise.resolve();
-      let operationInSlot = this.decisions.get(this.slotToExecute);
+      const operationInSlot = this.decisions.get(this.slotToExecute);
       this.checkOperationsToRepropose( operationInSlot );
       return this.perform( operationInSlot ).then(()=>{
         if (!this.test)
@@ -86,9 +86,9 @@ export class Replica extends Rol.Rol{
         return this.executeOperation(message);
       }else{
         return this.network.sendToOperation(message).then((message) =>{
-            let msg = {client: operation.client,
+            const msg = {client: operation.client,
                id: operation.command_id,
-               result:'OK'}
+               result:message}
             return this.network.responde(msg);
         });
       }
@@ -112,7 +112,7 @@ export class Replica extends Rol.Rol{
 
   private checkOperationsToRepropose(operation:Operation):void{
     if(!this.proposals.has(this.slotToExecute)) return;
-    for(let op of this.proposals.get(this.slotToExecute).values()){
+    for(const op of this.proposals.get(this.slotToExecute).values()){
       this.proposals.get(this.slotToExecute).delete(op);
       if(this.proposals.get(this.slotToExecute).size === 0)
         this.proposals.delete(this.slotToExecute);
@@ -127,7 +127,7 @@ export class Replica extends Rol.Rol{
 
 
   private checkSendGAP( ):Array<number>{
-    let actual = moment().unix()
+    const actual = moment().unix()
     let slots:Array<number> = [];
     if( this.lastDecidedMessage === undefined || actual - this.lastDecidedMessage > 10 ){
       if(this.nextSlotInDecisions === this.slotToExecute && this.decisions.size === 0)
