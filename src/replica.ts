@@ -2,8 +2,6 @@
 
 
 var winston = require('winston');
-var shuffle = require('shuffle-array');
-var moment = require('moment');
 
 import * as Ballot from "./ballot";
 import * as Message from "./message";
