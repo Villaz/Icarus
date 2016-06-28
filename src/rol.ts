@@ -33,6 +33,18 @@ export abstract class  Rol {
         winston.info(type +" %s started",this.id);
     }
   }
+
+  get Network():any{
+    return this.network;
+  }
+
+  get Id():string{
+    return this.id;
+  }
+
+  get Test():boolean{
+    return this.test;
+  }
 }
 
 export function getRol(type:any, params:{ name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}):any{

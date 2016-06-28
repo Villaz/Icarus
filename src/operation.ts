@@ -3,7 +3,7 @@
 export class Operation extends Object{
   public operation_id:number;
   public client_id:number;
-  public operation:Object;
+  public operation:any;
   public slot:number = -1;
   public sha:string;
 

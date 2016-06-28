@@ -9,10 +9,10 @@ import {Rol} from "./rol"
 import {Type as Type} from "./network/network";
 
 
-export class Acceptor extends Rol{
+export class Acceptor{ //extends Rol{
 
   actualBallot:Ballot;
-  mapOfValues:Map<number, any>;
+  //mapOfValues:Map<number, any>;
 
   messages_sended: number = 0
   last_slot:number;
@@ -23,95 +23,59 @@ export class Acceptor extends Rol{
 
   recuperation:any;
 
-  constructor(params?: { name:string, test?: boolean, network?:{ discover: any, ports: any, network:any }}){
-    super('acceptor', params);
-    this.actualBallot = new ballot.Ballot()
-    this.mapOfValues = new Map<number, any>();
-    this.last_slot = -1;
-    this.pending_messages = [];
+  private replica:Replica;
 
-    this.network.on('P1A',(message) =>{ this.processMessages(message);});
-    this.network.on('P2A',(message) =>{ this.processMessages(message);});
-    this.network.on('REC-A',(message) =>{ this.recuperation.processMessages(message);});
-    this.network.on('RECACK-A',(message) =>{ this.recuperation.processMessages(message);});
+  constructor(replica:Replica){
+    this.replica = replica;
+    this.actualBallot = new ballot.Ballot();
 
-    if(!params.test){
-      winston.info("%s is inactive", this.id);
-      this.recuperation = new RecAcceptor(this, params.test);
-      this.recuperation.start();
-    }
+    this.replica.Network.on('P1A',(message) =>{
+       this.processP1A(message.operation.ballot)
+    });
+    this.replica.Network.on('P2A',(message) =>{
+        this.processP2A({slot:message.operation.slot,
+                       operation:message.operation.operation,
+                      ballot:message.operation.ballot
+                    });
+    });
   }
 
-  get Network():any{
-    return this.network;
-  }
-
-  get Id():string{
-    return this.id;
-  }
-
-  public processMessages(message, check:boolean=true){
-    if(!this.active && check)
-    {
-      this.recuperation.processMessages(message);
-      return;
-    }
-    switch (message.type) {
-        case 'P1A':
-            this.processP1A(message.operation.ballot, message.operation.from)
-            break
-        case 'P2A':
-            this.processP2A(
-              {slot:message.operation.slot,
-               operation:message.operation.operation,
-               ballot:message.operation.ballot
-             });
-            break;
-    }
-  }
-
-  public clear(){
-    this.actualBallot = new ballot.Ballot()
-    this.mapOfValues.clear();
-  }
-
-
-  public processP1A(ballot:Ballot, to:any){
+  public processP1A(ballot:Ballot){
     if(ballot.isMayorThanOtherBallot(this.actualBallot))
     {
-      if(!this.test) winston.info("P1A Updated ballot to %s", JSON.stringify(ballot))
-      this.actualBallot = ballot
+      if(!this.replica.Test) winston.info("P1A Updated ballot to %s", JSON.stringify(ballot));
+      this.actualBallot = ballot;
     }
-    this.sendP1B(0, to)
+    this.sendP1B();
   }
 
 
-  public sendP1B( from:number , to:number ){
-    var values = this.mapOfValues.getValues({ start: from, end: to });
+  public sendP1B(){
     var operation = {
         ballot: this.actualBallot,
-        accepted: values
+        accepted: Array.from(this.replica.Decisions.values())
     };
     var message = new Message.Message(
       {type:'P1B',
-       from:this.id,
+       from:this.replica.Id,
        command_id:0,
        operation:operation});
-    this.network.send(message, Type.PUB);
+    this.replica.Network.send(message, Type.PUB);
   }
 
   public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
       if (value.slot > this.last_slot) this.last_slot = value.slot
       else{
-        var operation = this.mapOfValues.getValues({start:value.slot})[0];
+        var operation = this.replica.Decisions.get(value.slot);
         if (operation !== undefined && operation.operation.client === value.operation.client && operation.operation.id === value.operation.id) return
       }
 
       if(value.ballot.isMayorOrEqualThanOtherBallot(this.actualBallot)){
-          if(!this.test) winston.info("P2A Updated ballot to %s" ,JSON.stringify(value.ballot))
+          if(!this.replica.Test) winston.info("P2A Updated ballot to %s" ,JSON.stringify(value.ballot))
           this.actualBallot = value.ballot;
-          this.mapOfValues.set(value.slot, value.operation, true);
-          if(!this.test) winston.info("P2A Added operation to slot %s", value.slot)
+          //TODO checks if replica is running, if it's running dont save the value
+          this.replica.Decisions.set(value.slot, value.operation);
+          if(!this.replica.Test) winston.info("P2A Added operation to slot %s", value.slot)
       }
       this.sendP2B(value.slot, value.operation)
 
@@ -120,7 +84,7 @@ export class Acceptor extends Rol{
   public sendP2B(slot:number , operation:any ){
       var message = new Message.Message({
           type: 'P2B',
-          from: this.id,
+          from: this.replica.Id,
           command_id: 0,
           operation: {
               ballot: this.actualBallot,
@@ -128,11 +92,11 @@ export class Acceptor extends Rol{
               operation: operation
           }
       });
-      this.network.send(message, Type.PUB);
+      this.replica.Network.send(message, Type.PUB);
   }
 }
 
-
+/*
 export class RecAcceptor{
 
   private acceptor:Acceptor;
@@ -249,4 +213,4 @@ export class RecAcceptor{
       this.recived_rec = false;
     }
   }
-}
+}*/

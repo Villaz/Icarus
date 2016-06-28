@@ -1,14 +1,9 @@
 /// <reference path="./typings/tsd.d.ts"/>
 
+var winston = require('winston');
+import events = require('events');
 
-var Promise = require("bluebird")
-var ballot = require("./ballot")
-var winston = require('winston')
-var underscore = require("underscore")
-
-//import Emitter = require('./icarus_utils')
 import * as Message from "./message";
-import * as Emitter from "./icarus_utils";
 import {InternalMap as Map} from "./map";
 import {Type as Type} from "./network/network";
 
@@ -16,18 +11,18 @@ import {Type as Type} from "./network/network";
  * Class Scout
  * @class Scout
  */
-export class Scout extends Emitter.Emitter{
+export class Scout extends events.EventEmitter{
 
-  acceptors: any;
-  acceptorsResponsed : Array<string>
-  pvalues : Array<any>
-  slotsOfValues : Array<any>
-  adopted:boolean
-  ballot:Ballot
-  lastSlotReceived:any
-  network:any
+  private acceptors: any;
+  private acceptorsResponsed : Array<string>
+  private pvalues : Array<any>
+  private slotsOfValues : Array<any>
+  private adopted:boolean = false;
+  private ballot:Ballot
+  private network:any
 
-  constructor(params:{ballot:Ballot; lastSlotReceived:any; network?:any}){
+
+  constructor(params:{ballot:Ballot; network?:any}){
     super();
     this.slotsOfValues = [];
     this.pvalues = [];
@@ -35,17 +30,14 @@ export class Scout extends Emitter.Emitter{
     this.acceptors = params.network.acceptors;
     this.adopted = false;
     this.ballot = params.ballot;
-    this.lastSlotReceived = params.lastSlotReceived;
     this.network = params.network;
     this.network.on('P1B', (message) => { this.process(message) });
-
   }
 
   start( ){
       var operation = {
           leader: this.ballot.id,
           ballot: this.ballot,
-          lastSlotReceived: this.lastSlotReceived
       };
     var message = new Message.Message({ type: 'P1A', from: this.ballot.id, command_id: 0, operation: operation });
     this.network.send(message, Type.PUB);

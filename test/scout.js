@@ -16,7 +16,6 @@ describe('Tests Scout', function(){
         var scout = new Scout({ ballot: ballot, lastSlotReceived: 1, network: network });
 
         should.exists(scout.ballot);
-        scout.lastSlotReceived.should.be.exactly(1);
         scout.ballot.number.should.be.exactly(1);
         scout.ballot.id.should.be.exactly('127.0.0.1');
         scout.adopted.should.be.exactly(false);
@@ -32,7 +31,6 @@ describe('Tests Scout', function(){
         message.operation.leader.should.be.exactly('127.0.0.1');
         message.operation.ballot.number.should.be.exactly(ballot.number);
         message.operation.ballot.id.should.be.exactly(ballot.id);
-        message.operation.lastSlotReceived.should.be.exactly(1);
   });
 
 
@@ -43,7 +41,6 @@ describe('Tests Scout', function(){
     scout.acceptors = [ '127.0.0.1', '127.0.0.2' ]
 
     scout.on('preempted' , function( body ){
-      body = body[0]
       body.ballot.number.should.be.exactly(2)
       body.ballot.id.should.be.exactly('127.0.0.1')
       done()
@@ -86,7 +83,6 @@ describe('Tests Scout', function(){
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
 
     scout.on('adopted', function( body ){
-      body = body[0]
       body.ballot.id.should.be.exactly(ballot.id)
       body.ballot.number.should.be.exactly(ballot.number)
       body.pvalues.size.should.be.exactly(2)
@@ -131,7 +127,6 @@ describe('Tests Scout', function(){
     var scout = new Scout({ballot:ballot, lastSlotReceived:1, network: network})
 
     scout.on('adopted', function( body ){
-      body = body[0]
       body.ballot.id.should.be.exactly(ballot.id)
       body.ballot.number.should.be.exactly(ballot.number)
       body.pvalues.size.should.be.exactly(2)

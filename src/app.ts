@@ -62,13 +62,7 @@ if(cluster.isMaster){
   let name = names.generateName().substr(0, 15);
   var discover = Discover.createDiscover('bonjour',{name: name, ports:nconf.get('network').ports, roles:nconf.get('roles')});
   var network = new Network(discover, nconf.get('network').ports);
-  var replica;
-  var acceptor;
-  if(nconf.get('roles').indexOf('replica') >= 0)
-    replica = rol.getRol('replica', {name:name, network:network});
-  if(nconf.get('roles').indexOf('acceptor') >= 0)
-    acceptor = rol.getRol('acceptor', {name:name, network:network});
-
+  rol.getRol('replica', {name:name, network:network});
 }
 
 /*

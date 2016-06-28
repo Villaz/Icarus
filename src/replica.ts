@@ -8,31 +8,57 @@ var moment = require('moment');
 import * as Ballot from "./ballot";
 import * as Message from "./message";
 import * as Rol from "./rol";
-import {Leader as Leader} from "./leader";
+import * as Acceptor from "./acceptor";
+import {Commander as Commander} from "./commander";
+import {Scout as Scout} from "./scout";
 
 export class Replica extends Rol.Rol{
 
+  private ballot:Ballot;
+  private isCoordinator:boolean = false;
+  private actualCoordinator:string;
 
-  greaterSlotDecided:number = -1;
-  lastDecidedMessage:any = undefined;
+  private acceptor:Acceptor;
+  private scout :Scout;
+  private commander :Commander;
 
   private slotToExecute:number = 0;
   private nextSlotInProposals: number = 0;
   private nextSlotInDecisions: number = 0;
   private proposals:Map<number,Set<Operation>> = new Map();
   private decisions:Map<number,Operation> = new Map();
-  private leader:any;
 
-
+  /**
+  * Constructor of replica
+  * Receives as parameters the name of the process,
+  * a reference to the network
+  * a boolean indicanting if the instance is running in test mode
+  * and the conection type with the client (external true or false)
+  */
   constructor(params?: {name:string, test?:boolean, external?:boolean, network?:any}){
     super('replica', params);
+
+    this.ballot = new Ballot.Ballot({id:params.name, number:1});
+    this.acceptor = new Acceptor.Acceptor(this);
+    this.scout = new Scout({ballot:this.ballot, network:this.network});
+    this.commander = new Commander(this);
+
     if(!this.test){
-      this.leader = new Leader({name:params.name, test:params.test, replica:this, network:params.network });
-      setTimeout(()=>{this.leader.start()}, 5000);
-      //setInterval(()=>{this.checkSendGAP()},10000);
+      setTimeout(()=>{
+      this.scout.start();
+      this.scout.on('adopted', (message)=>{
+        this.adoptBallot(message);
+      });
+      this.commander.on('decision', (message)=>{ console.log(message);})
+    }, 5000);
     }
   }
 
+  /**
+  * Method executed when the client sends an operation to the replica
+  * checks if the operation has been processed before and starts the consensus
+  * problem to resolve the order of executeOperation
+  */
   public processOperationFromClient(operation:Operation):void{
     if(!this.isOperationInProposalsOrDecisions(operation)){
       operation.slot = this.nextEmpltySlot();
@@ -43,7 +69,7 @@ export class Replica extends Rol.Rol{
   }
 
   protected propose(operation:Operation):void{
-    return null;
+    this.commander.sendP2A({operation:operation, ballot:this.ballot});
   }
 
   private decision(operation:Operation):Promise<void>{
@@ -94,7 +120,18 @@ export class Replica extends Rol.Rol{
       }
     }else
       return Promise.resolve();
-    }
+  }
+
+
+  private adoptBallot(message:{ballot:Ballot; pvalues:Map<any,number> , pvaluesSlot:Map<number,number>}){
+    //message.pvalues.update(this.proposals)
+    //this.proposals = message.pvalues
+    //this.sendToCommanderAllproposals(this.proposals.keys);
+    this.actualCoordinator = this.id;
+    this.isCoordinator = true;
+    if(!this.test)
+      winston.info("Leader %s is active!!!", this.id);
+  }
 
 
   private isOperationInProposalsOrDecisions(operation:Operation):boolean{
@@ -125,25 +162,12 @@ export class Replica extends Rol.Rol{
     return this.nextSlotInProposals && this.nextSlotInDecisions;
   }
 
-
-  private checkSendGAP( ):Array<number>{
-    const actual = moment().unix()
-    let slots:Array<number> = [];
-    if( this.lastDecidedMessage === undefined || actual - this.lastDecidedMessage > 10 ){
-      if(this.nextSlotInDecisions === this.slotToExecute && this.decisions.size === 0)
-        slots.push(this.slotToExecute);
-      else{
-        for(var i = this.nextSlotInDecisions; i <= this.greaterSlotDecided; i++){
-          if(!this.decisions.has(i))
-            slots.push(i);
-        }
-      }
-    }
-    //this.network.sendToLeaders({slots:slots, port:this.network.routerPort}, this.id, 'GAP');
-    return slots;
-  }
-
   protected executeOperation(message:any){
     return Promise.reject("Not implemented");
+  }
+
+  get Decisions():Map<number,Operation>{
+    return this.decisions;
+    //return Array.from(new Set(this.decisions.values()));
   }
 }

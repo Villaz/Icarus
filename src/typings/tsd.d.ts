@@ -1,7 +1,6 @@
 /// <reference path="node/node.d.ts" />
 /// <reference path="map.d.ts" />
-/// <reference path="ballot.d.ts" />
-/// <reference path="utils.d.ts" />
+
 
 declare class Discover {
     private name: string
@@ -19,18 +18,46 @@ declare class DiscoverBonjour extends Discover {
     private startBrowser(): void;
 }
 
+
+declare class Ballot {
+    number: number;
+    id: string;
+    constructor(params?: {
+        number: number;
+        id: string;
+    });
+    isMayorThanOtherBallot(ballot: Ballot): boolean;
+    isMayorOrEqualThanOtherBallot(ballot: Ballot): boolean;
+    isEqual(ballot: Ballot): boolean;
+}
+
+
+
 declare class Operation extends Object{
   public operation_id:number;
   public client_id:number;
-  public operation:Object;
+  public operation:any;
   public slot:number;
   public sha:string;
   public equals(o:Operation);
 }
 
+declare class Rol{
+  Network:any;
+  Id:string;
+  Test:boolean;
+}
+
+declare class Replica extends Rol{
+  Decisions:Map<number,Operation>;
+}
+
+declare class Acceptor{
+
+}
+
 interface ParamsLeader{
-  slot?:number;
-  operation?:any;
+  operation?:Operation;
   ballot?:Ballot;
 }
 

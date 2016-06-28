@@ -1,4 +1,4 @@
-/// <reference path="./typings/node/node.d.ts"/>
+///<reference path='./typings/tsd.d.ts' />
 
 
 /**
@@ -29,7 +29,7 @@ export class Ballot{
   *@method isMayorThanOtherBallot
   *@param {Ballot} ballot
   */
-  public isMayorThanOtherBallot( ballot:Ballot ){
+  public isMayorThanOtherBallot( ballot:Ballot ):boolean{
     if(this.number < ballot.number) return false
     if(this.number > ballot.number) return true
 
@@ -45,7 +45,7 @@ export class Ballot{
   *@method isMayorOrEqualThanOtherBallot
   *@param {Ballot} ballot
   */
-  public isMayorOrEqualThanOtherBallot(ballot:Ballot){
+  public isMayorOrEqualThanOtherBallot(ballot:Ballot):boolean{
       if(this.isEqual(ballot)) return true
       else  return this.isMayorThanOtherBallot(ballot)
   }
@@ -55,7 +55,7 @@ export class Ballot{
   *@method isEqual
   *@param {Ballot} ballot
   */
-  public isEqual(ballot:Ballot){
+  public isEqual(ballot:Ballot):boolean{
       var actualBytes = this.getValue(this.id)
       var externalBytes = this.getValue(ballot.id)
       if((this.number === ballot.number) && (actualBytes === externalBytes))
@@ -80,7 +80,7 @@ export class Ballot{
   *@method getBytes
   *@param {string} id
   */
-  private getBytes( id:string ){
+  private getBytes( id:string ):Array<number>{
       var bytes:any = []
       var str = encodeURI(id)
 

@@ -8,16 +8,15 @@ describe('Replica tests', function(){
 
     var network = {
         acceptors : { 'lyr': {}, 'anu': {}, 'balar': {} },
-        sendToLeaders : function () { },
+        send : function () { },
         sendToOperation : function() {return Promise.resolve()},
-        responde : function() {return Promise.resolve();
-        }
+        responde : function() {return Promise.resolve();},
+        on: function(){}
     }
     var replica = undefined
 
     beforeEach(function(){
-        replica = new Replica({name:'test', test: true })
-        replica.network = network
+        replica = new Replica({name:'test', test: true, network:network });
         replica.executeOperation = function(message){return Promise.resolve();}
     });
 
@@ -140,44 +139,4 @@ describe('Replica tests', function(){
         replica.nextSlotInDecisions = 0
         replica.nextEmpltySlot().should.be.exactly(0)
       });
-
-    xit('Send GAP message no operations', function(){
-       var slots = new Set(replica.checkSendGAP());
-       slots.has(0).should.be.true()
-    });
-
-    xit('Send GAP message with operation', function(done){
-      var op1 = {command_id:1,client_id:1,op:{name:'hello'}}
-      replica.decision(0 , op1).then(function(){
-       var slots = new Set(replica.checkSendGAP());
-       slots.has(0).should.be.false();
-       slots.has(1).should.be.true();
-       done();
-     });
-    });
-
-    xit('Send GAP message with operation and space', function(done){
-      var op1 = {command_id:1,client_id:1,op:{name:'hello'}}
-      replica.decision(1 , op1).then(function(){
-       var slots = new Set(replica.checkSendGAP());
-       slots.has(0).should.be.true();
-       slots.has(1).should.be.false();
-       done();
-     });
-    });
-
-    xit('Send GAP message with operations and multiple spaces', function(done){
-      var op1 = {command_id:1,client_id:1,op:{name:'hello'}}
-      var op1 = {command_id:2,client_id:2,op:{name:'hello2'}}
-      replica.decision(1 , op1).then(function(){
-       replica.decision(3 , op1).then(function(){
-         var slots = new Set(replica.checkSendGAP());
-         slots.has(0).should.be.true();
-         slots.has(1).should.be.false();
-         slots.has(2).should.be.true();
-         slots.has(3).should.be.false();
-         done();
-       });
-     });
-    });
   });
