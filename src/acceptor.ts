@@ -33,7 +33,7 @@ export class Acceptor{ //extends Rol{
        this.processP1A(message.operation.ballot)
     });
     this.replica.Network.on('P2A',(message) =>{
-        this.processP2A({slot:message.operation.slot,
+        this.processP2A({slot:message.operation.operation.slot,
                        operation:message.operation.operation,
                       ballot:message.operation.ballot
                     });
