@@ -49,9 +49,7 @@ export class ZMQNetwork extends Network {
     let data = JSON.parse(message.toString())
     if (!this.messagesReceived.has(data.from))
         this.messagesReceived.set(data.from,new Set())
-    for (var obj of this.messagesReceived.get(data.from))
-        if (obj.crc === data.crc && obj.timestamp == data.timestamp)
-            return
+    if(this.messagesReceived.get(data.from).has({ crc: data.crc, timestamp: data.timestamp })) return;
     this.messagesReceived.get(data.from).add({ crc: data.crc, timestamp: data.timestamp })
     this.processMessage(data, type);
   }
