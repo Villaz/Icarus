@@ -43,7 +43,7 @@ export class LocalClient extends Replica.Replica{
       }else{
         this.executions.set(message.id,{'resolve':resolve,'reject':reject});
       }
-      this.propose(operation);
+      this.processOperationFromClient(operation);
     });
     if(this.executions.has(message.id))
       this.executions.get(message.id)['promise'] = promise;
