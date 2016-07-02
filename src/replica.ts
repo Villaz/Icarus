@@ -47,7 +47,9 @@ export class Replica extends Rol.Rol{
       this.scout.on('adopted', (message)=>{
         this.adoptBallot(message);
       });
-      this.commander.on('decision', (message)=>{ console.log(message);})
+      this.commander.on('decision', (message)=>{
+        this.decision(message.operation);
+      });
     }, 5000);
     }
   }
