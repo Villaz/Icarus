@@ -3,9 +3,8 @@
 
 var winston = require('winston')
 import events = require('events');
-
 import * as Message from "./message";
-
+import {Type as Type} from "./network/network";
 
 /**
  * Class Commander
@@ -55,7 +54,7 @@ export class Commander extends events.EventEmitter{
           command_id:0,
           operation:params
         });
-        this.leader.Network.send(message)
+        this.leader.Network.send(message, Type.PUB)
       }
     }
 
