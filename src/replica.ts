@@ -23,7 +23,9 @@ export class Replica extends Rol.Rol{
   private slotToExecute:number = 0;
   private nextSlotInProposals: number = 0;
   private nextSlotInDecisions: number = 0;
+
   private proposals:Map<number,Set<Operation>> = new Map();
+  private listOfProposals:Set<Operation> = new Set();
   private decisions:Map<number,Operation> = new Map();
 
   /**
@@ -135,9 +137,7 @@ export class Replica extends Rol.Rol{
 
 
   private isOperationInProposalsOrDecisions(operation:Operation):boolean{
-    if( new Set(this.decisions.values()).has(operation)) return true;
-    for( var [key, value] of this.proposals.entries())
-      if(value.has(operation)) return true;
+    if( new Set(this.decisions.values()).has(operation) || this.listOfProposals.has(operation)) return true;
     return false;
   }
 
@@ -145,12 +145,14 @@ export class Replica extends Rol.Rol{
     if(!this.proposals.has(operation.slot))
       this.proposals.set(operation.slot, new Set());
     this.proposals.get(operation.slot).add(operation);
+    this.listOfProposals.add(operation);
   }
 
   private checkOperationsToRepropose(operation:Operation):void{
     if(!this.proposals.has(this.slotToExecute)) return;
     for(const op of this.proposals.get(this.slotToExecute).values()){
       this.proposals.get(this.slotToExecute).delete(op);
+      this.listOfProposals.delete(op);
       if(this.proposals.get(this.slotToExecute).size === 0)
         this.proposals.delete(this.slotToExecute);
       if(op.sha !== operation.sha)
