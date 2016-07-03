@@ -26,6 +26,7 @@ export class Replica extends Rol.Rol{
 
   private proposals:Map<number,Set<Operation>> = new Map();
   private listOfProposals:Set<Operation> = new Set();
+  private listOfDecisions:Set<Operation> = new Set();
   private decisions:Map<number,Operation> = new Map();
 
   /**
@@ -78,7 +79,7 @@ export class Replica extends Rol.Rol{
     if (this.nextSlotInDecisions > operation.slot)
       return Promise.reject("Slot already decided");
     this.decisions.set(operation.slot, operation);
-
+    this.listOfDecisions.add(operation);
     //Updates the value to the last emplty slot
     if(this.nextSlotInDecisions === operation.slot)
       do
@@ -137,8 +138,7 @@ export class Replica extends Rol.Rol{
 
 
   private isOperationInProposalsOrDecisions(operation:Operation):boolean{
-    if( new Set(this.decisions.values()).has(operation) || this.listOfProposals.has(operation)) return true;
-    return false;
+    return  this.listOfDecisions.has(operation) || this.listOfProposals.has(operation);
   }
 
   private addOperationToProposals(operation:Operation):void{
