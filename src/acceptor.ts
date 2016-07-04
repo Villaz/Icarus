@@ -1,88 +1,86 @@
 ///<reference path='./typings/tsd.d.ts' />
 
-var ballot = require("./ballot")
-var winston = require('winston')
+const winston = require("winston");
 
+import * as Ballot from "./ballot";
 import * as Message from "./message";
-import {Rol} from "./rol"
+import {Rol} from "./rol";
 import {Type as Type} from "./network/network";
 
 
-export class Acceptor{ //extends Rol{
+export class Acceptor {
 
-  actualBallot:Ballot;
-  //mapOfValues:Map<number, any>;
+  actualBallot: Ballot;
+  messages_sended: number = 0;
+  last_slot: number;
 
-  messages_sended: number = 0
-  last_slot:number;
+  active: boolean = false;
+  recived_rec: boolean = false;
+  pending_messages: Array<any>;
 
-  active:boolean = false;
-  recived_rec:boolean = false;
-  pending_messages:Array<any>;
+  recuperation: any;
 
-  recuperation:any;
+  private replica: Replica;
 
-  private replica:Replica;
-
-  constructor(replica:Replica){
+  constructor(replica: Replica) {
     this.replica = replica;
-    this.actualBallot = new ballot.Ballot();
+    this.actualBallot = new Ballot.Ballot();
 
-    this.replica.Network.on('P1A',(message) =>{
-       this.processP1A(message.operation.ballot)
+    this.replica.Network.on("P1A", (message) => {
+       this.processP1A(message.operation.ballot);
     });
-    this.replica.Network.on('P2A',(message) =>{
-        this.processP2A({slot:message.operation.operation.slot,
-                       operation:message.operation.operation,
-                      ballot:message.operation.ballot
+
+    this.replica.Network.on("P2A", (message) => {
+        this.processP2A({slot: message.operation.operation.slot,
+                       operation: message.operation.operation,
+                      ballot: message.operation.ballot
                     });
     });
   }
 
-  public processP1A(ballot:Ballot){
-    if(ballot.isMayorThanOtherBallot(this.actualBallot))
-    {
-      if(!this.replica.Test) winston.info("P1A Updated ballot to %s", JSON.stringify(ballot));
+  public processP1A(ballot: Ballot) {
+    if (ballot.isMayorThanOtherBallot(this.actualBallot)) {
+      if (!this.replica.Test) winston.info("P1A Updated ballot to %s", JSON.stringify(ballot));
       this.actualBallot = ballot;
     }
     this.sendP1B();
   }
 
 
-  public sendP1B(){
-    var operation = {
+  public sendP1B() {
+    let operation = {
         ballot: this.actualBallot,
         accepted: Array.from(this.replica.Decisions.values())
     };
-    var message = new Message.Message(
-      {type:'P1B',
-       from:this.replica.Id,
-       command_id:0,
-       operation:operation});
+    let message = new Message.Message(
+      {type: "P1B",
+       from: this.replica.Id,
+       command_id: 0,
+       operation: operation});
     this.replica.Network.send(message, Type.PUB);
   }
 
-  public processP2A(value:{slot:number; operation:any; ballot:Ballot}){
-      if (value.slot > this.last_slot) this.last_slot = value.slot
-      else{
-        var operation = this.replica.Decisions.get(value.slot);
-        if (operation !== undefined && operation.operation.client === value.operation.client && operation.operation.id === value.operation.id) return
+  public processP2A(value: {slot: number; operation: any; ballot: Ballot}) {
+      if (value.slot > this.last_slot) this.last_slot = value.slot;
+      else {
+        let operation = this.replica.Decisions.get(value.slot);
+        if (operation !== undefined && operation.operation.client === value.operation.client && operation.operation.id === value.operation.id) return;
       }
 
-      if(value.ballot.isMayorOrEqualThanOtherBallot(this.actualBallot)){
-          if(!this.replica.Test) winston.info("P2A Updated ballot to %s" ,JSON.stringify(value.ballot))
+      if (value.ballot.isMayorOrEqualThanOtherBallot(this.actualBallot)) {
+          if (!this.replica.Test) winston.info("P2A Updated ballot to %s" , JSON.stringify(value.ballot));
           this.actualBallot = value.ballot;
-          //TODO checks if replica is running, if it's running dont save the value
+          // TODO checks if replica is running, if it's running dont save the value
           this.replica.Decisions.set(value.slot, value.operation);
-          if(!this.replica.Test) winston.info("P2A Added operation to slot %s", value.slot)
+          if (!this.replica.Test) winston.info("P2A Added operation to slot %s", value.slot);
       }
-      this.sendP2B(value.slot, value.operation)
+      this.sendP2B(value.slot, value.operation);
 
   }
 
-  public sendP2B(slot:number , operation:any ){
-      var message = new Message.Message({
-          type: 'P2B',
+  public sendP2B(slot: number , operation: any ) {
+      let message = new Message.Message({
+          type: "P2B",
           from: this.replica.Id,
           command_id: 0,
           operation: {
