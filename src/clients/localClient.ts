@@ -1,5 +1,4 @@
 ///<reference path='../typings/tsd.d.ts' />
-var zmq = require('zmq');
 var Promise = require('bluebird');
 var sha3 = require('sha3');
 import * as Message from "buffer";
