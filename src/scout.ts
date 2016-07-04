@@ -1,6 +1,5 @@
 /// <reference path="./typings/tsd.d.ts"/>
 
-var winston = require('winston');
 import events = require('events');
 
 import * as Message from "./message";
@@ -47,7 +46,7 @@ export class Scout extends events.EventEmitter{
 
   private process(message: any) {
     if (this.adopted) return;
-    if (message.type == 'P1B') var ballot = message.operation.ballot;
+    if (message.type === 'P1B') var ballot = message.operation.ballot;
     if(this.ballot.isEqual(ballot)){
         this.updateAcceptedValuesAndAcceptorsResponse(message);
         this.ifResponseMayorOfAcceptorsSendAdopted();
@@ -64,15 +63,8 @@ export class Scout extends events.EventEmitter{
 
   private ifResponseMayorOfAcceptorsSendAdopted(){
 
-    var acceptors = () => {
-      let counter = 0;
-      for(let key of this.acceptors)
-        counter++;
-      return counter;
-    }
-
-    var numberAcceptors = acceptors();
-    if (numberAcceptors == 2)
+    var numberAcceptors = this.acceptors.size;
+    if (numberAcceptors === 2)
       numberAcceptors = 3
     if (this.acceptorsResponsed.length >= Math.round( numberAcceptors / 2 )){
       this.adopted = true
