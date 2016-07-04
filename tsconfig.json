@@ -13,8 +13,6 @@
         "./src/rol.ts",
         "./src/app.ts",
         "./src/ballot.ts",
-        "./src/client.ts",
-        "./src/clientIcarus.ts",
         "./src/replica.ts",
         "./src/acceptor.ts",
         "./src/commander.ts",
