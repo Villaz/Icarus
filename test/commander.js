@@ -2,7 +2,6 @@
 
 var should = require('should');
 var Commander = require('../lib/commander.js').Commander;
-var Leader = require('../lib/leader.js').Leader;
 var Ballot = require('../lib/ballot.js').Ballot;
 
 
