@@ -1,7 +1,5 @@
 /// <reference path="./typings/tsd.d.ts"/>
 
-
-var winston = require('winston')
 import events = require('events');
 import * as Message from "./message";
 import {Type as Type} from "./network/network";
