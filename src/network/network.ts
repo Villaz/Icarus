@@ -2,11 +2,7 @@
 
 import {Ballot} from "../ballot";
 import * as Message from "../message";
-
-var map = require("../map").Map
-var Discover = require('../discover')
 import events = require('events');
-
 
 export enum Type{
   PUB
@@ -31,7 +27,7 @@ export class Network extends events.EventEmitter{
     }
 
     public upNode(node) {
-        let newNode = !this.replicas.has(node.name) || !this.leaders.has(node.name) || !this.acceptors.has(node.name);
+        const newNode = !this.replicas.has(node.name) || !this.leaders.has(node.name) || !this.acceptors.has(node.name);
         if(node.data.roles.indexOf('A') >= 0)
           this.addRol(this.acceptors, node);
 
@@ -49,7 +45,7 @@ export class Network extends events.EventEmitter{
       if(!rol.has(node.name))
         rol.set(node.name, new Set());
       if( !(node.addresses instanceof String))
-        for (let url of node.addresses)
+        for (const url of node.addresses)
           if (!rol.get(node.name).has(url))
             rol.get(node.name).add(url);
       else
@@ -81,16 +77,16 @@ export class Network extends events.EventEmitter{
     }
 
     protected generateBufferMessage(message:Message.Message){
-      let CHUNK = 1024 * 1024;
-      let bufferArray = new Array<Buffer>();
+      const CHUNK = 1024 * 1024;
+      let bufferArray = [];
       bufferArray.push(new Buffer(message.type));
       var buffer = new Buffer(JSON.stringify(message));
       if (buffer.length > CHUNK){
         for (let pos=0; pos < buffer.length; pos += CHUNK){
-          let aux = new Buffer(CHUNK);
-          let copied = buffer.copy(aux, 0, pos, pos + CHUNK);
+          const aux = new Buffer(CHUNK);
+          const copied = buffer.copy(aux, 0, pos, pos + CHUNK);
           if (copied < CHUNK){
-            let cutted = new Buffer(copied);
+            const cutted = new Buffer(copied);
             aux.copy(cutted, 0 , 0, copied);
             bufferArray.push(cutted)
           }else{
