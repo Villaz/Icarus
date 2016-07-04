@@ -20,11 +20,13 @@ export class Commander extends events.EventEmitter{
   constructor( leader:any ){
     super()
     this.leader = leader;
-    this.leader.Network.on('P2B', (message) => { this.process(message) })
+    this.leader.Network.on('P2B', (message) => {
+       this.process(message)
+     });
   }
 
   public process( message:Message.Message){
-    if (message.type == 'P2B' && this.leader.isCoordinator){
+    if (message.type === 'P2B' && this.leader.isCoordinator){
       this.receiveP2B({
         acceptor: message.from,
         ballot: message.operation.ballot,
@@ -62,14 +64,8 @@ export class Commander extends events.EventEmitter{
         if(!this.leader.Network.acceptors.has(params.acceptor)) return
         if(this.slotsDecided.has(params.slot)) return
 
-        if (!this.slots.has(params.slot)){
-          this.slots.set(params.slot, {
-              ballot: params.ballot,
-              operation: params.operation,
-              acceptorsResponse: new Set(),
-              acceptors: this.leader.Network.acceptors
-            });
-        }
+        this.ifNotExistsAddOperationToSlot(params);
+
         var slot = this.slots.get(params.slot);
         if(!slot.acceptors.has(params.acceptor)) return;
 
@@ -80,13 +76,28 @@ export class Commander extends events.EventEmitter{
             return
         }
 
+        this.checkIfMayorityOfAcceptorsHaveResponsed(slot, params);
+      }
+
+      private ifNotExistsAddOperationToSlot(params:{slot:number, ballot:Ballot, operation:any}){
+        if (!this.slots.has(params.slot)){
+          this.slots.set(params.slot, {
+              ballot: params.ballot,
+              operation: params.operation,
+              acceptorsResponse: new Set(),
+              acceptors: this.leader.Network.acceptors
+            });
+        }
+      }
+
+      private checkIfMayorityOfAcceptorsHaveResponsed(slot:any, params:{slot:number, operation:any}){
         //if the mayority of acceptors have accepted the operation, the
         //commander adopts the operation and emits a message to the leader.
         if (slot.acceptorsResponse.size >= Math.round((slot.acceptors.size ) / 2)){
             //removes the operation from slots
             this.slots.delete(params.slot);
             this.slotsDecided.add(params.slot);
-            this.emit('decision', {slot:params.slot , operation: params.operation})
+            this.emit('decision', {slot:params.slot , operation: params.operation});
         }
       }
 }
