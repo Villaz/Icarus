@@ -3,7 +3,6 @@
 import events = require('events');
 
 import * as Message from "./message";
-import {InternalMap as Map} from "./map";
 import {Type as Type} from "./network/network";
 
 /**

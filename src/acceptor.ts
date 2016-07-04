@@ -4,7 +4,6 @@ var ballot = require("./ballot")
 var winston = require('winston')
 
 import * as Message from "./message";
-import {InternalMap as Map} from "./map";
 import {Rol} from "./rol"
 import {Type as Type} from "./network/network";
 
