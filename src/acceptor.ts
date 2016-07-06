@@ -40,7 +40,7 @@ export class Acceptor {
 
   public processP1A(ballot: Ballot) {
     if (ballot.isMayorThanOtherBallot(this.actualBallot)) {
-      if (!this.replica.Test) winston.info("P1A Updated ballot to %s", JSON.stringify(ballot));
+      winston.info("P1A Updated ballot to %s", JSON.stringify(ballot));
       this.actualBallot = ballot;
     }
     this.sendP1B();
@@ -68,11 +68,11 @@ export class Acceptor {
       }
 
       if (value.ballot.isMayorOrEqualThanOtherBallot(this.actualBallot)) {
-          if (!this.replica.Test) winston.info("P2A Updated ballot to %s" , JSON.stringify(value.ballot));
+          winston.info("P2A Updated ballot to %s" , JSON.stringify(value.ballot));
           this.actualBallot = value.ballot;
           // TODO checks if replica is running, if it's running dont save the value
           this.replica.Decisions.set(value.slot, value.operation);
-          if (!this.replica.Test) winston.info("P2A Added operation to slot %s", value.slot);
+          winston.info("P2A Added operation to slot %s", value.slot);
       }
       this.sendP2B(value.slot, value.operation);
 
