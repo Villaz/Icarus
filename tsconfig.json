@@ -12,7 +12,6 @@
     "files": [
         "./src/rol.ts",
         "./src/app.ts",
-        "./src/clientIcarus.ts",
         "./src/ballot.ts",
         "./src/replica.ts",
         "./src/acceptor.ts",
