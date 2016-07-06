@@ -9,6 +9,7 @@ import {Rol as Rol} from "./rol";
 import * as Acceptor from "./acceptor";
 import {Commander as Commander} from "./commander";
 import {Scout as Scout} from "./scout";
+import {Type as Type} from "./network/network";
 
 export class Replica extends Rol {
 
@@ -25,6 +26,7 @@ export class Replica extends Rol {
   private nextSlotInDecisions: number = 0;
 
   private proposals: Map<number, Set<Operation>> = new Map();
+  private proposed: Map<number, Operation> = new Map();
   private listOfProposals: Set<Operation> = new Set();
   private listOfDecisions: Set<Operation> = new Set();
   private decisions: Map<number, Operation> = new Map();
@@ -44,17 +46,22 @@ export class Replica extends Rol {
     this.scout = new Scout({ballot: this.ballot, network: this.network});
     this.commander = new Commander(this);
 
-    if (!this.test) {
-      setTimeout(() => {
-      this.scout.start();
-      this.scout.on("adopted", (message) => {
-        this.adoptBallot(message);
-      });
-      this.commander.on("decision", (message) => {
-        this.decision(message.operation);
-      });
+    this.network.on("propose", (message) => {
+      this.propose(message.operation, false);
+    });
+    setTimeout(() => {
+      this.startScoutAndCommander();
     }, 5000);
-    }
+  }
+
+  private startScoutAndCommander() {
+    this.scout.start();
+    this.scout.on("adopted", (message) => {
+      this.adoptBallot(message);
+    });
+    this.commander.on("decision", (message) => {
+      this.decision(message.operation);
+    });
   }
 
   /**
@@ -71,8 +78,14 @@ export class Replica extends Rol {
     }
   }
 
-  protected propose(operation: Operation): void {
-    this.commander.sendP2A({operation: operation, ballot: this.ballot});
+  protected propose(operation: Operation, redirect: boolean= false ): void {
+    if (this.proposed.has(operation.slot)) return;
+    if (this.isCoordinator) {
+      this.proposed.set(operation.slot, operation);
+      this.commander.sendP2A({operation: operation, ballot: this.ballot});
+    }else {
+      if (redirect) this.sendToLeaders(operation);
+    }
   }
 
   private decision(operation: Operation): Promise<void> {
@@ -91,8 +104,7 @@ export class Replica extends Rol {
       const operationInSlot = this.decisions.get(this.slotToExecute);
       this.checkOperationsToRepropose( operationInSlot );
       return this.perform( operationInSlot ).then(() => {
-        if (!this.test)
-          winston.info("performed slot %s", this.slotToExecute - 1);
+        winston.info("performed slot %s", this.slotToExecute - 1);
         return whileDecisionsInSlot();
       });
     };
@@ -126,14 +138,12 @@ export class Replica extends Rol {
   }
 
 
-  private adoptBallot(message: {ballot: Ballot; pvalues: Map<any, number> , pvaluesSlot: Map<number, number>}) {
-    // message.pvalues.update(this.proposals)
-    // this.proposals = message.pvalues
-    // this.sendToCommanderAllproposals(this.proposals.keys);
+  private adoptBallot(message: {ballot: Ballot; pvalues: Map<number, Operation> , pvaluesSlot?: Map<number, number>}) {
+    this.proposed = this.updateMap(this.proposed, message.pvalues);
+    this.sendToCommanderAllProposed();
     this.actualCoordinator = this.id;
     this.isCoordinator = true;
-    if (!this.test)
-      winston.info("Leader %s is active!!!", this.id);
+    winston.info("Leader %s is active!!!", this.id);
   }
 
 
@@ -164,12 +174,31 @@ export class Replica extends Rol {
     return this.nextSlotInProposals && this.nextSlotInDecisions;
   }
 
-  protected executeOperation(message: any) {
+  private updateMap(m1: Map<number, Operation>, m2: Map<number, Operation>): Map<number, Operation> {
+    for (let [slot, operation] of m1.entries())
+      if (!m2.has(slot)) m2.set(slot, operation);
+    return m2;
+  }
+
+  private sendToCommanderAllProposed() {
+    for (let [slot, operation] of this.proposed.entries())
+      if (slot >= this.slotToExecute)
+        this.commander.sendP2A({operation: operation, ballot: this.ballot});
+  }
+
+  private sendToLeaders(operation: Operation): void {
+    let message = new Message.Message({from: this.id,
+                                       command_id: 0,
+                                       type: "PROPOSE",
+                                       operation: operation});
+    this.network.send(message, Type.PUB);
+  }
+
+  protected executeOperation(message: any): Promise<any> {
     return Promise.reject("Not implemented");
   }
 
   get Decisions(): Map<number, Operation>{
     return this.decisions;
-    // return Array.from(new Set(this.decisions.values()));
   }
 }
