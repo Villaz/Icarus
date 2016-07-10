@@ -59,6 +59,14 @@ export class Replica extends Rol {
     this.scout.on("adopted", (message) => {
       this.adoptBallot(message);
     });
+    this.scout.on("preempted", (message) => {
+      if (this.actualCoordinator !== message.ballot.id) {
+        this.isCoordinator = false;
+        this.actualCoordinator = message.ballot.id;
+        this.ballot.number++;
+        winston.info(`Replica ${this.id} preempted new coordinator is ${this.actualCoordinator}`);
+      }
+    });
     this.commander.on("decision", (message) => {
       this.decision(message.operation);
     });
@@ -70,6 +78,8 @@ export class Replica extends Rol {
   * problem to resolve the order of executeOperation
   */
   public processOperationFromClient(operation: Operation): void {
+    if (!operation.write)
+      this.sendOperationToExecute(operation);
     if (!this.isOperationInProposalsOrDecisions(operation)) {
       operation.slot = this.nextEmpltySlot();
       this.addOperationToProposals(operation);
@@ -114,36 +124,42 @@ export class Replica extends Rol {
 
   private perform( operation ) {
     this.slotToExecute++;
-    if ( operation.slot < this.slotToExecute ) {
-      let message = new Message.Message(
-        {
-          from: "",
-          type: "OPERATION",
-          command_id: operation.command_id,
-          operation: operation
-        });
-
-      if (!this.external) {
-        return this.executeOperation(message);
-      }else {
-        return this.network.sendToOperation(message).then((message) => {
-            const msg = {client: operation.client,
-               id: operation.command_id,
-               result: message};
-            return this.network.responde(msg);
-        });
-      }
-    }else
+    if ( operation.slot < this.slotToExecute )
+      return this.sendOperationToExecute(operation);
+    else
       return Promise.resolve();
   }
 
 
+  private sendOperationToExecute(operation: Operation) {
+    let message = new Message.Message(
+      {
+        from: "",
+        type: "OPERATION",
+        command_id: operation.operation_id,
+        operation: operation
+    });
+
+    if (!this.external) {
+      return this.executeOperation(message);
+    }else {
+      return this.network.sendToOperation(message).then((message) => {
+          const msg = {client: operation.client_id,
+             id: operation.operation_id,
+             result: message};
+          return this.network.responde(msg);
+      });
+    }
+  }
+
   private adoptBallot(message: {ballot: Ballot; pvalues: Map<number, Operation> , pvaluesSlot?: Map<number, number>}) {
     this.proposed = this.updateMap(this.proposed, message.pvalues);
     this.sendToCommanderAllProposed();
-    this.actualCoordinator = this.id;
-    this.isCoordinator = true;
-    winston.info("Leader %s is active!!!", this.id);
+    if (!this.isCoordinator) {
+      this.actualCoordinator = this.id;
+      this.isCoordinator = true;
+      winston.info("Leader %s is active!!!", this.id);
+    }
   }
 
 

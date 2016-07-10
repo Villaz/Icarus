@@ -3,10 +3,10 @@
 
 
 declare class Discover {
-    private name: string
-    private port: number
-    private roles: any
-    static createDiscover(discoverType: string, params: { name: string, port: number, roles: any }):Discover;
+    private name: string;
+    private port: number;
+    private roles: any;
+    static createDiscover(discoverType: string, params: { name: string, port: number, roles: any }): Discover;
 }
 
 declare class DiscoverBonjour extends Discover {
@@ -33,47 +33,48 @@ declare class Ballot {
 
 
 
-declare class Operation extends Object{
-  public operation_id:number;
-  public client_id:number;
-  public operation:any;
-  public slot:number;
-  public sha:string;
-  public equals(o:Operation);
+declare class Operation extends Object {
+  public operation_id: number;
+  public client_id: number;
+  public operation: any;
+  public slot: number;
+  public sha: string;
+  public write: boolean;
+  public equals(o: Operation);
 }
 
-declare class Rol{
-  Network:any;
-  Id:string;
-  Test:boolean;
+declare class Rol {
+  Network: any;
+  Id: string;
+  Test: boolean;
 }
 
-declare class Replica extends Rol{
-  Decisions:Map<number,Operation>;
+declare class Replica extends Rol {
+  Decisions: Map<number, Operation>;
 }
 
-declare class Acceptor{
+declare class Acceptor {
 
 }
 
-interface ParamsLeader{
-  operation?:Operation;
-  ballot?:Ballot;
+interface ParamsLeader {
+  operation?: Operation;
+  ballot?: Ballot;
 }
 
-interface CommanderSlot{
-  ballot: Ballot,
-  operation: any,
-  acceptorsResponse:Set<String>,
-  acceptors:Map<Number,Array<String>>
+interface CommanderSlot {
+  ballot: Ballot;
+  operation: any;
+  acceptorsResponse: Set<String>;
+  acceptors: Map<Number, Array<String>>;
 }
 
-interface P2AMessage{
-  from:string;
-  type:string;
-  body:{
-    slot:number,
-    operation:any,
-    ballot:Ballot
-  }
+interface P2AMessage {
+  from: string;
+  type: string;
+  body: {
+    slot: number,
+    operation: any,
+    ballot: Ballot
+  };
 }

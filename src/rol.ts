@@ -26,7 +26,9 @@ export abstract class  Rol {
     else this.external = false;
 
     if (!this.test) {
+      try {
         winston.add(winston.transports.File, { filename: `./logs/${type}-${this.id}.log` , level: "info"});
+      }catch (ex) { };
         if (params !== undefined && params.network !== undefined)
           winston.info(type + " %s started", this.id);
     } else {

@@ -22,16 +22,21 @@ export class Scout extends events.EventEmitter {
 
   constructor(params: {ballot: Ballot, network?: any}) {
     super();
-    this.slotsOfValues = [];
-    this.pvalues = [];
-    this.acceptorsResponsed = [];
-    this.acceptors = params.network.acceptors;
-    this.adopted = false;
-    this.ballot = params.ballot;
     this.network = params.network;
+    this.restart(params.ballot);
     this.network.on("P1B", (message) => {
        this.process(message);
      });
+  }
+
+  public restart(ballot: Ballot) {
+    this.network.removeAllListeners("P1B");
+    this.slotsOfValues = [];
+    this.pvalues = [];
+    this.acceptorsResponsed = [];
+    this.acceptors = this.network.acceptors;
+    this.adopted = false;
+    this.ballot = ballot;
   }
 
   start( ) {
@@ -49,14 +54,12 @@ export class Scout extends events.EventEmitter {
 
 
   private process(message: Message.Message) {
-    if (this.adopted) return;
     const ballot = message.operation.ballot;
-    if (this.ballot.isEqual(ballot)) {
+    if (this.ballot.isEqual(ballot) && !this.adopted) {
         this.updateAcceptedValuesAndAcceptorsResponse(message);
         this.ifResponseMayorOfAcceptorsSendAdopted();
-    }else if (!this.ballot.isEqual(ballot) || this.adopted) {
+    }else if (ballot.isMayorThanOtherBallot(this.ballot))
         this.sendPreemptedMessage(ballot);
-    }
   }
 
   private updateAcceptedValuesAndAcceptorsResponse(message: Message.Message) {
@@ -66,7 +69,6 @@ export class Scout extends events.EventEmitter {
   }
 
   private ifResponseMayorOfAcceptorsSendAdopted() {
-
     let numberAcceptors = this.acceptors.size;
     if (numberAcceptors === 2)
       numberAcceptors = 3;
@@ -87,7 +89,7 @@ export class Scout extends events.EventEmitter {
         pvaluesSlot: pvaluesInSlotMap
       };
       this.emit("adopted", body);
-      this.network.removeAllListeners("message");
+      // this.network.removeAllListeners("message");
     }
   }
 
@@ -98,7 +100,7 @@ export class Scout extends events.EventEmitter {
       };
     this.adopted = true;
     this.emit("preempted", body);
-    this.network.removeAllListeners("message");
+    // this.network.removeAllListeners("message");
   }
 
   private addAcceptedToPValues(accepted: any) {

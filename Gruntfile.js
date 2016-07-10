@@ -3,7 +3,7 @@
 
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-shell');
-    grunt.loadNpmTasks('grunt-plato');
+    grunt.loadNpmTasks('grunt-es6-plato');
     grunt.loadNpmTasks('grunt-coveralls');
 
     grunt.initConfig({

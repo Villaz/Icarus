@@ -4,65 +4,40 @@ import * as names from "./name_generator";
 import {Discover as Discover} from "./discover";
 import {ZMQNetwork as Network} from "./network/zmq/network";
 
-var program = require('commander');
-var nconf = require('nconf');
+const program = require("commander");
+const nconf = require("nconf");
 
 program
-  .version('0.0.1')
-  .option('--acceptor_name [name]', 'Acceptor name',names.generateName().substr(0, 15))
-  .option('--leader_name [name]', 'Leader name', names.generateName().substr(0, 15))
-  .option('--replica_name [name]', 'replica_name', names.generateName().substr(0, 15))
-  .option('--conf [configuration]', 'configuration file')
+  .version("0.0.1")
+  .option("--acceptor_name [name]", "Acceptor name", names.generateName().substr(0, 15))
+  .option("--leader_name [name]", "Leader name", names.generateName().substr(0, 15))
+  .option("--replica_name [name]", "replica_name", names.generateName().substr(0, 15))
+  .option("--conf [configuration]", "configuration file")
   .parse(process.argv);
 
 
-if(program['conf'])
-  nconf.argv().env().file({file: program['conf']});
-else{
+if (program["conf"])
+  nconf.argv().env().file({file: program["conf"]});
+else {
   nconf.argv()
        .env()
-       .file({ file: '/etc/icarus/icarus.conf'})
-       .file({ file: './conf/icarus.conf' })
+       .file({ file: "/etc/icarus/icarus.conf"})
+       .file({ file: "./conf/icarus.conf" });
 }
 
-function capitalize(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-/*
-function createDiscover(type:string, name:string, rol:any){
-  let roles = {}
-  roles[process.env.rol[0].toUpperCase()] = []
-  for (let ports in rol['ports']){
-    roles[process.env.rol[0].toUpperCase()].push(rol['ports'][ports])
-  }
-  let discover = Discover.Discover.createDiscover(type, {
-    name: name,
-    port: rol['discover'],
-    roles: roles
-  });
-  return discover;
-}
 
-function createRol(rol:any, name:string, discover:Discover.Discover):any{
-  var params = { name: name,
-                 network: { discover: discover,
-                            ports: rol['ports'],
-                            network: nconf.get('network'),
-                          },
-               }
-  var rol = require("./rol");
-  return rol.getRol(process.env.rol, params)
-}
-*/
-
-
-if(cluster.isMaster){
+if (cluster.isMaster) {
   const rol = require("./rol");
-  let name = names.generateName().substr(0, 15);
-  var discover = Discover.createDiscover('bonjour',{name: name, ports:nconf.get('network').ports, roles:nconf.get('roles')});
-  var network = new Network(discover, nconf.get('network').ports);
-  rol.getRol('replica', {name:name, network:network});
+  for (let cluster of nconf.get("clusters")) {
+    let name = names.generateName().substr(0, 15);
+    let discover = Discover.createDiscover("bonjour", {name: name, ports: cluster.network.ports, roles: cluster.roles});
+    let network = new Network(discover, cluster.network.ports);
+    rol.getRol("replica", {name: name, network: network});
+  }
 }
 
 /*

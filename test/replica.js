@@ -11,6 +11,7 @@ describe('Replica tests', function(){
         send : function () { },
         sendToOperation : function() {return Promise.resolve()},
         responde : function() {return Promise.resolve();},
+        removeAllListeners: () => {},
         on: function(){}
     }
     var replica = undefined
@@ -22,21 +23,21 @@ describe('Replica tests', function(){
 
 
     it('processOperationFromClient', function(){
-      var op1 = {command_id:1,client_id:1,op:{name:'hello'}};
+      var op1 = {operation_id:1,client_id:1,op:{name:'hello'}};
       replica.processOperationFromClient(op1);
       var ops = replica.proposals.get(0);
       ops.size.should.be.exactly(1);
 
       var op = ops.values().next().value;
-      op.command_id.should.be.exactly(1);
+      op.operation_id.should.be.exactly(1);
       op.client_id.should.be.exactly(1);
       replica.nextSlotInProposals.should.be.exactly(1);
     });
 
 
     it('processOperationFromClient same slot', function(){
-      var op1 = {command_id:1,client_id:1,op:{name:'hello'}};
-      var op2 = {command_id:2,client_id:1,op:{name:'hello2'}};
+      var op1 = {operation_id:1,client_id:1,op:{name:'hello'}};
+      var op2 = {operation_id:2,client_id:1,op:{name:'hello2'}};
 
       replica.processOperationFromClient(op1);
       replica.processOperationFromClient(op2);
@@ -45,9 +46,9 @@ describe('Replica tests', function(){
       ops.size.should.be.exactly(2);
       var values = ops.values();
       var op = values.next().value;
-      op.command_id.should.be.exactly(1);
+      op.operation_id.should.be.exactly(1);
       op = values.next().value;
-      op.command_id.should.be.exactly(2);
+      op.operation_id.should.be.exactly(2);
     });
 
     it('propose operation no coordinador no redirect', ( ) => {
@@ -106,7 +107,7 @@ describe('Replica tests', function(){
 
     it('Decision operation', function( done ){
         replica.executeOperation = function(message){return Promise.resolve();}
-        var op1 = {command_id:1,client_id:1,op:{name:'hello'}, slot:0}
+        var op1 = {operation_id:1,client_id:1,op:{name:'hello'}, slot:0}
         replica.decision(op1).then(function(){
           replica.nextSlotInDecisions.should.be.exactly(1);
           replica.decisions.get(0).should.be.exactly(op1);
@@ -117,8 +118,8 @@ describe('Replica tests', function(){
 
     it('Decide and repropose operations', function( done ){
       replica.executeOperation = function(message){return Promise.resolve();}
-      var op1 = {command_id:1,client_id:1,op:{name:'hello'}, slot:0}
-      var op2 = {command_id:2,client_id:1,op:{name:'hello2'}, slot:0}
+      var op1 = {operation_id:1,client_id:1,op:{name:'hello'}, slot:0}
+      var op2 = {operation_id:2,client_id:1,op:{name:'hello2'}, slot:0}
 
       replica.propose(op1);
       replica.propose(op2);
@@ -130,8 +131,8 @@ describe('Replica tests', function(){
 
     it('Decide operation with empty slots', function(done){
       replica.executeOperation = function(message){return Promise.resolve();}
-      var op1 = {command_id:1,client_id:1,op:{name:'hello'}, slot:1}
-      var op2 = {command_id:2,client_id:1,op:{name:'hello2'}, slot:0}
+      var op1 = {operation_id:1,client_id:1,op:{name:'hello'}, slot:1}
+      var op2 = {operation_id:2,client_id:1,op:{name:'hello2'}, slot:0}
 
       let key1 = JSON.stringify({id:op1.command_id,client:op1.client_id});
       let key2 = JSON.stringify({id:op2.command_id,client:op2.client_id});
@@ -159,19 +160,19 @@ describe('Replica tests', function(){
 
     it('no perform', ( done ) => {
       replica.slotToExecute = 1;
-      replica.perform({slot:2, command_id:1, operation:{client:""} }).then(( ) => {  done(); });
+      replica.perform({slot:2, operation_id:1, operation:{client:""} }).then(( ) => {  done(); });
     });
 
     it(' perform external', ( done ) => {
       replica.external = true;
       replica.slotToExecute = 1;
-      replica.perform({slot:1, command_id:1, operation:{client:""} }).then( ( ) => { done(); });
+      replica.perform({slot:1, operation_id:1, operation:{client:""} }).then( ( ) => { done(); });
     });
 
 
     it('reproposeOperation' , function(  ){
-        var op1 = {command_id:1,client_id:1,op:'hello', sha:'123'};
-        var op2 = {command_id:2,client_id:1,op:'hello2', sha:'124'};
+        var op1 = {operation_id:1,client_id:1,op:'hello', sha:'123'};
+        var op2 = {operation_id:2,client_id:1,op:'hello2', sha:'124'};
 
         replica.proposals.set(0, new Set([op1]) );
         replica.nextSlotInProposals = 1;
@@ -181,11 +182,11 @@ describe('Replica tests', function(){
         replica.checkOperationsToRepropose(op2);
         replica.nextSlotInProposals.should.be.exactly(2);
         should.not.exists(replica.proposals.get(0));
-        replica.proposals.get(1).values().next().value.command_id.should.be.exactly(1)
+        replica.proposals.get(1).values().next().value.operation_id.should.be.exactly(1)
     });
 
     it('repropose same operation' , function( ){
-        var op1 = {command_id:1,client_id:1,op:'hello', sha:'1234'};
+        var op1 = {operation_id:1,client_id:1,op:'hello', sha:'1234'};
 
         replica.proposals.set(0 , new Set([op1]));
         replica.nextSlotInProposals = 1;

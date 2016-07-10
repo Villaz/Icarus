@@ -40,7 +40,7 @@ export class Acceptor {
 
   public processP1A(ballot: Ballot) {
     if (ballot.isMayorThanOtherBallot(this.actualBallot)) {
-      winston.info("P1A Updated ballot to %s", JSON.stringify(ballot));
+      winston.info("%s P1A Updated ballot to %s", this.replica.Id, JSON.stringify(ballot));
       this.actualBallot = ballot;
     }
     this.sendP1B();
